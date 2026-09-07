@@ -1,4 +1,4 @@
-package com.example.kuran_app
+package com.zekitazegul.kuranapp
 
 import io.flutter.embedding.android.FlutterActivity
 
