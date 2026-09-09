@@ -1,566 +1,706 @@
 ﻿import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 class SurahScreen extends StatefulWidget {
-  final String surahName;
-  final int pageCount;
+final String surahName;
+final int pageCount;
 
-  const SurahScreen({
-    super.key,
-    required this.surahName,
-    required this.pageCount,
-  });
+const SurahScreen({
+super.key,
+required this.surahName,
+required this.pageCount,
+});
 
-  @override
-  State<SurahScreen> createState() => _SurahScreenState();
+@override
+State<SurahScreen> createState() => _SurahScreenState();
 }
 
 class _SurahScreenState extends State<SurahScreen>
-    with SingleTickerProviderStateMixin {
-  int _currentPage = 0;
+with SingleTickerProviderStateMixin {
+int _currentPage = 0;
 
-  int? _previousPage;
-  int? _targetPage;
+int? _previousPage;
+int? _targetPage;
 
-  bool _isAnimating = false;
-  bool _goingNext = true;
+bool _isAnimating = false;
+bool _goingNext = true;
 
-  late final AnimationController _animationController;
-  late final ScrollController _scrollController;
+bool _isFullscreen = false;
 
-  @override
-  void initState() {
-    super.initState();
+late final AnimationController _animationController;
+late final ScrollController _scrollController;
 
-    _scrollController = ScrollController();
+double _pointerStartX = 0;
+double _pointerStartY = 0;
 
-    _animationController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 550),
-    );
+double _pointerCurrentX = 0;
+double _pointerCurrentY = 0;
 
-    _animationController.addStatusListener((status) {
-      if (status == AnimationStatus.completed) {
-        if (!mounted) {
-          return;
-        }
+bool _pointerMoved = false;
 
-        setState(() {
-          _currentPage = _targetPage ?? _currentPage;
-          _previousPage = null;
-          _targetPage = null;
-          _isAnimating = false;
-        });
+static const double _swipeThreshold = 70;
 
-        _scrollToTop();
-      }
-    });
-  }
+@override
+void initState() {
+super.initState();
 
-  @override
-  void dispose() {
-    _animationController.dispose();
-    _scrollController.dispose();
-    super.dispose();
-  }
 
-  void _scrollToTop() {
-    if (!_scrollController.hasClients) {
-      return;
-    }
+_scrollController = ScrollController();
 
-    _scrollController.jumpTo(0);
-  }
+_animationController = AnimationController(
+  vsync: this,
+  duration: const Duration(milliseconds: 550),
+);
 
-  void _nextPage() {
-    if (_isAnimating) {
-      return;
-    }
-
-    if (_currentPage >= widget.pageCount - 1) {
-      return;
-    }
-
-    _scrollToTop();
-
-    _startPageAnimation(
-      _currentPage + 1,
-      true,
-    );
-  }
-
-  void _previousPageAction() {
-    if (_isAnimating) {
-      return;
-    }
-
-    if (_currentPage <= 0) {
-      return;
-    }
-
-    _scrollToTop();
-
-    _startPageAnimation(
-      _currentPage - 1,
-      false,
-    );
-  }
-
-  void _startPageAnimation(
-    int newPage,
-    bool goingNext,
-  ) {
-    if (newPage < 0 || newPage >= widget.pageCount) {
+_animationController.addStatusListener((status) {
+  if (status == AnimationStatus.completed) {
+    if (!mounted) {
       return;
     }
 
     setState(() {
-      _previousPage = _currentPage;
-      _targetPage = newPage;
-      _goingNext = goingNext;
-      _isAnimating = true;
+      _currentPage = _targetPage ?? _currentPage;
+      _previousPage = null;
+      _targetPage = null;
+      _isAnimating = false;
     });
 
-    _animationController.forward(from: 0);
+    _scrollToTop();
   }
+});
 
-  void _handleHorizontalDragEnd(
-    DragEndDetails details,
-  ) {
-    if (_isAnimating) {
-      return;
-    }
 
-    final double velocity =
-        details.primaryVelocity ?? 0;
+}
 
-    if (velocity < -300) {
-      _nextPage();
-      return;
-    }
+@override
+void dispose() {
+SystemChrome.setEnabledSystemUIMode(
+SystemUiMode.edgeToEdge,
+);
 
-    if (velocity > 300) {
-      _previousPageAction();
-    }
-  }
 
-  Widget _buildAnimatedPages(
-    BoxConstraints constraints,
-    bool isLandscape,
-  ) {
-    if (isLandscape) {
-      return _buildLandscapePages(constraints);
-    }
+_animationController.dispose();
+_scrollController.dispose();
 
-    return _buildPortraitPages(constraints);
-  }
+super.dispose();
 
-  Widget _buildPortraitPages(
-    BoxConstraints constraints,
-  ) {
-    if (!_isAnimating ||
-        _previousPage == null ||
-        _targetPage == null) {
-      return _QuranPage(
-        pageNumber: _currentPage + 1,
-        availableWidth: constraints.maxWidth,
-        availableHeight: constraints.maxHeight,
-        isLandscape: false,
+
+}
+
+void _toggleFullscreen() {
+setState(() {
+_isFullscreen = !_isFullscreen;
+});
+
+
+if (_isFullscreen) {
+  SystemChrome.setEnabledSystemUIMode(
+    SystemUiMode.immersiveSticky,
+  );
+} else {
+  SystemChrome.setEnabledSystemUIMode(
+    SystemUiMode.edgeToEdge,
+  );
+}
+
+
+}
+
+void _scrollToTop() {
+if (!_scrollController.hasClients) {
+return;
+}
+
+
+_scrollController.jumpTo(0);
+
+
+}
+
+void _nextPage() {
+if (_isAnimating) {
+return;
+}
+
+
+if (_currentPage >= widget.pageCount - 1) {
+  return;
+}
+
+_scrollToTop();
+
+_startPageAnimation(
+  _currentPage + 1,
+  true,
+);
+
+
+}
+
+void _previousPageAction() {
+if (_isAnimating) {
+return;
+}
+
+
+if (_currentPage <= 0) {
+  return;
+}
+
+_scrollToTop();
+
+_startPageAnimation(
+  _currentPage - 1,
+  false,
+);
+
+}
+
+void _startPageAnimation(
+int newPage,
+bool goingNext,
+) {
+if (newPage < 0 ||
+newPage >= widget.pageCount) {
+return;
+}
+
+setState(() {
+  _previousPage = _currentPage;
+  _targetPage = newPage;
+  _goingNext = goingNext;
+  _isAnimating = true;
+});
+
+_animationController.forward(from: 0);
+
+
+}
+
+void _handlePointerDown(
+PointerDownEvent event,
+) {
+_pointerStartX = event.position.dx;
+_pointerStartY = event.position.dy;
+
+
+_pointerCurrentX = event.position.dx;
+_pointerCurrentY = event.position.dy;
+
+_pointerMoved = false;
+}
+
+void _handlePointerMove(
+PointerMoveEvent event,
+) {
+_pointerCurrentX = event.position.dx;
+_pointerCurrentY = event.position.dy;
+
+
+final double deltaX =
+    (_pointerCurrentX - _pointerStartX).abs();
+
+final double deltaY =
+    (_pointerCurrentY - _pointerStartY).abs();
+
+if (deltaX > 10 || deltaY > 10) {
+  _pointerMoved = true;
+}
+}
+
+void _handlePointerUp(
+PointerUpEvent event,
+) {
+final double deltaX =
+_pointerCurrentX - _pointerStartX;
+
+
+final double deltaY =
+    _pointerCurrentY - _pointerStartY;
+
+final double absX = deltaX.abs();
+final double absY = deltaY.abs();
+
+if (_isAnimating) {
+  _resetPointer();
+  return;
+}
+
+if (!_pointerMoved) {
+  _resetPointer();
+
+  _toggleFullscreen();
+  return;
+}
+
+final bool isHorizontalSwipe =
+    absX >= _swipeThreshold &&
+    absX > absY;
+
+if (!isHorizontalSwipe) {
+  _resetPointer();
+  return;
+}
+
+if (deltaX > 0) {
+  _nextPage();
+} else {
+  _previousPageAction();
+}
+
+_resetPointer();
+}
+
+void _handlePointerCancel(
+PointerCancelEvent event,
+) {
+_resetPointer();
+}
+
+void _resetPointer() {
+_pointerStartX = 0;
+_pointerStartY = 0;
+_pointerCurrentX = 0;
+_pointerCurrentY = 0;
+
+_pointerMoved = false;
+}
+
+Widget _buildAnimatedPages(
+BoxConstraints constraints,
+bool isLandscape,
+) {
+if (isLandscape) {
+return _buildLandscapePages(constraints);
+}
+
+return _buildPortraitPages(constraints);
+}
+
+Widget _buildPortraitPages(
+BoxConstraints constraints,
+) {
+if (!_isAnimating ||
+_previousPage == null ||
+_targetPage == null) {
+return _QuranPage(
+pageNumber: _currentPage + 1,
+availableWidth: constraints.maxWidth,
+availableHeight: constraints.maxHeight,
+isLandscape: false,
+);
+}
+
+return AnimatedBuilder(
+  animation: _animationController,
+  builder: (context, child) {
+    final double progress =
+        Curves.easeInOutCubic.transform(
+      _animationController.value,
+    );
+
+    final double width =
+        constraints.maxWidth;
+
+    if (_goingNext) {
+      final double currentX =
+          width * progress;
+
+      final double newX =
+          -width + (width * progress);
+
+      return Stack(
+        clipBehavior: Clip.hardEdge,
+        children: [
+          Positioned(
+            left: currentX,
+            top: 0,
+            right: -currentX,
+            bottom: 0,
+            child: _QuranPage(
+              pageNumber:
+                  _previousPage! + 1,
+              availableWidth:
+                  constraints.maxWidth,
+              availableHeight:
+                  constraints.maxHeight,
+              isLandscape: false,
+            ),
+          ),
+          Positioned(
+            left: newX,
+            top: 0,
+            right: -newX,
+            bottom: 0,
+            child: _QuranPage(
+              pageNumber:
+                  _targetPage! + 1,
+              availableWidth:
+                  constraints.maxWidth,
+              availableHeight:
+                  constraints.maxHeight,
+              isLandscape: false,
+            ),
+          ),
+        ],
       );
     }
 
-    return AnimatedBuilder(
-      animation: _animationController,
-      builder: (context, child) {
-        final double progress =
-            Curves.easeInOutCubic.transform(
-          _animationController.value,
-        );
+    final double currentX =
+        -width * progress;
 
-        final double width = constraints.maxWidth;
+    final double newX =
+        width - (width * progress);
 
-        if (_goingNext) {
-          final double currentX =
-              width * progress;
+    return Stack(
+      clipBehavior: Clip.hardEdge,
+      children: [
+        Positioned(
+          left: currentX,
+          top: 0,
+          right: -currentX,
+          bottom: 0,
+          child: _QuranPage(
+            pageNumber:
+                _previousPage! + 1,
+            availableWidth:
+                constraints.maxWidth,
+            availableHeight:
+                constraints.maxHeight,
+            isLandscape: false,
+          ),
+        ),
+        Positioned(
+          left: newX,
+          top: 0,
+          right: -newX,
+          bottom: 0,
+          child: _QuranPage(
+            pageNumber:
+                _targetPage! + 1,
+            availableWidth:
+                constraints.maxWidth,
+            availableHeight:
+                constraints.maxHeight,
+            isLandscape: false,
+          ),
+        ),
+      ],
+    );
+  },
+);
+}
 
-          final double newX =
-              -width + (width * progress);
+Widget _buildLandscapePages(
+BoxConstraints constraints,
+) {
+final double pageWidth =
+constraints.maxWidth;
 
-          return Stack(
-            clipBehavior: Clip.hardEdge,
-            children: [
-              Positioned(
-                left: currentX,
-                top: 0,
-                right: -currentX,
-                bottom: 0,
-                child: _QuranPage(
-                  pageNumber:
-                      _previousPage! + 1,
-                  availableWidth:
-                      constraints.maxWidth,
-                  availableHeight:
-                      constraints.maxHeight,
-                  isLandscape: false,
-                ),
-              ),
-              Positioned(
-                left: newX,
-                top: 0,
-                right: -newX,
-                bottom: 0,
-                child: _QuranPage(
-                  pageNumber:
-                      _targetPage! + 1,
-                  availableWidth:
-                      constraints.maxWidth,
-                  availableHeight:
-                      constraints.maxHeight,
-                  isLandscape: false,
-                ),
-              ),
-            ],
-          );
-        }
 
-        final double currentX =
-            -width * progress;
+final double pageHeight =
+    pageWidth * (1916 / 1134);
 
-        final double newX =
-            width - (width * progress);
+if (!_isAnimating ||
+    _previousPage == null ||
+    _targetPage == null) {
+  return _QuranPage(
+    pageNumber: _currentPage + 1,
+    availableWidth: pageWidth,
+    availableHeight: pageHeight,
+    isLandscape: true,
+  );
+}
 
-        return Stack(
+return AnimatedBuilder(
+  animation: _animationController,
+  builder: (context, child) {
+    final double progress =
+        Curves.easeInOutCubic.transform(
+      _animationController.value,
+    );
+
+    final double width = pageWidth;
+
+    if (_goingNext) {
+      final double currentX =
+          width * progress;
+
+      final double newX =
+          -width + (width * progress);
+
+      return SizedBox(
+        width: width,
+        height: pageHeight,
+        child: Stack(
           clipBehavior: Clip.hardEdge,
           children: [
             Positioned(
               left: currentX,
               top: 0,
-              right: -currentX,
-              bottom: 0,
+              width: width,
+              height: pageHeight,
               child: _QuranPage(
                 pageNumber:
                     _previousPage! + 1,
-                availableWidth:
-                    constraints.maxWidth,
-                availableHeight:
-                    constraints.maxHeight,
-                isLandscape: false,
+                availableWidth: width,
+                availableHeight: pageHeight,
+                isLandscape: true,
               ),
             ),
             Positioned(
               left: newX,
               top: 0,
-              right: -newX,
-              bottom: 0,
+              width: width,
+              height: pageHeight,
               child: _QuranPage(
                 pageNumber:
                     _targetPage! + 1,
-                availableWidth:
-                    constraints.maxWidth,
-                availableHeight:
-                    constraints.maxHeight,
-                isLandscape: false,
+                availableWidth: width,
+                availableHeight: pageHeight,
+                isLandscape: true,
               ),
             ),
           ],
-        );
-      },
-    );
-  }
-
-  Widget _buildLandscapePages(
-    BoxConstraints constraints,
-  ) {
-    final double pageWidth =
-        constraints.maxWidth;
-
-    // Yasin PNG gerçek ölçüsü:
-    // 1134 x 1916
-    //
-    // Landscape modda sayfa genişliğe göre
-    // ölçeklendiği için gerçek yüksekliği
-    // aynı oran üzerinden hesaplıyoruz.
-    final double pageHeight =
-        pageWidth * (1916 / 1134);
-
-    if (!_isAnimating ||
-        _previousPage == null ||
-        _targetPage == null) {
-      return _QuranPage(
-        pageNumber: _currentPage + 1,
-        availableWidth: pageWidth,
-        availableHeight: pageHeight,
-        isLandscape: true,
+        ),
       );
     }
 
-    return AnimatedBuilder(
-      animation: _animationController,
-      builder: (context, child) {
-        final double progress =
-            Curves.easeInOutCubic.transform(
-          _animationController.value,
-        );
+    final double currentX =
+        -width * progress;
 
-        final double width = pageWidth;
+    final double newX =
+        width - (width * progress);
 
-        if (_goingNext) {
-          final double currentX =
-              width * progress;
-
-          final double newX =
-              -width + (width * progress);
-
-          return SizedBox(
+    return SizedBox(
+      width: width,
+      height: pageHeight,
+      child: Stack(
+        clipBehavior: Clip.hardEdge,
+        children: [
+          Positioned(
+            left: currentX,
+            top: 0,
             width: width,
             height: pageHeight,
-            child: Stack(
-              clipBehavior: Clip.hardEdge,
-              children: [
-                Positioned(
-                  left: currentX,
-                  top: 0,
-                  width: width,
-                  height: pageHeight,
-                  child: _QuranPage(
-                    pageNumber:
-                        _previousPage! + 1,
-                    availableWidth: width,
-                    availableHeight: pageHeight,
-                    isLandscape: true,
-                  ),
-                ),
-                Positioned(
-                  left: newX,
-                  top: 0,
-                  width: width,
-                  height: pageHeight,
-                  child: _QuranPage(
-                    pageNumber:
-                        _targetPage! + 1,
-                    availableWidth: width,
-                    availableHeight: pageHeight,
-                    isLandscape: true,
-                  ),
-                ),
-              ],
-            ),
-          );
-        }
-
-        final double currentX =
-            -width * progress;
-
-        final double newX =
-            width - (width * progress);
-
-        return SizedBox(
-          width: width,
-          height: pageHeight,
-          child: Stack(
-            clipBehavior: Clip.hardEdge,
-            children: [
-              Positioned(
-                left: currentX,
-                top: 0,
-                width: width,
-                height: pageHeight,
-                child: _QuranPage(
-                  pageNumber:
-                      _previousPage! + 1,
-                  availableWidth: width,
-                  availableHeight: pageHeight,
-                  isLandscape: true,
-                ),
-              ),
-              Positioned(
-                left: newX,
-                top: 0,
-                width: width,
-                height: pageHeight,
-                child: _QuranPage(
-                  pageNumber:
-                      _targetPage! + 1,
-                  availableWidth: width,
-                  availableHeight: pageHeight,
-                  isLandscape: true,
-                ),
-              ),
-            ],
-          ),
-        );
-      },
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor:
-          const Color(0xFFE9E1D1),
-      appBar: AppBar(
-        title: Text(
-          widget.surahName,
-          style: const TextStyle(
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        centerTitle: true,
-        backgroundColor:
-            const Color(0xFFE9E1D1),
-      ),
-      body: SafeArea(
-        child: Column(
-          children: [
-            Expanded(
-              child: LayoutBuilder(
-                builder:
-                    (context, constraints) {
-                  final bool isLandscape =
-                      constraints.maxWidth >
-                          constraints.maxHeight;
-
-                  final Widget pageContent =
-                      _buildAnimatedPages(
-                    constraints,
-                    isLandscape,
-                  );
-
-                  return GestureDetector(
-                    behavior:
-                        HitTestBehavior.opaque,
-                    onHorizontalDragEnd:
-                        _handleHorizontalDragEnd,
-                    child: ClipRect(
-                      child: isLandscape
-                          ? SingleChildScrollView(
-                              controller:
-                                  _scrollController,
-                              physics:
-                                  const ClampingScrollPhysics(),
-                              child: pageContent,
-                            )
-                          : pageContent,
-                    ),
-                  );
-                },
-              ),
-            ),
-            _buildPageControls(),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildPageControls() {
-    return Container(
-      padding: const EdgeInsets.fromLTRB(
-        16,
-        8,
-        16,
-        14,
-      ),
-      child: Row(
-        mainAxisAlignment:
-            MainAxisAlignment.center,
-        children: [
-          IconButton(
-            tooltip: 'Sonraki sayfa',
-            onPressed:
-                (!_isAnimating &&
-                        _currentPage <
-                            widget.pageCount - 1)
-                    ? _nextPage
-                    : null,
-            icon: const Icon(
-              Icons.chevron_left,
+            child: _QuranPage(
+              pageNumber:
+                  _previousPage! + 1,
+              availableWidth: width,
+              availableHeight: pageHeight,
+              isLandscape: true,
             ),
           ),
-          const SizedBox(width: 12),
-          Container(
-            padding:
-                const EdgeInsets.symmetric(
-              horizontal: 18,
-              vertical: 8,
-            ),
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(
-                alpha: 0.85,
-              ),
-              borderRadius:
-                  BorderRadius.circular(20),
-            ),
-            child: Text(
-              '${_currentPage + 1} / ${widget.pageCount}',
-              style: const TextStyle(
-                fontWeight: FontWeight.bold,
-                fontSize: 15,
-              ),
-            ),
-          ),
-          const SizedBox(width: 12),
-          IconButton(
-            tooltip: 'Önceki sayfa',
-            onPressed:
-                (!_isAnimating &&
-                        _currentPage > 0)
-                    ? _previousPageAction
-                    : null,
-            icon: const Icon(
-              Icons.chevron_right,
+          Positioned(
+            left: newX,
+            top: 0,
+            width: width,
+            height: pageHeight,
+            child: _QuranPage(
+              pageNumber:
+                  _targetPage! + 1,
+              availableWidth: width,
+              availableHeight: pageHeight,
+              isLandscape: true,
             ),
           ),
         ],
       ),
     );
-  }
+  },
+);
+}
+
+@override
+Widget build(BuildContext context) {
+return Scaffold(
+backgroundColor:
+const Color(0xFFE9E1D1),
+
+  appBar: _isFullscreen
+      ? null
+      : AppBar(
+          title: Text(
+            widget.surahName,
+            style: const TextStyle(
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          centerTitle: true,
+          backgroundColor:
+              const Color(0xFFE9E1D1),
+        ),
+
+  body: _isFullscreen
+      ? _buildPageArea()
+      : SafeArea(
+          child: Column(
+            children: [
+              Expanded(
+                child: _buildPageArea(),
+              ),
+              _buildPageControls(),
+            ],
+          ),
+        ),
+);
+
+}
+
+Widget _buildPageArea() {
+return LayoutBuilder(
+builder: (context, constraints) {
+final bool isLandscape =
+constraints.maxWidth >
+constraints.maxHeight;
+
+    final Widget pageContent =
+        _buildAnimatedPages(
+      constraints,
+      isLandscape,
+    );
+
+    final Widget content =
+        isLandscape
+            ? SingleChildScrollView(
+                controller:
+                    _scrollController,
+                physics:
+                    const ClampingScrollPhysics(),
+                child: pageContent,
+              )
+            : pageContent;
+
+    return Listener(
+      behavior: HitTestBehavior.opaque,
+      onPointerDown:
+          _handlePointerDown,
+      onPointerMove:
+          _handlePointerMove,
+      onPointerUp:
+          _handlePointerUp,
+      onPointerCancel:
+          _handlePointerCancel,
+      child: ClipRect(
+        child: content,
+      ),
+    );
+  },
+);
+
+
+}
+
+Widget _buildPageControls() {
+return Container(
+padding: const EdgeInsets.fromLTRB(
+16,
+8,
+16,
+14,
+),
+child: Row(
+mainAxisAlignment:
+MainAxisAlignment.center,
+children: [
+IconButton(
+tooltip: 'Sonraki sayfa',
+onPressed:
+(!_isAnimating &&
+_currentPage <
+widget.pageCount - 1)
+? _nextPage
+: null,
+icon: const Icon(
+Icons.chevron_left,
+),
+),
+const SizedBox(width: 12),
+Container(
+padding:
+const EdgeInsets.symmetric(
+horizontal: 18,
+vertical: 8,
+),
+decoration: BoxDecoration(
+color: Colors.white.withValues(
+alpha: 0.85,
+),
+borderRadius:
+BorderRadius.circular(20),
+),
+child: Text(
+'${_currentPage + 1} / ${widget.pageCount}',
+style: const TextStyle(
+fontWeight: FontWeight.bold,
+fontSize: 15,
+),
+),
+),
+const SizedBox(width: 12),
+IconButton(
+tooltip: 'Önceki sayfa',
+onPressed:
+(!_isAnimating &&
+_currentPage > 0)
+? _previousPageAction
+: null,
+icon: const Icon(
+Icons.chevron_right,
+),
+),
+],
+),
+);
+}
 }
 
 class _QuranPage extends StatelessWidget {
-  final int pageNumber;
-  final double availableWidth;
-  final double? availableHeight;
-  final bool isLandscape;
+final int pageNumber;
+final double availableWidth;
+final double? availableHeight;
+final bool isLandscape;
 
-  const _QuranPage({
-    required this.pageNumber,
-    required this.availableWidth,
-    required this.availableHeight,
-    required this.isLandscape,
-  });
+const _QuranPage({
+required this.pageNumber,
+required this.availableWidth,
+required this.availableHeight,
+required this.isLandscape,
+});
 
-  @override
-  Widget build(BuildContext context) {
-    final String assetPath =
-        'assets/yasin/page_$pageNumber.png';
+@override
+Widget build(BuildContext context) {
+final String assetPath =
+'assets/yasin/page_$pageNumber.png';
 
-    if (isLandscape) {
-      return Align(
-        alignment: Alignment.topCenter,
-        child: Image.asset(
-          assetPath,
-          width: availableWidth,
-          height: availableHeight,
-          fit: BoxFit.fitWidth,
-          filterQuality: FilterQuality.high,
-          alignment: Alignment.topCenter,
-        ),
-      );
-    }
 
-    return SizedBox(
+if (isLandscape) {
+  return Align(
+    alignment: Alignment.topCenter,
+    child: Image.asset(
+      assetPath,
       width: availableWidth,
       height: availableHeight,
-      child: Center(
-        child: Image.asset(
-          assetPath,
-          width: availableWidth,
-          height: availableHeight,
-          fit: BoxFit.contain,
-          filterQuality: FilterQuality.high,
-          alignment: Alignment.center,
-        ),
-      ),
-    );
-  }
+      fit: BoxFit.fitWidth,
+      filterQuality: FilterQuality.high,
+      alignment: Alignment.topCenter,
+    ),
+  );
+}
+
+return SizedBox(
+  width: availableWidth,
+  height: availableHeight,
+  child: Center(
+    child: Image.asset(
+      assetPath,
+      width: availableWidth,
+      height: availableHeight,
+      fit: BoxFit.contain,
+      filterQuality: FilterQuality.high,
+      alignment: Alignment.center,
+    ),
+  ),
+);
+}
 }

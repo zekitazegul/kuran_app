@@ -56,3 +56,34 @@ kotlin {
 flutter {
     source = "../.."
 }
+
+tasks.configureEach {
+
+if (name == "assembleDebug") {
+
+doLast {
+
+val apkFile = layout.buildDirectory.file("outputs/apk/debug/app-debug.apk").get().asFile
+
+val flutterOutputDir = projectDir.parentFile.parentFile.resolve("build/app/outputs/flutter-apk")
+
+if (apkFile.exists()) {
+
+flutterOutputDir.mkdirs()
+
+apkFile.copyTo(
+
+flutterOutputDir.resolve("app-debug.apk"),
+
+overwrite = true
+
+)
+
+}
+
+}
+
+}
+
+}
+
