@@ -19,6 +19,25 @@ class _SettingsScreenState extends State<SettingsScreen> {
   bool _saving = false;
   void _message(String text) => ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(context.t(text))));
 
+  Future<void> _removeDownload() async {
+    final confirmed = await showDialog<bool>(context: context, builder: (dialogContext) => AlertDialog(
+      title: Text(dialogContext.t('Hattı cihazımdan kaldır')),
+      content: Text(dialogContext.t('{edition} dosyaları cihazdan silinecek. Ayraçların ve son okuduğun sayfa korunacak. Tekrar okumak için bu hattı yeniden indirmen gerekir.',
+        {'edition': dialogContext.t(widget.store.edition.name)})),
+      actions: [TextButton(onPressed: () => Navigator.pop(dialogContext, false), child: Text(dialogContext.t('Vazgeç'))),
+        FilledButton(onPressed: () => Navigator.pop(dialogContext, true), child: Text(dialogContext.t('Kaldır')))],
+    ));
+    if (confirmed != true || !mounted) return;
+    setState(() => _saving = true);
+    try {
+      await widget.store.removeDownload();
+      PaintingBinding.instance.imageCache.clear();
+      PaintingBinding.instance.imageCache.clearLiveImages();
+      if (mounted) _message('Hat cihazından kaldırıldı.');
+    } catch (_) { if (mounted) _message('Hat kaldırılamadı. Tekrar dene.'); }
+    finally { if (mounted) setState(() => _saving = false); }
+  }
+
   @override
   Widget build(BuildContext context) => Scaffold(
     appBar: AppBar(title: Text(context.t('Ayarlar')), actions: [LanguageSelector()]),
@@ -58,6 +77,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
         ),
       ])),
       SizedBox(height: 24),
+      Card(child: ListTile(
+        leading: const Icon(Icons.delete_outline),
+        title: Text(context.t('Hattı cihazımdan kaldır')),
+        subtitle: Text(context.t(widget.store.edition.name)),
+        enabled: !_saving && (widget.store.downloadedBytes > 0 || widget.store.downloaded.isNotEmpty),
+        onTap: _saving ? null : _removeDownload,
+      )),
+      const SizedBox(height: 24),
       _heading(context.t('YARDIM VE BİLGİ')),
       Card(child: Column(children: [
         ListTile(leading: const Icon(Icons.info_outline), title: Text(context.t('Uygulama hakkında')),

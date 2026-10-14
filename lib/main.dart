@@ -215,21 +215,32 @@ class _HomeScreenState extends State<HomeScreen> {
                 Text(context.t('Kur’an sayfalarını indir'), style: Theme.of(context).textTheme.titleLarge),
                 SizedBox(height: 8), Text(context.t('İndirilecek sayfalar: {size} MB', {'size': (store.edition.downloadBytes / 1000000).toStringAsFixed(1)})),
                 SizedBox(height: 20),
-                LinearProgressIndicator(value: (store.downloadedBytes / store.edition.downloadBytes).clamp(0.0, 1.0), borderRadius: BorderRadius.circular(8), minHeight: 6),
-                SizedBox(height: 10), Text(context.t('İndirilen: {done} MB · Kalan: {remaining} MB', {
-                  'done': (store.downloadedBytes / 1000000).toStringAsFixed(1),
-                  'remaining': ((store.edition.downloadBytes - store.downloadedBytes).clamp(0, store.edition.downloadBytes) / 1000000).toStringAsFixed(1)})),
-                if (store.downloadedBytes >= store.edition.downloadBytes) ...[
+                Text(context.t(store.sourceDownloaded
+                  ? '2 / 2 · Sayfalar cihazda hazırlanıyor'
+                  : '1 / 2 · Dosya indiriliyor')),
+                const SizedBox(height: 8),
+                LinearProgressIndicator(value: store.sourceDownloaded
+                  ? store.downloaded.length / store.edition.pageCount
+                  : (store.downloadedBytes / store.edition.downloadBytes).clamp(0.0, 1.0),
+                  borderRadius: BorderRadius.circular(8), minHeight: 6),
+                const SizedBox(height: 10),
+                if (!store.sourceDownloaded)
+                  Text(context.t('İndirilen: {done} MB · Kalan: {remaining} MB', {
+                    'done': (store.downloadedBytes / 1000000).toStringAsFixed(1),
+                    'remaining': ((store.edition.downloadBytes - store.downloadedBytes).clamp(0, store.edition.downloadBytes) / 1000000).toStringAsFixed(1)}))
+                else ...[
+                  Text(context.t('Hazır: {done} / {total} sayfa · Kalan: {remaining}', {
+                    'done': store.downloaded.length, 'total': store.edition.pageCount,
+                    'remaining': store.edition.pageCount - store.downloaded.length})),
                   const SizedBox(height: 8),
-                  Text(context.t('İndirme tamamlandı. Sayfalar okumaya açılıyor…')),
-                  const SizedBox(height: 8),
-                  LinearProgressIndicator(value: store.downloaded.length / store.edition.pageCount),
+                  Text(context.t('PDF cihazında. Okuma için sayfalar hazırlanıyor; ek internet indirmesi yapılmıyor.')),
                 ],
                 SizedBox(height: 18),
                 if (_downloading) OutlinedButton(onPressed: _pauseRequested ? null : () => setState(() => _pauseRequested = true),
-                  child: Text(_pauseRequested ? context.t('Mevcut sayfa tamamlanıyor…') : context.t('İndirmeyi duraklat')))
+                  child: Text(_pauseRequested ? context.t('Mevcut sayfa tamamlanıyor…') : context.t(store.sourceDownloaded ? 'Hazırlamayı duraklat' : 'İndirmeyi duraklat')))
                 else FilledButton.icon(onPressed: _download, icon: Icon(Icons.download_rounded),
-                  label: Text(store.downloaded.isEmpty ? context.t('Tam Kur’an’ı indir') : context.t('İndirmeye devam et'))),
+                  label: Text(store.sourceDownloaded ? context.t('Sayfaları hazırlamaya devam et')
+                    : store.downloaded.isEmpty ? context.t('Tam Kur’an’ı indir') : context.t('İndirmeye devam et'))),
               ]))),
           ],
           SizedBox(height: 24),

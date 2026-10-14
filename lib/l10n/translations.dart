@@ -2,6 +2,17 @@ import 'package:flutter/material.dart';
 import '../services/app_language.dart';
 
 const translations = <String, Map<String, String>>{
+  "Hattı cihazımdan kaldır": {"en": "Remove edition from my device", "nl": "Schriftuitgave van mijn apparaat verwijderen"},
+  "{edition} dosyaları cihazdan silinecek. Ayraçların ve son okuduğun sayfa korunacak. Tekrar okumak için bu hattı yeniden indirmen gerekir.": {"en": "Files for {edition} will be deleted from this device. Your bookmarks and last-read page will be kept. Download this edition again to read it.", "nl": "De bestanden van {edition} worden van dit apparaat verwijderd. Je bladwijzers en laatst gelezen pagina blijven bewaard. Download deze uitgave opnieuw om te lezen."},
+  "Kaldır": {"en": "Remove", "nl": "Verwijderen"},
+  "Hat cihazından kaldırıldı.": {"en": "Edition removed from your device.", "nl": "Schriftuitgave van je apparaat verwijderd."},
+  "Hat kaldırılamadı. Tekrar dene.": {"en": "Could not remove this edition. Try again.", "nl": "De uitgave kon niet worden verwijderd. Probeer het opnieuw."},
+  "2 / 2 · Sayfalar cihazda hazırlanıyor": {"en": "2 / 2 · Preparing pages on your device", "nl": "2 / 2 · Pagina’s voorbereiden op je apparaat"},
+  "1 / 2 · Dosya indiriliyor": {"en": "1 / 2 · Downloading file", "nl": "1 / 2 · Bestand downloaden"},
+  "Hazır: {done} / {total} sayfa · Kalan: {remaining}": {"en": "Ready: {done} / {total} pages · Remaining: {remaining}", "nl": "Gereed: {done} / {total} pagina’s · Resterend: {remaining}"},
+  "PDF cihazında. Okuma için sayfalar hazırlanıyor; ek internet indirmesi yapılmıyor.": {"en": "The PDF is on your device. Pages are being prepared for reading; no additional internet download is taking place.", "nl": "De PDF staat op je apparaat. Pagina’s worden klaargemaakt om te lezen; er wordt niets extra van internet gedownload."},
+  "Hazırlamayı duraklat": {"en": "Pause preparation", "nl": "Voorbereiding pauzeren"},
+  "Sayfaları hazırlamaya devam et": {"en": "Resume preparing pages", "nl": "Pagina’s verder voorbereiden"},
   'İndirilecek sayfalar: {size} MB': {'en': 'Pages to download: {size} MB', 'nl': 'Te downloaden pagina’s: {size} MB'},
   'İndirilen: {done} MB · Kalan: {remaining} MB': {'en': 'Downloaded: {done} MB · Remaining: {remaining} MB', 'nl': 'Gedownload: {done} MB · Resterend: {remaining} MB'},
   'Fetih suresinden hat örneği': {'en': 'Script preview from Surah Al-Fath', 'nl': 'Schriftvoorbeeld uit soera Al-Fath'},

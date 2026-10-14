@@ -67,6 +67,31 @@ void main() {
     expect(restored.ready, isFalse);
   });
 
+  test('source download is separate from page readiness and removal preserves reading records', () async {
+    final store = await ReadingStore.load();
+    store.downloadedBytes = store.edition.downloadBytes;
+    store.downloaded.add(0);
+    expect(store.sourceDownloaded, isTrue);
+    expect(store.ready, isFalse);
+    final savedPage = store.lastPage;
+    final savedBookmarks = Set<int>.from(store.bookmarks);
+    String? removedEdition;
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+      .setMockMethodCallHandler(ReadingStore.channel, (call) async {
+        expect(call.method, 'removeDownload');
+        removedEdition = (call.arguments as Map)['edition'] as String;
+        return null;
+      });
+    await store.removeDownload();
+    expect(removedEdition, store.edition.id);
+    expect(store.downloadedBytes, 0);
+    expect(store.downloaded, isEmpty);
+    expect(store.sourceDownloaded, isFalse);
+    expect(store.ready, isFalse);
+    expect(store.lastPage, savedPage);
+    expect(store.bookmarks, savedBookmarks);
+  });
+
   testWidgets('first launch explains access before offering a download', (tester) async {
     await tester.pumpWidget(const KuranApp());
     await tester.pumpAndSettle();

@@ -88,6 +88,14 @@ class ReadingStore {
     downloaded..clear()..addAll(selected.downloaded);
   }
 
+  bool get sourceDownloaded => downloadedBytes >= edition.downloadBytes;
+
+  Future<void> removeDownload() async {
+    await channel.invokeMethod<void>('removeDownload', {'edition': edition.id});
+    downloaded.clear();
+    downloadedBytes = 0;
+  }
+
   Future<void> downloadPage(int page) async {
     await channel.invokeMethod<void>('downloadPage', {'edition': edition.id, 'page': page});
     downloadedBytes = edition.downloadBytes;

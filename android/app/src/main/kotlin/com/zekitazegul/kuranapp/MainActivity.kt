@@ -47,6 +47,7 @@ class MainActivity : FlutterActivity() {
                         "acknowledgeGuide" -> storage.acknowledgeGuide().let { null }
                         "setPageAnimations" -> storage.setPageAnimations(requireNotNull(call.argument<Boolean>("enabled"))).let { null }
                         "acknowledge" -> storage.acknowledge().let { null }
+                        "removeDownload" -> storage.removeDownload().let { null }
                         "downloadPage" -> storage.downloadPage(requireNotNull(call.argument<Int>("page"))).let { null }
                         else -> {
                             runOnUiThread { result.notImplemented() }

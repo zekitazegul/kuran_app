@@ -280,8 +280,8 @@ class _QuranScreenState extends State<QuranScreen> with SingleTickerProviderStat
               Navigator.push(context, MaterialPageRoute<void>(builder: (_) => SettingsScreen(store: widget.store)))
                 .then((_) {
                   if (!mounted || !context.mounted) return;
+                  if (!widget.store.ready) { Navigator.pop(context); return; }
                   if (previous != widget.store.edition.id) {
-                    if (!widget.store.ready) { Navigator.pop(context); return; }
                     _resetReadingPosition();
                     setState(() => _page = widget.store.lastPage);
                   } else { setState(() {}); }

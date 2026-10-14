@@ -172,6 +172,13 @@ class ReadingStorage(private val context: Context, requestedEdition: String? = n
         }
     }
 
+    fun removeDownload() {
+        // Only this edition's private content; preserve preferences and reading records.
+        check(directory.canonicalFile.parentFile == context.filesDir.canonicalFile)
+        check(directory.deleteRecursively()) { "Hat dosyaları kaldırılamadı." }
+        check(directory.mkdirs()) { "Hat klasörü oluşturulamadı." }
+    }
+
     fun downloadPage(page: Int) {
         require(page in firstPage..lastPage)
         val target = pageFile(page)
