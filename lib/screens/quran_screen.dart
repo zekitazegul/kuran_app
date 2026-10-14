@@ -22,6 +22,37 @@ class _QuranScreenState extends State<QuranScreen> with SingleTickerProviderStat
   bool _preparing = false;
   bool _bookmarkSaving = false;
   final TransformationController _zoom = TransformationController();
+  final ScrollController _verticalScroll = ScrollController();
+  bool _zoomed = false;
+  double _bottomPull = 0;
+  bool _landscape = false;
+  Orientation? _orientation;
+
+  void _resetReadingPosition() {
+    _zoom.value = Matrix4.identity();
+    _zoomed = false;
+    _bottomPull = 0;
+    if (_verticalScroll.hasClients) _verticalScroll.jumpTo(0);
+  }
+
+  bool _scrollNotification(ScrollNotification notification) {
+    if (notification.depth != 0) return false;
+    if (notification is ScrollStartNotification) _bottomPull = 0;
+    if (notification is OverscrollNotification && notification.dragDetails != null &&
+        notification.overscroll > 0 && notification.metrics.extentAfter <= 0 &&
+        _landscape && !_zoomed && !_multiTouch && _target == null &&
+        !_preparing && _page < 604) {
+      _bottomPull += notification.overscroll;
+      if (_bottomPull >= 55) {
+        _bottomPull = 0;
+        // Scroll notifications arrive during layout; navigate after this frame.
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted && _target == null && !_preparing) _go(_page + 1, animate: true);
+        });
+      }
+    }
+    return false;
+  }
   Offset? _touchStart;
   int? _touchPointer;
   bool _multiTouch = false;
@@ -56,7 +87,7 @@ class _QuranScreenState extends State<QuranScreen> with SingleTickerProviderStat
         await _turn.forward().orCancel;
         if (!mounted) return;
         setState(() { _page = target; _target = null; });
-        _zoom.value = Matrix4.identity();
+        _resetReadingPosition();
         await _remember(target);
       } else {
         await _turn.reverse().orCancel;
@@ -86,7 +117,7 @@ class _QuranScreenState extends State<QuranScreen> with SingleTickerProviderStat
 
   Future<void> _go(int page, {bool animate = false}) async {
     if (_target != null || _preparing || page < 0 || page > 604 || page == _page) return;
-    _zoom.value = Matrix4.identity();
+    _resetReadingPosition();
     if (!animate || MediaQuery.of(context).disableAnimations) {
       setState(() => _page = page);
       await _remember(page);
@@ -162,13 +193,14 @@ class _QuranScreenState extends State<QuranScreen> with SingleTickerProviderStat
 
   void _toggleFullscreen() {
     if (_target != null || _preparing) return;
-    _zoom.value = Matrix4.identity();
+    _resetReadingPosition();
     setState(() => _fullscreen = !_fullscreen);
     SystemChrome.setEnabledSystemUIMode(_fullscreen ? SystemUiMode.immersiveSticky : SystemUiMode.edgeToEdge);
   }
 
   @override
   void dispose() {
+    _verticalScroll.dispose();
     _zoom.dispose();
     _turn.dispose();
     SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
@@ -193,6 +225,16 @@ class _QuranScreenState extends State<QuranScreen> with SingleTickerProviderStat
   @override
   Widget build(BuildContext context) {
     final busy = _target != null || _preparing;
+    final orientation = MediaQuery.orientationOf(context);
+    if (_orientation != orientation) {
+      _orientation = orientation;
+      _zoom.value = Matrix4.identity();
+      _zoomed = false;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _resetReadingPosition();
+      });
+    }
+    _landscape = orientation == Orientation.landscape;
     return Scaffold(backgroundColor: const Color(0xFFE9E1D1),
       appBar: _fullscreen ? null : AppBar(title: Text(surahsOnPage(_page).map((s) => s.name).join(' · ')),
         actions: [IconButton(tooltip: 'Sayfaya git', onPressed: _jump, icon: const Icon(Icons.numbers)),
@@ -239,18 +281,33 @@ class _QuranScreenState extends State<QuranScreen> with SingleTickerProviderStat
             _readerWidth = constraints.maxWidth;
             _readerHeight = constraints.maxHeight;
             final crop = readingCrop(_page);
-            final sheetHeight = _fullscreen
-                ? math.max(constraints.maxHeight, constraints.maxWidth * crop.height / crop.width)
+            final aspect = _fullscreen ? crop.height / crop.width : 779.528 / 538.583;
+            final sheetHeight = _fullscreen || _landscape
+                ? math.max(constraints.maxHeight, constraints.maxWidth * aspect)
                 : constraints.maxHeight;
             final child = _target == null ? _image(_page) : PageTurn(
               image: FileImage(File(widget.store.pagePath(_page))), animation: _turn,
               toRight: _target! > _page, underneath: _image(_target!),
-              touchHeight: _touchHeight * constraints.maxHeight / sheetHeight, dragTilt: _dragTilt,
+              touchHeight: (_touchHeight * constraints.maxHeight +
+                (_verticalScroll.hasClients ? _verticalScroll.offset : 0)) / sheetHeight, dragTilt: _dragTilt,
               crop: _fullscreen ? normalizedReadingCrop(_page) : null);
             return InteractiveViewer(transformationController: _zoom, minScale: 1, maxScale: 4,
-              constrained: false, alignment: Alignment.topCenter,
-              panEnabled: _target == null,
-              child: SizedBox(width: constraints.maxWidth, height: sheetHeight, child: child));
+              alignment: Alignment.topCenter,
+              panEnabled: _zoomed && _target == null,
+              onInteractionUpdate: (_) {
+                final zoomed = _zoom.value.getMaxScaleOnAxis() > 1.01;
+                if (zoomed != _zoomed) setState(() => _zoomed = zoomed);
+              },
+              child: NotificationListener<ScrollNotification>(
+                onNotification: _scrollNotification,
+                child: SingleChildScrollView(
+                  controller: _verticalScroll,
+                  physics: _zoomed || _target != null
+                      ? const NeverScrollableScrollPhysics()
+                      : const ClampingScrollPhysics(),
+                  child: SizedBox(width: constraints.maxWidth, height: sheetHeight, child: child),
+                ),
+              ));
           })),
         )),
         if (!_fullscreen) Padding(padding: const EdgeInsets.symmetric(horizontal: 8), child: Row(

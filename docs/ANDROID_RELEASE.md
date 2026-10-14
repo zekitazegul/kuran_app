@@ -1,6 +1,6 @@
 # Android development and release checks
 
-Version 1.1.2+4 targets Android. No iOS distribution is prepared.
+Version 1.1.3+5 targets Android. No iOS distribution is prepared.
 
 ## Build on the existing Flutter workstation
 
@@ -63,6 +63,10 @@ required. Test:
 - In borderless mode inspect all verse edges, including special Fatiha/Bakara
   title pages. Frames and outer headings/numbers should be absent. Wide screens
   allow vertical panning to avoid cutting off verses. Tap center to restore UI.
+- Rotate to landscape: width-fitted page starts at top in normal and borderless
+  modes. Swipe up to read; at the bottom continue the upward drag to turn once
+  to the next page, which starts at the top. Final page must not advance.
+  Pinching, inertial scrolling, and returning to portrait must not skip pages.
 - Zoom, pinch, orientation, fast repeated gestures, and first/last boundaries.
 - Screen stays on in foreground; normal timeout resumes in background.
 

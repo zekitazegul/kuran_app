@@ -107,7 +107,7 @@ class _HomeScreenState extends State<HomeScreen> {
           const SizedBox(height: 12),
           OutlinedButton(onPressed: () => _read(439), child: const Text('Yasin Suresi · Bilgisayar hattı')),
           const SizedBox(height: 16),
-          const Text('Bu baskıda Fatiha numarasızdır (0); basılı sayfa numaraları 1–604 arasındadır. Okuyucunun menüsünden sure seçebilir, sayfa numarasıyla gidebilir ve ayraçlarınıza ulaşabilirsiniz. Soldaki alana dokunarak sonraki, sağdaki alana dokunarak önceki sayfaya geçin. Ortadaki alana dokunarak çerçevesiz okuma modunu açıp kapatın. İki parmakla yakınlaştırabilirsiniz.'),
+          const Text('Bu baskıda Fatiha numarasızdır (0); basılı sayfa numaraları 1–604 arasındadır. Okuyucunun menüsünden sure seçebilir, sayfa numarasıyla gidebilir ve ayraçlarınıza ulaşabilirsiniz. Soldaki alana dokunarak sonraki, sağdaki alana dokunarak önceki sayfaya geçin. Ortadaki alana dokunarak çerçevesiz okuma modunu açıp kapatın. İki parmakla yakınlaştırabilirsiniz. Yatay görünümde yukarı kaydırarak okuyun; sayfanın sonunda yukarı kaydırmaya devam ederek sonraki sayfaya geçin.'),
         ] else if (store != null) ...[
           Text('Hazırlanan sayfalar: ${store.downloaded.length} / 605'),
           const SizedBox(height: 12),
