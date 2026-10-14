@@ -1,138 +1,130 @@
 import 'package:flutter/material.dart';
+import 'screens/information_screen.dart';
+import 'screens/quran_screen.dart';
 import 'screens/surah_screen.dart';
+import 'services/reading_store.dart';
 
-void main() {
-runApp(const KuranApp());
-}
+void main() => runApp(const KuranApp());
 
 class KuranApp extends StatelessWidget {
-const KuranApp({super.key});
-
-@override
-Widget build(BuildContext context) {
-return MaterialApp(
-debugShowCheckedModeBanner: false,
-title: 'Kuran App',
-theme: ThemeData(
-useMaterial3: true,
-colorScheme: ColorScheme.fromSeed(
-seedColor: Colors.green,
-),
-fontFamily: 'Arial',
-),
-home: const HomeScreen(),
-);
-}
+  const KuranApp({super.key});
+  @override
+  Widget build(BuildContext context) => MaterialApp(
+    debugShowCheckedModeBanner: false, title: 'Kuran App',
+    theme: ThemeData(useMaterial3: true,
+      colorScheme: ColorScheme.fromSeed(seedColor: Colors.green)),
+    home: const HomeScreen(),
+  );
 }
 
-class HomeScreen extends StatelessWidget {
-const HomeScreen({super.key});
-
-void _openYasin(BuildContext context) {
-Navigator.push(
-context,
-MaterialPageRoute(
-builder: (context) => const SurahScreen(
-surahName: 'Yasin Suresi',
-pageCount: 6,
-),
-),
-);
+class HomeScreen extends StatefulWidget {
+  const HomeScreen({super.key});
+  @override
+  State<HomeScreen> createState() => _HomeScreenState();
 }
 
-@override
-Widget build(BuildContext context) {
-return Scaffold(
-appBar: AppBar(
-title: const Text(
-'Kuran App',
-style: TextStyle(
-fontWeight: FontWeight.bold,
-),
-),
-centerTitle: true,
-),
-body: SafeArea(
-child: Center(
-child: SingleChildScrollView(
-padding: const EdgeInsets.all(24),
-child: ConstrainedBox(
-constraints: const BoxConstraints(
-maxWidth: 600,
-),
-child: Column(
-mainAxisAlignment: MainAxisAlignment.center,
-children: [
-const Icon(
-Icons.menu_book,
-size: 90,
-),
-const SizedBox(height: 24),
-const Text(
-'Kuran-ı Kerim',
-textAlign: TextAlign.center,
-style: TextStyle(
-fontSize: 30,
-fontWeight: FontWeight.bold,
-),
-),
-const SizedBox(height: 12),
-const Text(
-'Sureleri okumak için başlayın',
-textAlign: TextAlign.center,
-style: TextStyle(
-fontSize: 18,
-),
-),
-const SizedBox(height: 40),
-Card(
-elevation: 3,
-child: Padding(
-padding: const EdgeInsets.all(24),
-child: Column(
-children: [
-const Icon(
-Icons.auto_stories,
-size: 50,
-),
-const SizedBox(height: 16),
-const Text(
-'Yasin Suresi',
-style: TextStyle(
-fontSize: 25,
-fontWeight: FontWeight.bold,
-),
-),
-const SizedBox(height: 8),
-const Text(
-'83 Ayet • 6 Sayfa',
-style: TextStyle(
-fontSize: 16,
-),
-),
-const SizedBox(height: 22),
-SizedBox(
-width: double.infinity,
-child: FilledButton.icon(
-onPressed: () => _openYasin(context),
-icon: const Icon(
-Icons.menu_book,
-),
-label: const Text(
-'Yasin Suresini Oku',
-),
-),
-),
-],
-),
-),
-),
-],
-),
-),
-),
-),
-),
-);
-}
+class _HomeScreenState extends State<HomeScreen> {
+  ReadingStore? _store;
+  String? _error;
+  bool _downloading = false;
+  bool _pauseRequested = false;
+
+  @override
+  void initState() { super.initState(); _load(); }
+
+  Future<void> _load() async {
+    try {
+      final store = await ReadingStore.load();
+      if (mounted) setState(() { _store = store; _error = null; });
+    } catch (_) {
+      if (mounted) setState(() => _error = 'Okuma kayıtları yüklenemedi. Bu sürüm Android içindir.');
+    }
+  }
+
+  Future<void> _download() async {
+    final store = _store!;
+    final confirmed = await showDialog<bool>(context: context, builder: (context) => AlertDialog(
+      title: const Text('604 sayfayı indir'),
+      content: const Text('Sayfalar internetten indirilip uygulamanın özel klasöründe saklanacak. İndirme ve depolama boyutu kaynak görsellerine göre değişir. Wi-Fi kullanmanız önerilir. İndirme sırasında uygulamayı açık tutun; duraklatıp daha sonra kaldığınız yerden sürdürebilirsiniz.'),
+      actions: [TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('İptal')),
+        FilledButton(onPressed: () => Navigator.pop(context, true), child: const Text('İndirmeyi başlat'))],
+    ));
+    if (confirmed != true || !mounted) return;
+    setState(() { _downloading = true; _pauseRequested = false; _error = null; });
+    try {
+      for (var page = 1; page <= 604; page++) {
+        if (_pauseRequested || !mounted) break;
+        if (store.downloaded.contains(page)) continue;
+        await store.downloadPage(page);
+        if (mounted) setState(() {});
+      }
+    } catch (_) {
+      if (mounted) setState(() => _error = 'İndirme tamamlanamadı. İnternet bağlantısını ve cihazdaki boş alanı kontrol edin. İndirilen sayfalar korunur; tekrar deneyerek devam edebilirsiniz.');
+    } finally {
+      if (mounted) setState(() => _downloading = false);
+    }
+  }
+
+  Future<void> _read(int page) async {
+    await Navigator.push(context, MaterialPageRoute<void>(builder: (_) => QuranScreen(store: _store!, initialPage: page)));
+    if (mounted) setState(() {});
+  }
+
+  @override
+  void dispose() { _pauseRequested = true; super.dispose(); }
+
+  @override
+  Widget build(BuildContext context) {
+    final store = _store;
+    if (store != null && !store.informationSeen) {
+      return InformationScreen(onContinue: () async {
+        await store.acknowledgeInformation();
+        if (mounted) setState(() {});
+      });
+    }
+    return Scaffold(
+      appBar: AppBar(title: const Text('Kuran App'), actions: [
+        IconButton(tooltip: 'Gizlilik ve erişimler', icon: const Icon(Icons.privacy_tip_outlined),
+          onPressed: () => Navigator.push(context, MaterialPageRoute<void>(builder: (_) => const InformationScreen()))),
+      ]),
+      body: ListView(padding: const EdgeInsets.all(24), children: [
+        const Icon(Icons.menu_book, size: 80), const SizedBox(height: 16),
+        const Text('Kur’an-ı Kerim', textAlign: TextAlign.center,
+          style: TextStyle(fontSize: 30, fontWeight: FontWeight.bold)),
+        const SizedBox(height: 8),
+        const Text('604 sayfa · 114 sure', textAlign: TextAlign.center),
+        const SizedBox(height: 24),
+        if (store == null && _error == null) const Center(child: CircularProgressIndicator()),
+        if (_error != null) Padding(padding: const EdgeInsets.only(bottom: 16), child: Text(_error!, style: TextStyle(color: Theme.of(context).colorScheme.error))),
+        if (store == null && _error != null) OutlinedButton(onPressed: _load, child: const Text('Tekrar dene')),
+        if (store != null && store.ready) ...[
+          FilledButton.icon(onPressed: () => _read(store.lastPage), icon: const Icon(Icons.auto_stories),
+            label: Text('Kaldığım yerden devam et · Sayfa ${store.lastPage}')),
+          const SizedBox(height: 12),
+          OutlinedButton(onPressed: () => _read(1), child: const Text('Baştan oku')),
+          const SizedBox(height: 12),
+          OutlinedButton(onPressed: () => _read(440), child: const Text('Yasin Suresi')),
+          const SizedBox(height: 16),
+          const Text('Okuyucunun menüsünden sure seçebilir, sayfa numarasıyla gidebilir ve ayraçlarınıza ulaşabilirsiniz. Yakınlaştırmak için iki parmak, tam ekran için çift dokunuş kullanın.'),
+        ] else if (store != null) ...[
+          Text('İndirilen sayfalar: ${store.downloaded.length} / 604'),
+          const SizedBox(height: 12),
+          LinearProgressIndicator(value: store.downloaded.length / 604),
+          const SizedBox(height: 16),
+          if (_downloading) OutlinedButton(onPressed: _pauseRequested ? null : () => setState(() => _pauseRequested = true),
+            child: Text(_pauseRequested ? 'Mevcut sayfa tamamlanıyor…' : 'İndirmeyi duraklat'))
+          else FilledButton.icon(onPressed: _download, icon: const Icon(Icons.download),
+            label: Text(store.downloaded.isEmpty ? 'Tam Kur’an’ı indir' : 'İndirmeye devam et')),
+          const SizedBox(height: 16),
+          const Text('Tam Kur’an bir kez indirildikten sonra internetsiz okunabilir. Mevcut Yasin sayfaları indirme gerektirmez.'),
+        ],
+        if (store == null || !store.ready) ...[
+          const SizedBox(height: 24),
+          OutlinedButton(onPressed: () => Navigator.push(context, MaterialPageRoute<void>(
+            builder: (_) => const SurahScreen(surahName: 'Yasin Suresi', pageCount: 6))),
+            child: const Text('Yasin Suresi · Çevrimdışı')),
+        ],
+      ]),
+    );
+  }
 }

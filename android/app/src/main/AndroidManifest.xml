@@ -1,6 +1,10 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <uses-permission android:name="android.permission.INTERNET" />
     <application
         android:label="KuranApp"
+        android:allowBackup="false"
+        android:fullBackupContent="false"
+        android:usesCleartextTraffic="false"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity
