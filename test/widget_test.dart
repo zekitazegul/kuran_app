@@ -134,8 +134,12 @@ void main() {
     expect(store.pageAnimations, isFalse);
     final restored = await ReadingStore.load();
     expect(restored.pageAnimations, isFalse);
-    await tester.scrollUntilVisible(find.text('Kullanım kılavuzu'), 200);
-    await tester.tap(find.text('Kullanım kılavuzu'));
+    final guideTile = find.widgetWithText(ListTile, 'Kullanım kılavuzu');
+    await tester.scrollUntilVisible(guideTile, 200);
+    await tester.ensureVisible(guideTile);
+    await tester.pumpAndSettle();
+    expect(guideTile.hitTestable(), findsOneWidget);
+    await tester.tap(guideTile);
     await tester.pumpAndSettle();
     expect(find.text('Okumaya hoş geldin'), findsOneWidget);
   });
