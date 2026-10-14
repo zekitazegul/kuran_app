@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../services/app_language.dart';
 
 const translations = <String, Map<String, String>>{
+  'Beğen': {'en': 'Like', 'nl': 'Vind ik leuk'},
   'Ana sayfaya dön': {'en': 'Back to home', 'nl': 'Terug naar start'},
   'Henüz tamamen indirilmiş bir hat yok.': {'en': 'No edition has been fully downloaded yet.', 'nl': 'Er is nog geen uitgave volledig gedownload.'},
   'İndirilen hatta dönülemedi. Tekrar dene.': {'en': 'Could not return to the downloaded edition. Try again.', 'nl': 'Terugkeren naar de gedownloade uitgave is mislukt. Probeer het opnieuw.'},
