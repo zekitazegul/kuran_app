@@ -78,8 +78,11 @@ void main() {
     expect(guideSeen, isTrue);
     expect(find.text('Tam Kur’an’ı indir'), findsOneWidget);
     expect(find.text('Yasin Suresi · Çevrimdışı'), findsNothing);
-    await tester.scrollUntilVisible(find.text('Tam Kur’an’ı indir'), 300);
-    await tester.tap(find.text('Tam Kur’an’ı indir'));
+    final downloadButton = find.widgetWithText(FilledButton, 'Tam Kur’an’ı indir');
+    await tester.ensureVisible(downloadButton);
+    await tester.pumpAndSettle();
+    expect(downloadButton.hitTestable(), findsOneWidget);
+    await tester.tap(downloadButton);
     await tester.pumpAndSettle();
     expect(find.text('İndirmeyi başlat'), findsOneWidget);
     await tester.tap(find.text('İptal'));

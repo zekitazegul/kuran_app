@@ -66,7 +66,9 @@ class _QuranScreenState extends State<QuranScreen> with SingleTickerProviderStat
 
   void _dragMove(PointerMoveEvent event) {
     if (event.pointer != _touchPointer || _touchStart == null || _multiTouch ||
-        _preparing || _turn.isAnimating || _zoom.value.getMaxScaleOnAxis() > 1.01) return;
+        _preparing || _turn.isAnimating || _zoom.value.getMaxScaleOnAxis() > 1.01) {
+      return;
+    }
     final delta = event.position - _touchStart!;
     if (!_dragging) {
       if (delta.dx.abs() < 8 || delta.dx.abs() <= delta.dy.abs()) return;
@@ -258,7 +260,7 @@ class _QuranScreenState extends State<QuranScreen> with SingleTickerProviderStat
               final previous = widget.store.edition.id;
               Navigator.push(context, MaterialPageRoute<void>(builder: (_) => SettingsScreen(store: widget.store)))
                 .then((_) {
-                  if (!mounted) return;
+                  if (!mounted || !context.mounted) return;
                   if (previous != widget.store.edition.id) {
                     if (!widget.store.ready) { Navigator.pop(context); return; }
                     _resetReadingPosition();
