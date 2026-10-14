@@ -51,7 +51,7 @@ class ReadingStorage(context: Context) {
         var current = url
         repeat(5) {
             require(current.protocol == "https" &&
-                current.host in setOf("android.quran.com", "quran.app") &&
+                current.host in setOf("android.quran.com", "quran.app", "files.quran.app") &&
                 current.port in setOf(-1, 443)) { "Güvenilmeyen indirme adresi." }
             val connection = current.openConnection() as HttpsURLConnection
             connection.connectTimeout = 20_000
@@ -72,7 +72,7 @@ class ReadingStorage(context: Context) {
         val target = pageFile(page)
         if (validImage(target)) return
         val temp = File(directory, target.name + ".part")
-        val connection = openPage(URL("https://android.quran.com/data/width_1024/${target.name}"))
+        val connection = openPage(URL("https://files.quran.app/hafs/madani/width_1024/${target.name}"))
         try {
             check(connection.responseCode == 200) { "Sayfa $page indirilemedi (HTTP ${connection.responseCode})." }
             check(connection.contentLengthLong <= 8_000_000) { "Beklenmeyen sayfa boyutu." }

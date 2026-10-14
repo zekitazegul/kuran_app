@@ -34,8 +34,10 @@ Use the existing signing key to update an installed APK. Version: 1.1.0+2.
 
 ## Content provenance and remaining release gate
 
-Images: `https://android.quran.com/data/width_1024/page001.png` through
-`page604.png`. This URL construction is documented by Quran for Android's
+Images: `https://files.quran.app/hafs/madani/width_1024/page001.png` through
+`page604.png`. The legacy android.quran.com URL returned HTTP 301 to this HTTPS host, and
+the destination returned HTTP 200 image/png in the user's workstation check
+on 2026-10-14. The legacy URL construction is documented by Quran for Android's
 MadaniPageProvider and QuranFileUtils at upstream commit
 `a823af79a577d0d09db38681c4b6cfab4a5253a9`. The image generator identifies the underlying fonts and pages
 as belonging to King Fahd Quran Complex, separately from the generator's GPL

@@ -12,7 +12,7 @@ class InformationScreen extends StatelessWidget {
       const SizedBox(height: 24),
       const Text('Uygulama neye erişir?', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
       const SizedBox(height: 16),
-      const Text('• İnternet: Tam Kur’an sayfalarını yalnızca indirmeyi başlattığınızda android.quran.com (ve yönlendirme durumunda quran.app) üzerinden HTTPS ile indirir. İndirme tamamlanınca çevrimdışı okuyabilirsiniz. Sunucu, bağlantı sırasında IP adresinizi görebilir. Mobil veri ücretleri uygulanabilir; Wi-Fi önerilir.\n\n'
+      const Text('• İnternet: Tam Kur’an sayfalarını yalnızca indirmeyi başlattığınızda files.quran.app üzerinden HTTPS ile indirir. İndirme tamamlanınca çevrimdışı okuyabilirsiniz. Sunucu, bağlantı sırasında IP adresinizi görebilir. Mobil veri ücretleri uygulanabilir; Wi-Fi önerilir.\n\n'
         '• Uygulamaya özel depolama: İndirilen sayfalar, ayraçlar ve son okunan sayfa cihazınızda saklanır. Galerinize veya diğer dosyalarınıza erişilmez. Uygulamayı kaldırmak bu kayıtları siler. Android bulut yedeklemesi bu sürümde kapalıdır.\n\n'
         '• Ekran: Uygulama ön plandayken ekran otomatik kapanmaz. Bu, pil tüketimini artırabilir. Başka uygulamaya geçtiğinizde normal ekran zaman aşımı geri gelir.\n\n'
         'Kamera, mikrofon, konum, rehber, bildirim veya genel dosya erişimi izni istenmez. Hesap, reklam ve analiz SDK’sı bulunmaz. Okuma geçmişiniz ve ayraçlarınız tarafımızca bir sunucuya gönderilmez.\n\n'
