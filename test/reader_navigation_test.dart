@@ -45,7 +45,8 @@ void main() {
       await tester.pump();
       expect(find.byType(PageTurn), findsNothing);
       expect(find.text('$page / 604'), findsOneWidget);
-      expect(tester.widget<IconButton>(find.byTooltip('Sonraki sayfa')).onPressed, isNotNull);
+      expect(tester.widget<IconButton>(find.byWidgetPredicate(
+        (widget) => widget is IconButton && widget.tooltip == 'Sonraki sayfa')).onPressed, isNotNull);
     }
     await tester.tap(find.byTooltip('Önceki sayfa'));
     await tester.pumpAndSettle();
@@ -56,7 +57,7 @@ void main() {
   testWidgets('animated edge turn unlocks navigation after completion', (tester) async {
     await tester.pumpWidget(MaterialApp(home: QuranScreen(store: store, initialPage: 439)));
     await tester.pumpAndSettle();
-    final reader = find.byWidgetPredicate((w) => w is GestureDetector && w.onTapUp != null);
+    final reader = find.byKey(const ValueKey('quran-reading-surface'));
     final bounds = tester.getRect(reader);
     await tester.tapAt(Offset(bounds.left + 8, bounds.center.dy));
     await tester.pump();
@@ -64,7 +65,8 @@ void main() {
     expect(find.byType(PageTurn), findsOneWidget);
     await tester.pumpAndSettle();
     expect(find.text('440 / 604'), findsOneWidget);
-    expect(tester.widget<IconButton>(find.byTooltip('Sonraki sayfa')).onPressed, isNotNull);
+    expect(tester.widget<IconButton>(find.byWidgetPredicate(
+        (widget) => widget is IconButton && widget.tooltip == 'Sonraki sayfa')).onPressed, isNotNull);
     await tester.tap(find.byTooltip('Sonraki sayfa'));
     await tester.pumpAndSettle();
     expect(find.text('441 / 604'), findsOneWidget);

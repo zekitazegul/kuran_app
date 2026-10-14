@@ -293,6 +293,7 @@ class _QuranScreenState extends State<QuranScreen> with SingleTickerProviderStat
             PopupMenuItem(value: 'settings', child: Text(context.t('Ayarlar')))]), LanguageSelector()]),
       body: SafeArea(top: !_fullscreen, bottom: !_fullscreen, child: Column(children: [
         Expanded(child: GestureDetector(
+          key: const ValueKey('quran-reading-surface'),
           behavior: HitTestBehavior.opaque,
           onTapUp: _tapPage,
           child: Listener(
