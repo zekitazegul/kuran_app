@@ -2,6 +2,16 @@ import 'package:flutter/material.dart';
 import '../services/app_language.dart';
 
 const translations = <String, Map<String, String>>{
+  'Uygulama hakkında': {'en': 'About the app', 'nl': 'Over de app'},
+  'Geliştirici: Zeki Tazegul': {'en': 'Developer: Zeki Tazegul', 'nl': 'Ontwikkelaar: Zeki Tazegul'},
+  'aboutDescription': {
+    'tr': 'Kur’an-ı Kerim’i farklı hatlarla, çevrimdışı ve reklamsız okumak için geliştirildi. Sure ve cüz seçimi, ayraçlar, kaldığın yerden devam etme ve çerçevesiz tam ekran okuma özellikleriyle kendi okuma düzenini oluşturabilirsin.',
+    'en': 'Read the Quran offline and without ads in different script editions. Find surahs and juz, save bookmarks, resume your reading and use borderless fullscreen mode.',
+    'nl': 'Lees de Koran offline en zonder advertenties in verschillende schriftuitgaven. Kies soera’s en djoez, bewaar bladwijzers, lees verder waar je gebleven bent en gebruik de schermvullende leesmodus.'},
+  'supportInvitation': {
+    'tr': 'Uygulamayı faydalı buluyorsan geliştiriciye bir kahve ısmarlayarak destek olabilirsin. Bu tamamen isteğe bağlıdır; tüm okuma özellikleri ücretsizdir.',
+    'en': 'If you find the app useful, you can support its developer by buying a coffee. Support is entirely optional; all reading features are free.',
+    'nl': 'Vind je de app nuttig? Steun de ontwikkelaar met een kopje koffie. Dit is geheel vrijwillig; alle leesfuncties zijn gratis.'},
   'Sure / Cüz': {'en': 'Surah / Juz', 'nl': 'Soera / Djoez'},
   'Cüzler': {'en': 'Juz', 'nl': 'Djoez'},
   'Cüz {number}': {'en': 'Juz {number}', 'nl': 'Djoez {number}'},

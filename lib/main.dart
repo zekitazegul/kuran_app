@@ -1,3 +1,4 @@
+import 'screens/about_screen.dart';
 import 'l10n/translations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -94,6 +95,10 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
+  void _about() {
+    Navigator.push(context, MaterialPageRoute<void>(builder: (_) => const AboutScreen()));
+  }
+
   Future<void> _read(int page, {String? panel}) async {
     await Navigator.push(context, MaterialPageRoute<void>(builder: (_) => QuranScreen(store: _store!, initialPage: page, initialPanel: panel)));
     if (mounted) setState(() {});
@@ -122,7 +127,8 @@ class _HomeScreenState extends State<HomeScreen> {
     }
     return Scaffold(
       appBar: AppBar(leading: Padding(padding: EdgeInsets.all(6),
-        child: QuranArtwork(size: 44, decorative: true)),
+        child: InkWell(onTap: _about, child: Tooltip(message: context.t('Uygulama hakkında'),
+          child: const QuranArtwork(size: 44, decorative: true)))),
         titleSpacing: 0, title: Text(context.t('Kur’an-ı Kerim'), style: TextStyle(fontWeight: FontWeight.w700)),
         actions: [IconButton(tooltip: context.t('Ayarlar'), icon: Icon(Icons.tune_rounded),
           onPressed: store == null || _downloading ? null : () async {
@@ -147,7 +153,9 @@ class _HomeScreenState extends State<HomeScreen> {
                   Center(child: SizedBox(width: 220, height: 200, child: Stack(alignment: Alignment.center, children: [
                     Container(width: 155, height: 155, decoration: BoxDecoration(shape: BoxShape.circle,
                       gradient: RadialGradient(colors: [Color(0x558DAD80), Color(0x008DAD80)]))),
-                    QuranArtwork(size: 220),
+                    Semantics(button: true, label: context.t('Uygulama hakkında'),
+                      child: InkWell(onTap: _about, borderRadius: BorderRadius.circular(24),
+                        child: const QuranArtwork(size: 220, decorative: true))),
                   ]))),
                   SizedBox(height: 20),
                   if (store != null && store.ready) ...[

@@ -1,3 +1,5 @@
+import '../widgets/support_card.dart';
+import 'about_screen.dart';
 import '../widgets/language_selector.dart';
 import '../l10n/translations.dart';
 import 'package:flutter/material.dart';
@@ -15,13 +17,6 @@ class SettingsScreen extends StatefulWidget {
 
 class _SettingsScreenState extends State<SettingsScreen> {
   bool _saving = false;
-  static const _supportUrl = String.fromEnvironment('SUPPORT_URL');
-  bool get _supportAvailable {
-    final uri = Uri.tryParse(_supportUrl);
-    return uri != null && uri.scheme == 'https' &&
-      ['buymeacoffee.com', 'www.buymeacoffee.com', 'ko-fi.com', 'www.ko-fi.com'].contains(uri.host);
-  }
-
   void _message(String text) => ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(context.t(text))));
 
   @override
@@ -65,6 +60,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
       SizedBox(height: 24),
       _heading(context.t('YARDIM VE BİLGİ')),
       Card(child: Column(children: [
+        ListTile(leading: const Icon(Icons.info_outline), title: Text(context.t('Uygulama hakkında')),
+          trailing: const Icon(Icons.chevron_right), onTap: () => Navigator.push(context,
+            MaterialPageRoute<void>(builder: (_) => const AboutScreen()))),
         ListTile(leading: Icon(Icons.help_outline), title: Text(context.t('Kullanım kılavuzu')),
           trailing: Icon(Icons.chevron_right), onTap: () => Navigator.push(context,
             MaterialPageRoute<void>(builder: (_) => GuideScreen()))),
@@ -74,24 +72,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       ])),
       SizedBox(height: 24),
       _heading(context.t('BİRLİKTE BÜYÜTELİM')),
-      Card(child: ListTile(leading: Icon(Icons.local_cafe_outlined),
-        title: Text(context.t('Bir kahveyle destek ol')),
-        subtitle: Text(_supportAvailable
-          ? context.t('İsteğe bağlı destek · Hiçbir özellik ödeme gerektirmez')
-          : context.t('Destek bağlantısı yakında')),
-        trailing: _supportAvailable ? Icon(Icons.open_in_new) : null,
-        onTap: !_supportAvailable ? null : () async {
-          final confirmed = await showDialog<bool>(context: context, builder: (context) => AlertDialog(
-            title: Text(context.t('Geliştiriciye destek')),
-            content: Text(context.t('Dış ödeme sitesine yönlendirileceksin. Destek tamamen isteğe bağlıdır; okuma özelliklerini etkilemez. Ödeme bilgilerin bu uygulamada işlenmez.')),
-            actions: [TextButton(onPressed: () => Navigator.pop(context, false), child: Text(context.t('Vazgeç'))),
-              FilledButton(onPressed: () => Navigator.pop(context, true), child: Text(context.t('Devam et')))],
-          ));
-          if (confirmed != true) return;
-          try { await ReadingStore.channel.invokeMethod<void>('openSupport', {'url': _supportUrl}); }
-          catch (_) { if (mounted) _message('Destek bağlantısı açılamadı.'); }
-        },
-      )),
+      const SupportCard(),
       SizedBox(height: 24),
       Text(context.t('Okumak her zaman ücretsiz.'), textAlign: TextAlign.center,
         style: Theme.of(context).textTheme.bodySmall),
