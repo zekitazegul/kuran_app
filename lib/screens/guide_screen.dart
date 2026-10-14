@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../widgets/quran_artwork.dart';
 
 class GuideScreen extends StatelessWidget {
   final Future<void> Function()? onContinue;
@@ -8,6 +9,8 @@ class GuideScreen extends StatelessWidget {
   Widget build(BuildContext context) => Scaffold(
     appBar: AppBar(title: const Text('Kullanım kılavuzu')),
     body: ListView(padding: const EdgeInsets.all(24), children: [
+      const Center(child: QuranArtwork(size: 140, decorative: true)),
+      const SizedBox(height: 16),
       Text('Okumaya hoş geldin', style: Theme.of(context).textTheme.headlineMedium),
       const SizedBox(height: 8),
       const Text('Bu kısa rehbere istediğin zaman Ayarlar’dan ulaşabilirsin.'),

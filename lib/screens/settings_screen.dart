@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../services/reading_store.dart';
 import 'guide_screen.dart';
 import 'information_screen.dart';
+import '../widgets/quran_artwork.dart';
 
 class SettingsScreen extends StatefulWidget {
   final ReadingStore store;
@@ -25,6 +26,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Widget build(BuildContext context) => Scaffold(
     appBar: AppBar(title: const Text('Ayarlar')),
     body: ListView(padding: const EdgeInsets.all(20), children: [
+      const Center(child: QuranArtwork(size: 110, decorative: true)),
+      const SizedBox(height: 16),
       _heading('OKUMA DENEYİMİ'),
       Card(child: SwitchListTile(
         secondary: const Icon(Icons.auto_stories_outlined),

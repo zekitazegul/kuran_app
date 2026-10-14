@@ -1,6 +1,6 @@
 # Android development and release checks
 
-Version 1.2.3+9 targets Android. No iOS distribution is prepared.
+Version 1.3.0+10 targets Android. No iOS distribution is prepared.
 
 ## Build on the existing Flutter workstation
 
@@ -143,3 +143,19 @@ financial credential in the app. The missing-link state must not open a fake
 checkout. Recheck current Google Play payment policy for the intended region
 and the exact support flow before publication; do not assume external payment
 links are universally permitted.
+
+
+## Quran visual identity
+
+`assets/branding/quran.png` is original generated Quran-on-rehal artwork with a
+transparent background, used on Home, Settings and the first-use guide.
+No scripture or invented lettering is included. Native Android uses the same
+artwork in `drawable-nodpi/quran_launcher_foreground.png`, with adaptive icon
+padding and an emerald background, plus a legacy layer-list fallback. Both
+roundIcon and icon refer to the same adaptive resource. Old Flutter launcher
+PNGs were removed. Pre-Android-12 launch backgrounds use the new artwork too.
+
+Validate `flutter analyze`, `flutter test` and a signed release on device. Check
+Samsung launcher masks, splash appearance, image transparency, large text,
+landscape and narrow-screen Home layout. Visual resource/layout checks in the
+cloud do not replace a Flutter build or an actual device screenshot.

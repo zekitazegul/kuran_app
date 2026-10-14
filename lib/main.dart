@@ -5,6 +5,7 @@ import 'screens/guide_screen.dart';
 import 'screens/settings_screen.dart';
 import 'screens/quran_screen.dart';
 import 'services/reading_store.dart';
+import 'widgets/quran_artwork.dart';
 
 void main() => runApp(const KuranApp());
 
@@ -103,7 +104,9 @@ class _HomeScreenState extends State<HomeScreen> {
       });
     }
     return Scaffold(
-      appBar: AppBar(title: const Text('Kur’an-ı Kerim', style: TextStyle(fontWeight: FontWeight.w700)),
+      appBar: AppBar(leading: const Padding(padding: EdgeInsets.all(6),
+        child: QuranArtwork(size: 44, decorative: true)),
+        titleSpacing: 0, title: const Text('Kur’an-ı Kerim', style: TextStyle(fontWeight: FontWeight.w700)),
         actions: [IconButton(tooltip: 'Ayarlar', icon: const Icon(Icons.tune_rounded),
           onPressed: store == null || _downloading ? null : () async {
             await Navigator.push(context, MaterialPageRoute<void>(builder: (_) => SettingsScreen(store: store)));
@@ -123,11 +126,26 @@ class _HomeScreenState extends State<HomeScreen> {
                     decoration: BoxDecoration(color: const Color(0x22E5C383), borderRadius: BorderRadius.circular(20)),
                     child: const Text('OKUMA VAKTİ', style: TextStyle(color: Color(0xFFE5C383),
                       fontWeight: FontWeight.w600, letterSpacing: 2, fontSize: 11))),
-                  const SizedBox(height: 24),
-                  const Icon(Icons.auto_stories_rounded, color: Color(0xFFE5C383), size: 40),
-                  const SizedBox(height: 14),
-                  const Text('Her sayfada\nbir huzur.', style: TextStyle(color: Colors.white,
-                    fontSize: 32, height: 1.2, fontWeight: FontWeight.w600)),
+                  const SizedBox(height: 12),
+                  LayoutBuilder(builder: (context, constraints) {
+                    const headline = Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                      Text('Her sayfada\nbir huzur.', style: TextStyle(color: Colors.white,
+                        fontSize: 30, height: 1.2, fontWeight: FontWeight.w600)),
+                      SizedBox(height: 10),
+                      Text('Kur’an, her an yanında.', style: TextStyle(color: Color(0xFFCEDBD1), fontSize: 14)),
+                    ]);
+                    final artwork = SizedBox(width: 220, height: 200, child: Stack(alignment: Alignment.center, children: [
+                      Container(width: 155, height: 155, decoration: const BoxDecoration(shape: BoxShape.circle,
+                        gradient: RadialGradient(colors: [Color(0x558DAD80), Color(0x008DAD80)]))),
+                      const QuranArtwork(size: 220),
+                    ]));
+                    if (constraints.maxWidth >= 460) {
+                      return Row(children: [const Expanded(child: headline), artwork]);
+                    }
+                    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                      Center(child: artwork), headline,
+                    ]);
+                  }),
                   const SizedBox(height: 20),
                   if (store != null && store.ready) ...[
                     Text('${store.edition.surahsOnPage(store.lastPage).map((s) => s.name).join(' · ')}  /  ${store.lastPage == 0 ? 'Fatiha' : 'Sayfa ${store.lastPage}'}',
@@ -146,7 +164,12 @@ class _HomeScreenState extends State<HomeScreen> {
             child: Text(_error!, style: TextStyle(color: Theme.of(context).colorScheme.error))),
           if (store == null && _error != null) OutlinedButton(onPressed: _load, child: const Text('Tekrar dene')),
           if (store != null && store.ready) ...[
-            Text('Kütüphanem', style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700)),
+            Row(children: [Expanded(child: Text('Kütüphanem',
+              style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700))),
+              Container(padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                decoration: BoxDecoration(color: const Color(0xFFEAE4D4), borderRadius: BorderRadius.circular(20)),
+                child: Text('${store.edition.surahIndex.length} sure', style: const TextStyle(color: Color(0xFF6B634E), fontSize: 12))),
+            ]),
             const SizedBox(height: 12),
             LayoutBuilder(builder: (context, constraints) {
               final width = (constraints.maxWidth - 12) / 2;
@@ -205,7 +228,10 @@ class _QuickAction extends StatelessWidget {
           color: const Color(0xFFF0E8D5), borderRadius: BorderRadius.circular(13)),
           child: Icon(icon, color: const Color(0xFF7E6533), size: 24)),
         const SizedBox(height: 14), Text(title, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 16)),
-        const SizedBox(height: 4), Text(subtitle, style: const TextStyle(color: Color(0xFF827A6C), fontSize: 12)),
+        const SizedBox(height: 4), Row(children: [
+          Expanded(child: Text(subtitle, style: const TextStyle(color: Color(0xFF827A6C), fontSize: 12))),
+          const Icon(Icons.arrow_forward_rounded, size: 16, color: Color(0xFF9B834F)),
+        ]),
       ])))));
 }
 
