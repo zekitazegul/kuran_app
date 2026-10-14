@@ -2,6 +2,11 @@ import 'package:flutter/material.dart';
 import '../services/app_language.dart';
 
 const translations = <String, Map<String, String>>{
+  'Hat ön izleme': {'en': 'Script preview', 'nl': 'Schriftvoorbeeld'},
+  '{edition} · Hat ön izleme': {'en': '{edition} · Script preview', 'nl': '{edition} · Schriftvoorbeeld'},
+  'Hüsrev hattını indir': {'en': 'Download Hüsrev edition', 'nl': 'Hüsrev-uitgave downloaden'},
+  'Bilgisayar hattını indir': {'en': 'Download Computer Script edition', 'nl': 'Computerschrift downloaden'},
+  'Bilgisayar Hattı 2’yi indir': {'en': 'Download Computer Script 2', 'nl': 'Computerschrift 2 downloaden'},
   'Seçilen hat cihazına indirilecek. Wi-Fi kullanmanı ve işlem boyunca uygulamayı açık tutmanı öneririz. İndirmeyi duraklatıp daha sonra devam edebilirsin.': {'en': 'The selected edition will be downloaded to your device. We recommend Wi-Fi and keeping the app open during the process. You can pause and resume later.', 'nl': 'De gekozen uitgave wordt naar je apparaat gedownload. We raden wifi aan en adviseren de app tijdens het proces open te houden. Je kunt pauzeren en later verdergaan.'},
   "2 / 2 · Sayfalar cihaza indiriliyor": {"en": "2 / 2 · Downloading pages to your device", "nl": "2 / 2 · Pagina’s downloaden naar je apparaat"},
   "İndirilen: {done}/{total}": {"en": "Downloaded: {done}/{total}", "nl": "Gedownload: {done}/{total}"},

@@ -171,16 +171,17 @@ class _HomeScreenState extends State<HomeScreen> {
                     child: Text(context.t('OKUMA VAKTİ'), style: TextStyle(color: Color(0xFFE5C383),
                       fontWeight: FontWeight.w600, letterSpacing: 2, fontSize: 11))),
                   SizedBox(height: 12),
-                  if (store != null) ...[
+                  if (store != null && !store.ready) ...[
                     ClipRRect(borderRadius: BorderRadius.circular(14), child: Image.asset(
                       'assets/previews/${store.edition.id}.png',
                       width: double.infinity, fit: BoxFit.contain,
-                      semanticLabel: context.t('{edition} · Fetih suresinden hat örneği',
+                      semanticLabel: context.t('{edition} · Hat ön izleme',
                         {'edition': context.t(store.edition.name)}))),
                     const SizedBox(height: 8),
-                    Text(context.t('Fetih suresinden hat örneği'),
+                    Text(context.t('Hat ön izleme'),
                       style: const TextStyle(color: Color(0xFFE1E9DC), fontSize: 12)),
-                  ] else const Center(child: QuranArtwork(size: 180, decorative: true)),
+                  ] else Center(child: InkWell(onTap: _about,
+                    child: const QuranArtwork(size: 180, decorative: true))),
                   SizedBox(height: 20),
                   if (store != null && store.ready) ...[
                     Text('${store.edition.surahsOnPage(store.lastPage).map((s) => surahName(s, context.language)).join(' · ')}  /  ${store.lastPage == 0 ? context.t('Fatiha') : context.t('Sayfa {page}', {'page': store.lastPage})}',
@@ -224,7 +225,9 @@ class _HomeScreenState extends State<HomeScreen> {
           ] else if (store != null) ...[
             Card(child: Padding(padding: EdgeInsets.all(22), child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-                Text(context.t('Kur’an sayfalarını indir'), style: Theme.of(context).textTheme.titleLarge),
+                Text(context.t(store.edition.id == 'husrev' ? 'Hüsrev hattını indir'
+                  : store.edition.id == 'hat2' ? 'Bilgisayar Hattı 2’yi indir' : 'Bilgisayar hattını indir'),
+                  style: Theme.of(context).textTheme.titleLarge),
                 SizedBox(height: 8), Text(context.t('İndirilecek sayfalar: {size} MB', {'size': (store.edition.downloadBytes / 1000000).toStringAsFixed(1)})),
                 SizedBox(height: 20),
                 Text(context.t(store.sourceDownloaded
