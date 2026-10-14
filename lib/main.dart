@@ -221,7 +221,7 @@ class _QuickAction extends StatelessWidget {
   final String title;
   final String subtitle;
   final VoidCallback onTap;
-  _QuickAction({required this.width, required this.icon, required this.title,
+  const _QuickAction({required this.width, required this.icon, required this.title,
     required this.subtitle, required this.onTap});
   @override
   Widget build(BuildContext context) => SizedBox(width: width, child: Card(margin: EdgeInsets.zero,
@@ -239,7 +239,7 @@ class _QuickAction extends StatelessWidget {
 }
 
 class _Ornament extends StatelessWidget {
-  _Ornament();
+  const _Ornament();
   @override
   Widget build(BuildContext context) => Transform.rotate(angle: .45,
     child: SizedBox(width: 180, height: 180, child: Stack(alignment: Alignment.center, children: [

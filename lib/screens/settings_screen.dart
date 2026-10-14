@@ -39,7 +39,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         onChanged: _saving ? null : (value) async {
           setState(() => _saving = true);
           try { await widget.store.setPageAnimations(value); }
-          catch (_) { if (mounted) _message(context.t('Tercih kaydedilemedi.')); }
+          catch (_) { if (mounted) _message('Tercih kaydedilemedi.'); }
           finally { if (mounted) setState(() => _saving = false); }
         },
       )),
@@ -56,8 +56,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
             setState(() => _saving = true);
             try {
               await widget.store.selectEdition(edition.id);
-              if (mounted && !widget.store.ready) _message(context.t('Bu hattı ana ekrandan indirebilirsin.'));
-            } catch (_) { if (mounted) _message(context.t('Hat seçimi kaydedilemedi.')); }
+              if (mounted && !widget.store.ready) _message('Bu hattı ana ekrandan indirebilirsin.');
+            } catch (_) { if (mounted) _message('Hat seçimi kaydedilemedi.'); }
             finally { if (mounted) setState(() => _saving = false); }
           },
         ),
@@ -89,7 +89,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ));
           if (confirmed != true) return;
           try { await ReadingStore.channel.invokeMethod<void>('openSupport', {'url': _supportUrl}); }
-          catch (_) { if (mounted) _message(context.t('Destek bağlantısı açılamadı.')); }
+          catch (_) { if (mounted) _message('Destek bağlantısı açılamadı.'); }
         },
       )),
       SizedBox(height: 24),

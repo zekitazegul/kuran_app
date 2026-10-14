@@ -10,8 +10,10 @@ class LanguageSelector extends StatelessWidget {
     onSelected: (code) async {
       try { await AppLanguage.instance.change(code); }
       catch (_) {
-        if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(context.t('Dil tercihi kaydedilemedi.'))));
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(context.t('Dil tercihi kaydedilemedi.'))));
+        }
       }
     },
     itemBuilder: (_) => const [

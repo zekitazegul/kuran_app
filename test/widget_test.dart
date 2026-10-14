@@ -78,7 +78,11 @@ void main() {
     expect(acknowledged, isTrue);
     expect(find.text('Kullanım kılavuzu'), findsOneWidget);
     await tester.scrollUntilVisible(find.text('Okumaya başlayalım'), 400);
-    await tester.tap(find.text('Okumaya başlayalım'));
+    final continueButton = find.widgetWithText(FilledButton, 'Okumaya başlayalım');
+    await tester.ensureVisible(continueButton);
+    await tester.pumpAndSettle();
+    expect(continueButton.hitTestable(), findsOneWidget);
+    await tester.tap(continueButton);
     await tester.pumpAndSettle();
     expect(guideSeen, isTrue);
     expect(find.text('Tam Kur’an’ı indir'), findsOneWidget);

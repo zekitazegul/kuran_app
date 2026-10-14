@@ -374,7 +374,7 @@ class _QuranScreenState extends State<QuranScreen> with SingleTickerProviderStat
 
 class _SurahPicker extends StatefulWidget {
   final List<Surah> items;
-  _SurahPicker({required this.items});
+  const _SurahPicker({required this.items});
   @override
   State<_SurahPicker> createState() => _SurahPickerState();
 }
