@@ -4,7 +4,7 @@ import '../services/reading_store.dart';
 
 class SupportCard extends StatelessWidget {
   const SupportCard({super.key});
-  static const url = String.fromEnvironment('SUPPORT_URL');
+  static const url = String.fromEnvironment('SUPPORT_URL', defaultValue: 'https://ko-fi.com/zetasoft');
   bool get available {
     final uri = Uri.tryParse(url);
     return uri != null && uri.scheme == 'https' &&

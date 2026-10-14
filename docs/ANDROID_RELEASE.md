@@ -134,9 +134,9 @@ bookmark and save a page, then switch back. Computer downloads/bookmarks must
 remain unchanged. Repeat after relaunch; check Settings from both Home/reader.
 The Flutter SDK is absent in the cloud, so these tests are not claimed passed.
 
-Optional support: default builds have no payment URL. Configure an owned HTTPS
-Buy Me a Coffee or Ko-fi profile only after the developer supplies the link,
-using `--dart-define=SUPPORT_URL=https://...` on the Flutter build/run command.
+Optional support: default builds use the developer-provided Ko-fi profile
+https://ko-fi.com/zetasoft. Override it with another owned HTTPS profile using
+`--dart-define=SUPPORT_URL=https://...` on the Flutter build/run command.
 Native code validates HTTPS and an exact provider hostname; opening the browser
 requires an explicit confirmation. There is no payment SDK, paid feature or
 financial credential in the app. The missing-link state must not open a fake
@@ -183,3 +183,9 @@ Quran seated directly on the V-shaped wooden rehal rather than a closed book.
 Run `flutter pub get`, `flutter analyze`, `flutter test` locally, then the signed
 release on device. Flutter localization is an SDK dependency; commit the lockfile
 produced by the same pinned Flutter toolchain when it is refreshed locally.
+
+### Developer support link
+
+The optional coffee support card defaults to https://ko-fi.com/zetasoft in both
+About and Settings. It opens externally after confirmation. No payment details
+are handled by the app. `SUPPORT_URL` remains an optional build-time override.
