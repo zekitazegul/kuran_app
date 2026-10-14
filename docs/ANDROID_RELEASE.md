@@ -1,6 +1,6 @@
 # Android development and release checks
 
-Version 1.3.0+10 targets Android. No iOS distribution is prepared.
+Version 1.4.0+11 targets Android. No iOS distribution is prepared.
 
 ## Build on the existing Flutter workstation
 
@@ -159,3 +159,27 @@ Validate `flutter analyze`, `flutter test` and a signed release on device. Check
 Samsung launcher masks, splash appearance, image transparency, large text,
 landscape and narrow-screen Home layout. Visual resource/layout checks in the
 cloud do not replace a Flutter build or an actual device screenshot.
+
+
+## Languages and narrow tap regions
+
+First launch chooses Türkçe, English or Nederlands before privacy/guide.
+The top-right selector changes the entire UI immediately and stores the choice
+in global preferences without changing the selected PDF, bookmarks or page.
+Flutter SDK localization delegates also translate Material controls/tooltips.
+The Arabic page images are never translated. Surah labels use the Turkish
+names for Turkish and conventional transliterations (e.g. Al-Baqarah, Ali 'Imran)
+for English and Dutch, not translated meanings such as “Cow”. Search indexes
+both sets of names and removes accents, spaces, apostrophes and hyphens.
+
+Page taps turn only inside approximately 1 cm left/right strips, estimated from
+Android xdpi and density (reported physical DPI can vary by device). The broad
+center toggles fullscreen with a single tap. Pulling down from the very top
+exits fullscreen; ordinary downward scrolling within a page does not. Check
+portrait/landscape, pinch zoom, short pages and bottom-pull advancement on S24+.
+The two marketing slogans were removed. The shared artwork now depicts an open
+Quran seated directly on the V-shaped wooden rehal rather than a closed book.
+
+Run `flutter pub get`, `flutter analyze`, `flutter test` locally, then the signed
+release on device. Flutter localization is an SDK dependency; commit the lockfile
+produced by the same pinned Flutter toolchain when it is refreshed locally.

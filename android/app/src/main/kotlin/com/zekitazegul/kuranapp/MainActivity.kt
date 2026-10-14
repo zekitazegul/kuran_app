@@ -34,6 +34,7 @@ class MainActivity : FlutterActivity() {
                     val value: Any? = when (call.method) {
                         "selectEdition" -> storage.selectEdition(requireNotNull(call.argument<String>("id")))
                         "load" -> storage.load()
+                        "setLanguage" -> storage.setLanguage(requireNotNull(call.argument<String>("language"))).let { null }
                         "savePage" -> storage.savePage(requireNotNull(call.argument<Int>("page"))).let { null }
                         "saveBookmarks" -> storage.saveBookmarks(requireNotNull(call.argument<List<Int>>("pages"))).let { null }
                         "acknowledgeGuide" -> storage.acknowledgeGuide().let { null }

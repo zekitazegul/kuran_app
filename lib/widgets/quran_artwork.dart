@@ -1,3 +1,4 @@
+import '../l10n/translations.dart';
 import 'package:flutter/material.dart';
 
 /// Shared artwork for the home screen, guide and Android launcher identity.
@@ -11,5 +12,5 @@ class QuranArtwork extends StatelessWidget {
     width: size, height: size, fit: BoxFit.contain,
     cacheWidth: (size * MediaQuery.devicePixelRatioOf(context)).round().clamp(96, 1024).toInt(),
     excludeFromSemantics: decorative,
-    semanticLabel: decorative ? null : 'Ahşap rahle üzerinde altın bezemeli yeşil Kur’an-ı Kerim');
+    semanticLabel: decorative ? null : context.t('Ahşap rahle üzerinde altın bezemeli yeşil Kur’an-ı Kerim'));
 }

@@ -1,11 +1,12 @@
+import '../l10n/translations.dart';
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 
 /// Coordinates measured in the original 538.583 × 779.528 point PDF.
 Rect readingCrop(int page) {
-  if (page == 0) return const Rect.fromLTRB(132.5, 264.3, 305.4, 513.8);
-  if (page == 1) return const Rect.fromLTRB(232.4, 266.0, 405.4, 513.6);
-  return const Rect.fromLTRB(78.5, 63.8, 461, 715);
+  if (page == 0) return Rect.fromLTRB(132.5, 264.3, 305.4, 513.8);
+  if (page == 1) return Rect.fromLTRB(232.4, 266.0, 405.4, 513.6);
+  return Rect.fromLTRB(78.5, 63.8, 461, 715);
 }
 
 Rect normalizedReadingCrop(int page) {
@@ -54,8 +55,8 @@ class _ReadingPageState extends State<ReadingPage> {
   }
   @override
   Widget build(BuildContext context) {
-    if (_failed) return const Center(child: Text('Sayfa görüntüsü okunamadı.'));
-    if (_image == null) return const Center(child: CircularProgressIndicator());
+    if (_failed) return Center(child: Text(context.t('Sayfa görüntüsü okunamadı.')));
+    if (_image == null) return Center(child: CircularProgressIndicator());
     return CustomPaint(painter: _ReadingPainter(_image!, widget.crop));
   }
 }

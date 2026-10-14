@@ -5,16 +5,20 @@ import 'package:kuran_app/main.dart';
 import 'package:kuran_app/data/surahs.dart';
 import 'package:kuran_app/services/reading_store.dart';
 import 'package:kuran_app/screens/settings_screen.dart';
+import 'package:kuran_app/services/app_language.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
   var acknowledged = false;
   var guideSeen = false;
   var animations = true;
+  String? language;
   var lastPage = 439;
   var bookmarks = <int>[439];
 
   setUp(() {
+    AppLanguage.instance.value = const Locale('tr');
+    language = null;
     acknowledged = false;
     guideSeen = false;
     animations = true;
@@ -24,7 +28,8 @@ void main() {
       .setMockMethodCallHandler(ReadingStore.channel, (call) async {
         switch (call.method) {
           case 'load': return {'directory': '/tmp/quran-test', 'lastPage': lastPage,
-            'informationSeen': acknowledged, 'guideSeen': guideSeen, 'pageAnimations': animations, 'bookmarks': bookmarks, 'downloaded': <int>[]};
+            'language': language, 'informationSeen': acknowledged, 'guideSeen': guideSeen, 'pageAnimations': animations, 'bookmarks': bookmarks, 'downloaded': <int>[]};
+          case 'setLanguage': language = (call.arguments as Map)['language'] as String; return null;
           case 'acknowledge': acknowledged = true; return null;
           case 'acknowledgeGuide': guideSeen = true; return null;
           case 'setPageAnimations': animations = (call.arguments as Map)['enabled'] as bool; return null;
@@ -103,6 +108,24 @@ void main() {
     await tester.tap(find.text('Kullanım kılavuzu'));
     await tester.pumpAndSettle();
     expect(find.text('Okumaya hoş geldin'), findsOneWidget);
+  });
+
+  testWidgets('first launch chooses Dutch and can switch to English', (tester) async {
+    AppLanguage.instance.value = null;
+    await tester.pumpWidget(const KuranApp());
+    await tester.pumpAndSettle();
+    expect(find.text('Nederlands'), findsOneWidget);
+    await tester.tap(find.text('Nederlands'));
+    await tester.pumpAndSettle();
+    expect(language, 'nl');
+    expect(find.text('Privacy en app-toegang'), findsOneWidget);
+    await tester.tap(find.byTooltip('Taal kiezen'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('English'));
+    await tester.pumpAndSettle();
+    expect(language, 'en');
+    expect(find.text('Privacy and app access'), findsOneWidget);
+    expect((await ReadingStore.load()).language, 'en');
   });
 
 }

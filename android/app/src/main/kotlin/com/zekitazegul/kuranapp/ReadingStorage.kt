@@ -61,6 +61,8 @@ class ReadingStorage(private val context: Context, requestedEdition: String? = n
         "edition" to toCodec(edition),
         "editions" to toCodec(catalog),
         "directory" to directory.path,
+        "language" to global.getString("language", null),
+        "edgeTapWidth" to (context.resources.displayMetrics.xdpi / 2.54 / context.resources.displayMetrics.density),
         "lastPage" to preferences.getInt("lastPage", firstPage),
         "informationSeen" to global.getBoolean("informationSeen", false),
         "guideSeen" to global.getBoolean("guideSeen", false),
@@ -81,6 +83,11 @@ class ReadingStorage(private val context: Context, requestedEdition: String? = n
 
     fun acknowledge() {
         check(global.edit().putBoolean("informationSeen", true).commit())
+    }
+
+    fun setLanguage(language: String) {
+        require(language in setOf("tr", "en", "nl"))
+        check(global.edit().putString("language", language).commit())
     }
 
     fun acknowledgeGuide() {

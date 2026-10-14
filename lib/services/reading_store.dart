@@ -14,10 +14,12 @@ class ReadingStore {
   bool informationSeen;
   bool guideSeen;
   bool pageAnimations;
+  final String? language;
+  final double edgeTapWidth;
 
   ReadingStore({required this.directory, required this.lastPage,
     required this.informationSeen, required this.bookmarks, required this.downloaded,
-    this.guideSeen = false, this.pageAnimations = true,
+    this.guideSeen = false, this.pageAnimations = true, this.language, this.edgeTapWidth = 160 / 2.54,
     this.edition = QuranEdition.computer, this.editions = const [QuranEdition.computer]});
 
   bool get ready => downloaded.length == edition.pageCount;
@@ -34,6 +36,8 @@ class ReadingStore {
       lastPage: (data['lastPage'] as int).clamp(edition.firstPage, edition.lastPage).toInt(),
       informationSeen: data['informationSeen'] == true,
       guideSeen: data['guideSeen'] == true,
+      language: data['language'] as String?,
+      edgeTapWidth: ((data['edgeTapWidth'] as num?)?.toDouble() ?? 160 / 2.54).clamp(32.0, 96.0).toDouble(),
       pageAnimations: data['pageAnimations'] != false,
       bookmarks: Set<int>.from(data['bookmarks'] as List).where((p) => p >= edition.firstPage && p <= edition.lastPage).toSet(),
       downloaded: Set<int>.from(data['downloaded'] as List),

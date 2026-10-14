@@ -1,3 +1,4 @@
+import '../l10n/translations.dart';
 import 'dart:io';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
@@ -7,6 +8,8 @@ import '../services/reading_store.dart';
 import '../widgets/page_turn.dart';
 import '../widgets/reading_page.dart';
 import 'settings_screen.dart';
+import '../widgets/language_selector.dart';
+import '../widgets/reader_tap_region.dart';
 
 class QuranScreen extends StatefulWidget {
   final ReadingStore store;
@@ -27,6 +30,7 @@ class _QuranScreenState extends State<QuranScreen> with SingleTickerProviderStat
   final ScrollController _verticalScroll = ScrollController();
   bool _zoomed = false;
   double _bottomPull = 0;
+  double _topPull = 0;
   bool _landscape = false;
   Orientation? _orientation;
 
@@ -34,12 +38,24 @@ class _QuranScreenState extends State<QuranScreen> with SingleTickerProviderStat
     _zoom.value = Matrix4.identity();
     _zoomed = false;
     _bottomPull = 0;
+    _topPull = 0;
     if (_verticalScroll.hasClients) _verticalScroll.jumpTo(0);
   }
 
   bool _scrollNotification(ScrollNotification notification) {
     if (notification.depth != 0) return false;
-    if (notification is ScrollStartNotification) _bottomPull = 0;
+    if (notification is ScrollStartNotification) { _bottomPull = 0; _topPull = 0; }
+    if (notification is OverscrollNotification && notification.dragDetails != null &&
+        notification.overscroll < 0 && notification.metrics.extentBefore <= 0 &&
+        _fullscreen && !_zoomed && !_multiTouch && _target == null && !_preparing) {
+      _topPull -= notification.overscroll;
+      if (_topPull >= 55) {
+        _topPull = 0;
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted && _fullscreen) _toggleFullscreen();
+        });
+      }
+    }
     if (notification is OverscrollNotification && notification.dragDetails != null &&
         notification.overscroll > 0 && notification.metrics.extentAfter <= 0 &&
         _landscape && !_zoomed && !_multiTouch && _target == null &&
@@ -109,7 +125,7 @@ class _QuranScreenState extends State<QuranScreen> with SingleTickerProviderStat
   void initState() {
     super.initState();
     _page = widget.initialPage.clamp(widget.store.edition.firstPage, widget.store.edition.lastPage).toInt();
-    _turn = AnimationController(vsync: this, duration: const Duration(milliseconds: 650));
+    _turn = AnimationController(vsync: this, duration: Duration(milliseconds: 650));
     _remember(_page);
     if (widget.initialPanel != null) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -122,7 +138,7 @@ class _QuranScreenState extends State<QuranScreen> with SingleTickerProviderStat
   }
 
   void _error(String message) {
-    if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+    if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(context.t(message))));
   }
 
   Future<void> _remember(int page) async {
@@ -156,23 +172,23 @@ class _QuranScreenState extends State<QuranScreen> with SingleTickerProviderStat
     final controller = TextEditingController();
     final form = GlobalKey<FormState>();
     final page = await showDialog<int>(context: context, builder: (context) => AlertDialog(
-      title: const Text('Sayfaya git'),
+      title: Text(context.t('Sayfaya git')),
       content: Form(key: form, child: TextFormField(
         controller: controller, autofocus: true,
         keyboardType: TextInputType.number,
         inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-        decoration: InputDecoration(labelText: 'Sayfa numarası (${widget.store.edition.firstPage}–${widget.store.edition.lastPage})'),
+        decoration: InputDecoration(labelText: context.t('Sayfa numarası ({first}–{last})', {'first': widget.store.edition.firstPage, 'last': widget.store.edition.lastPage})),
         validator: (value) {
           final n = int.tryParse(value ?? '');
-          return n == null || n < widget.store.edition.firstPage || n > widget.store.edition.lastPage ? '${widget.store.edition.firstPage} ile ${widget.store.edition.lastPage} arasında bir sayı yazın.' : null;
+          return n == null || n < widget.store.edition.firstPage || n > widget.store.edition.lastPage ? context.t('{first} ile {last} arasında bir sayı yazın.', {'first': widget.store.edition.firstPage, 'last': widget.store.edition.lastPage}) : null;
         },
         onFieldSubmitted: (_) { if (form.currentState!.validate()) Navigator.pop(context, int.parse(controller.text)); },
       )),
-      actions: [TextButton(onPressed: () => Navigator.pop(context), child: const Text('İptal')),
-        FilledButton(onPressed: () { if (form.currentState!.validate()) Navigator.pop(context, int.parse(controller.text)); }, child: const Text('Sayfaya git'))],
+      actions: [TextButton(onPressed: () => Navigator.pop(context), child: Text(context.t('İptal'))),
+        FilledButton(onPressed: () { if (form.currentState!.validate()) Navigator.pop(context, int.parse(controller.text)); }, child: Text(context.t('Sayfaya git')))],
     ));
     // Dialog exit animation may still use the controller; dispose after it finishes.
-    await Future<void>.delayed(const Duration(milliseconds: 300));
+    await Future<void>.delayed(Duration(milliseconds: 300));
     controller.dispose();
     if (page != null && mounted) await _go(page);
   }
@@ -186,10 +202,10 @@ class _QuranScreenState extends State<QuranScreen> with SingleTickerProviderStat
   Future<void> _bookmarks() async {
     final pages = widget.store.bookmarks.toList()..sort();
     final selected = await showModalBottomSheet<int>(context: context, builder: (context) => SafeArea(
-      child: pages.isEmpty ? const Padding(padding: EdgeInsets.all(32), child: Text('Henüz ayraç yok. Okuduğunuz sayfada ayraç simgesine dokunun.'))
-      : ListView(children: [const ListTile(title: Text('Ayraçlar')),
-        for (final page in pages) ListTile(title: Text('Sayfa $page'),
-          subtitle: Text(widget.store.edition.surahsOnPage(page).map((s) => s.name).join(', ')),
+      child: pages.isEmpty ? Padding(padding: EdgeInsets.all(32), child: Text(context.t('Henüz ayraç yok. Okuduğunuz sayfada ayraç simgesine dokunun.')))
+      : ListView(children: [ListTile(title: Text(context.t('Ayraçlar'))),
+        for (final page in pages) ListTile(title: Text(context.t('Sayfa {page}', {'page': page})),
+          subtitle: Text(widget.store.edition.surahsOnPage(page).map((s) => surahName(s, context.language)).join(', ')),
           onTap: () => Navigator.pop(context, page))]),
     ));
     if (selected != null && mounted) await _go(selected);
@@ -228,11 +244,12 @@ class _QuranScreenState extends State<QuranScreen> with SingleTickerProviderStat
 
   void _tapPage(TapUpDetails details) {
     if (_target != null || _preparing) return;
-    final fraction = details.localPosition.dx / _readerWidth;
-    if (fraction >= .4 && fraction <= .6) {
+    // Android physical DPI approximates a 1 cm strip at each edge.
+    final region = readerTapRegion(details.localPosition.dx, _readerWidth, widget.store.edgeTapWidth);
+    if (region == ReaderTapRegion.fullscreen) {
       _toggleFullscreen();
     } else if (_zoom.value.getMaxScaleOnAxis() <= 1.01) {
-      _go(_page + (fraction < .4 ? 1 : -1), animate: true);
+      _go(_page + (region == ReaderTapRegion.nextPage ? 1 : -1), animate: true);
     }
   }
 
@@ -249,9 +266,9 @@ class _QuranScreenState extends State<QuranScreen> with SingleTickerProviderStat
       });
     }
     _landscape = orientation == Orientation.landscape;
-    return Scaffold(backgroundColor: const Color(0xFFE9E1D1),
-      appBar: _fullscreen ? null : AppBar(title: Text(widget.store.edition.surahsOnPage(_page).map((s) => s.name).join(' · ')),
-        actions: [IconButton(tooltip: 'Sayfaya git', onPressed: _jump, icon: const Icon(Icons.numbers)),
+    return Scaffold(backgroundColor: Color(0xFFE9E1D1),
+      appBar: _fullscreen ? null : AppBar(title: Text(widget.store.edition.surahsOnPage(_page).map((s) => surahName(s, context.language)).join(' · ')),
+        actions: [IconButton(tooltip: context.t('Sayfaya git'), onPressed: _jump, icon: Icon(Icons.numbers)),
           PopupMenuButton<String>(enabled: !busy && !_bookmarkSaving, onSelected: (v) {
             if (v == 'surah') _selectSurah();
             if (v == 'bookmarks') _bookmarks();
@@ -268,10 +285,10 @@ class _QuranScreenState extends State<QuranScreen> with SingleTickerProviderStat
                   } else { setState(() {}); }
                 });
             }
-          }, itemBuilder: (_) => const [PopupMenuItem(value: 'surah', child: Text('Sure seç')),
-            PopupMenuItem(value: 'bookmarks', child: Text('Ayraçlar')),
-            PopupMenuItem(value: 'full', child: Text('Tam ekran')),
-            PopupMenuItem(value: 'settings', child: Text('Ayarlar'))])]),
+          }, itemBuilder: (_) => [PopupMenuItem(value: 'surah', child: Text(context.t('Sure seç'))),
+            PopupMenuItem(value: 'bookmarks', child: Text(context.t('Ayraçlar'))),
+            PopupMenuItem(value: 'full', child: Text(context.t('Tam ekran'))),
+            PopupMenuItem(value: 'settings', child: Text(context.t('Ayarlar')))]), LanguageSelector()]),
       body: SafeArea(top: !_fullscreen, bottom: !_fullscreen, child: Column(children: [
         Expanded(child: GestureDetector(
           behavior: HitTestBehavior.opaque,
@@ -335,20 +352,20 @@ class _QuranScreenState extends State<QuranScreen> with SingleTickerProviderStat
                 child: SingleChildScrollView(
                   controller: _verticalScroll,
                   physics: _zoomed || _target != null
-                      ? const NeverScrollableScrollPhysics()
-                      : const ClampingScrollPhysics(),
+                      ? NeverScrollableScrollPhysics()
+                      : ClampingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
                   child: SizedBox(width: constraints.maxWidth, height: sheetHeight, child: child),
                 ),
               ));
           })),
         )),
-        if (!_fullscreen) Padding(padding: const EdgeInsets.symmetric(horizontal: 8), child: Row(
+        if (!_fullscreen) Padding(padding: EdgeInsets.symmetric(horizontal: 8), child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceEvenly, children: [
-            IconButton(tooltip: 'Sonraki sayfa', onPressed: busy || _page == widget.store.edition.lastPage ? null : () => _go(_page + 1, animate: true), icon: const Icon(Icons.chevron_left)),
+            IconButton(tooltip: context.t('Sonraki sayfa'), onPressed: busy || _page == widget.store.edition.lastPage ? null : () => _go(_page + 1, animate: true), icon: Icon(Icons.chevron_left)),
             TextButton(onPressed: _jump, child: Text('$_page / ${widget.store.edition.lastPage}')),
-            IconButton(tooltip: widget.store.bookmarks.contains(_page) ? 'Ayracı kaldır' : 'Ayraç ekle',
+            IconButton(tooltip: widget.store.bookmarks.contains(_page) ? context.t('Ayracı kaldır') : context.t('Ayraç ekle'),
               onPressed: busy || _bookmarkSaving ? null : _toggleBookmark, icon: Icon(widget.store.bookmarks.contains(_page) ? Icons.bookmark : Icons.bookmark_border)),
-            IconButton(tooltip: 'Önceki sayfa', onPressed: busy || _page == widget.store.edition.firstPage ? null : () => _go(_page - 1, animate: true), icon: const Icon(Icons.chevron_right)),
+            IconButton(tooltip: context.t('Önceki sayfa'), onPressed: busy || _page == widget.store.edition.firstPage ? null : () => _go(_page - 1, animate: true), icon: Icon(Icons.chevron_right)),
           ])),
       ])),
     );
@@ -357,7 +374,7 @@ class _QuranScreenState extends State<QuranScreen> with SingleTickerProviderStat
 
 class _SurahPicker extends StatefulWidget {
   final List<Surah> items;
-  const _SurahPicker({required this.items});
+  _SurahPicker({required this.items});
   @override
   State<_SurahPicker> createState() => _SurahPickerState();
 }
@@ -365,14 +382,14 @@ class _SurahPickerState extends State<_SurahPicker> {
   String query = '';
   @override
   Widget build(BuildContext context) {
-    final filtered = widget.items.where((s) => normalizeSurahName(s.name).contains(normalizeSurahName(query)) || s.number.toString() == query).toList();
+    final filtered = widget.items.where((s) => matchesSurah(s, query)).toList();
     return SafeArea(child: SizedBox(height: MediaQuery.sizeOf(context).height * .8,
-      child: Column(children: [Padding(padding: const EdgeInsets.all(16), child: TextField(
-        decoration: const InputDecoration(labelText: 'Sure adı veya numarası', prefixIcon: Icon(Icons.search)),
+      child: Column(children: [Padding(padding: EdgeInsets.all(16), child: TextField(
+        decoration: InputDecoration(labelText: context.t('Sure adı veya numarası'), prefixIcon: Icon(Icons.search)),
         onChanged: (v) => setState(() => query = v))),
         Expanded(child: ListView.builder(itemCount: filtered.length, itemBuilder: (_, i) {
           final surah = filtered[i];
-          return ListTile(title: Text('${surah.number}. ${surah.name}'), trailing: Text('s. ${surah.startPage}'),
+          return ListTile(title: Text('${surah.number}. ${surahName(surah, context.language)}'), trailing: Text(context.t('s. {page}', {'page': surah.startPage})),
             onTap: () => Navigator.pop(context, surah.startPage));
         })),
       ])));
