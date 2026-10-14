@@ -2,6 +2,12 @@ import 'package:flutter/material.dart';
 import '../services/app_language.dart';
 
 const translations = <String, Map<String, String>>{
+  'Sure / Cüz': {'en': 'Surah / Juz', 'nl': 'Soera / Djoez'},
+  'Cüzler': {'en': 'Juz', 'nl': 'Djoez'},
+  'Cüz {number}': {'en': 'Juz {number}', 'nl': 'Djoez {number}'},
+  'Sure veya cüz ara': {'en': 'Search surah or juz', 'nl': 'Zoek soera of djoez'},
+  'Fetih': {'en': 'Al-Fath', 'nl': 'Al-Fath'},
+  'Yasin': {'en': 'Ya-Sin', 'nl': 'Ya-Sin'},
   "Kur’an-ı Kerim": {
     "en": "Quran",
     "nl": "Koran"

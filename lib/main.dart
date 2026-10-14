@@ -178,13 +178,13 @@ class _HomeScreenState extends State<HomeScreen> {
               final width = (constraints.maxWidth - 12) / 2;
               return Wrap(spacing: 12, runSpacing: 12, children: [
                 _QuickAction(width: width, icon: Icons.format_list_numbered_rounded,
-                  title: context.t('Sureler'), subtitle: context.t('{count} sure', {'count': store.edition.surahIndex.length}), onTap: () => _read(store.lastPage, panel: 'surah')),
+                  title: context.t('Sure / Cüz'), subtitle: context.t('{count} sure', {'count': store.edition.surahIndex.length}), onTap: () => _read(store.lastPage, panel: 'surah')),
                 _QuickAction(width: width, icon: Icons.bookmarks_outlined,
                   title: context.t('Ayraçlarım'), subtitle: context.t('{count} kayıt', {'count': store.bookmarks.length}), onTap: () => _read(store.lastPage, panel: 'bookmarks')),
                 _QuickAction(width: width, icon: Icons.menu_book_outlined,
-                  title: context.t('Baştan oku'), subtitle: context.t('Fatiha Suresi'), onTap: () => _read(store.edition.firstPage)),
+                  title: context.t('Fetih'), subtitle: context.t('Sayfa {page}', {'page': store.edition.surahIndex[47].startPage}), onTap: () => _read(store.edition.surahIndex[47].startPage)),
                 _QuickAction(width: width, icon: Icons.auto_stories_outlined,
-                  title: context.t('Yasin Suresi'), subtitle: context.t('Sayfa {page}', {'page': store.edition.yasinPage}), onTap: () => _read(store.edition.yasinPage)),
+                  title: context.t('Yasin'), subtitle: context.t('Sayfa {page}', {'page': store.edition.yasinPage}), onTap: () => _read(store.edition.yasinPage)),
               ]);
             }),
             SizedBox(height: 20),

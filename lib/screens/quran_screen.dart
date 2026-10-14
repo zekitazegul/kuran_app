@@ -285,7 +285,7 @@ class _QuranScreenState extends State<QuranScreen> with SingleTickerProviderStat
                   } else { setState(() {}); }
                 });
             }
-          }, itemBuilder: (_) => [PopupMenuItem(value: 'surah', child: Text(context.t('Sure seç'))),
+          }, itemBuilder: (_) => [PopupMenuItem(value: 'surah', child: Text(context.t('Sure / Cüz'))),
             PopupMenuItem(value: 'bookmarks', child: Text(context.t('Ayraçlar'))),
             PopupMenuItem(value: 'full', child: Text(context.t('Tam ekran'))),
             PopupMenuItem(value: 'settings', child: Text(context.t('Ayarlar')))]), LanguageSelector()]),
@@ -380,14 +380,36 @@ class _SurahPicker extends StatefulWidget {
 }
 class _SurahPickerState extends State<_SurahPicker> {
   String query = '';
+  bool showJuz = false;
   @override
   Widget build(BuildContext context) {
+    final normalized = normalizeSurahName(query);
+    final juzQuery = RegExp(r'^(cuz|juz|djoez)([0-9]*)$').firstMatch(normalized);
+    final juzMode = showJuz || juzQuery != null;
+    final number = juzQuery?.group(2) ?? normalized;
+    final juzNumbers = List.generate(30, (i) => i + 1)
+      .where((n) => number.isEmpty || n.toString() == number).toList();
     final filtered = widget.items.where((s) => matchesSurah(s, query)).toList();
     return SafeArea(child: SizedBox(height: MediaQuery.sizeOf(context).height * .8,
-      child: Column(children: [Padding(padding: EdgeInsets.all(16), child: TextField(
-        decoration: InputDecoration(labelText: context.t('Sure adı veya numarası'), prefixIcon: Icon(Icons.search)),
+      child: Column(children: [
+        Padding(padding: const EdgeInsets.only(top: 12), child: Wrap(spacing: 8, children: [
+          ChoiceChip(label: Text(context.t('Sureler')), selected: !juzMode,
+            onSelected: (_) => setState(() { showJuz = false; query = ''; })),
+          ChoiceChip(label: Text(context.t('Cüzler')), selected: juzMode,
+            onSelected: (_) => setState(() { showJuz = true; query = ''; })),
+        ])),
+        Padding(padding: EdgeInsets.all(16), child: TextField(
+        key: ValueKey(showJuz),
+        decoration: InputDecoration(labelText: context.t('Sure veya cüz ara'), prefixIcon: Icon(Icons.search)),
         onChanged: (v) => setState(() => query = v))),
-        Expanded(child: ListView.builder(itemCount: filtered.length, itemBuilder: (_, i) {
+        Expanded(child: ListView.builder(itemCount: juzMode ? juzNumbers.length : filtered.length, itemBuilder: (_, i) {
+          if (juzMode) {
+            final juz = juzNumbers[i];
+            final page = juz == 1 ? 0 : (juz - 1) * 20 + 1;
+            return ListTile(title: Text(context.t('Cüz {number}', {'number': juz})),
+              trailing: Text(context.t('s. {page}', {'page': page})),
+              onTap: () => Navigator.pop(context, page));
+          }
           final surah = filtered[i];
           return ListTile(title: Text('${surah.number}. ${surahName(surah, context.language)}'), trailing: Text(context.t('s. {page}', {'page': surah.startPage})),
             onTap: () => Navigator.pop(context, surah.startPage));
