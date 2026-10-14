@@ -105,7 +105,9 @@ class _HomeScreenState extends State<HomeScreen> {
           const SizedBox(height: 12),
           OutlinedButton(onPressed: () => _read(1), child: const Text('Baştan oku')),
           const SizedBox(height: 12),
-          OutlinedButton(onPressed: () => _read(440), child: const Text('Yasin Suresi')),
+          OutlinedButton(onPressed: () => Navigator.push(context, MaterialPageRoute<void>(
+            builder: (_) => const SurahScreen(surahName: 'Yasin Suresi', pageCount: 6))),
+            child: const Text('Yasin Suresi · Bilgisayar hattı')),
           const SizedBox(height: 16),
           const Text('Okuyucunun menüsünden sure seçebilir, sayfa numarasıyla gidebilir ve ayraçlarınıza ulaşabilirsiniz. Yakınlaştırmak için iki parmak, tam ekran için çift dokunuş kullanın.'),
         ] else if (store != null) ...[
