@@ -262,10 +262,6 @@ class _HomeScreenState extends State<HomeScreen> {
               ]))),
           ],
           SizedBox(height: 24),
-          Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-            Icon(Icons.verified_outlined, size: 16, color: Color(0xFF8B7449)), SizedBox(width: 6),
-            Flexible(child: Text(context.t('{edition} · Reklamsız okuma', {'edition': context.t(store?.edition.name ?? 'KuranApp')}), style: TextStyle(color: Color(0xFF776F61), fontSize: 12))),
-          ]),
         ]))),
     );
   }
