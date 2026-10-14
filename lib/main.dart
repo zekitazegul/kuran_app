@@ -45,15 +45,15 @@ class _HomeScreenState extends State<HomeScreen> {
   Future<void> _download() async {
     final store = _store!;
     final confirmed = await showDialog<bool>(context: context, builder: (context) => AlertDialog(
-      title: const Text('604 sayfayı indir'),
-      content: const Text('Sayfalar internetten indirilip uygulamanın özel klasöründe saklanacak. İndirme ve depolama boyutu kaynak görsellerine göre değişir. Wi-Fi kullanmanız önerilir. İndirme sırasında uygulamayı açık tutun; duraklatıp daha sonra kaldığınız yerden sürdürebilirsiniz.'),
+      title: const Text('Bilgisayar hatlı Kur’an’ı indir'),
+      content: const Text('Bilgisayar hatlı PDF (yaklaşık 24 MB) indirilecek ve sayfalar cihazınızda hazırlanacak. Hazırlanan görseller ek depolama alanı kullanır. Wi-Fi kullanmanız önerilir. İndirme sırasında uygulamayı açık tutun; duraklatıp daha sonra kaldığınız yerden sürdürebilirsiniz.'),
       actions: [TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('İptal')),
         FilledButton(onPressed: () => Navigator.pop(context, true), child: const Text('İndirmeyi başlat'))],
     ));
     if (confirmed != true || !mounted) return;
     setState(() { _downloading = true; _pauseRequested = false; _error = null; });
     try {
-      for (var page = 1; page <= 604; page++) {
+      for (var page = 0; page <= 604; page++) {
         if (_pauseRequested || !mounted) break;
         if (store.downloaded.contains(page)) continue;
         await store.downloadPage(page);
@@ -94,7 +94,7 @@ class _HomeScreenState extends State<HomeScreen> {
         const Text('Kur’an-ı Kerim', textAlign: TextAlign.center,
           style: TextStyle(fontSize: 30, fontWeight: FontWeight.bold)),
         const SizedBox(height: 8),
-        const Text('604 sayfa · 114 sure', textAlign: TextAlign.center),
+        const Text('Bilgisayar hattı · 114 sure', textAlign: TextAlign.center),
         const SizedBox(height: 24),
         if (store == null && _error == null) const Center(child: CircularProgressIndicator()),
         if (_error != null) Padding(padding: const EdgeInsets.only(bottom: 16), child: Text(_error!, style: TextStyle(color: Theme.of(context).colorScheme.error))),
@@ -103,17 +103,15 @@ class _HomeScreenState extends State<HomeScreen> {
           FilledButton.icon(onPressed: () => _read(store.lastPage), icon: const Icon(Icons.auto_stories),
             label: Text('Kaldığım yerden devam et · Sayfa ${store.lastPage}')),
           const SizedBox(height: 12),
-          OutlinedButton(onPressed: () => _read(1), child: const Text('Baştan oku')),
+          OutlinedButton(onPressed: () => _read(0), child: const Text('Baştan oku')),
           const SizedBox(height: 12),
-          OutlinedButton(onPressed: () => Navigator.push(context, MaterialPageRoute<void>(
-            builder: (_) => const SurahScreen(surahName: 'Yasin Suresi', pageCount: 6))),
-            child: const Text('Yasin Suresi · Bilgisayar hattı')),
+          OutlinedButton(onPressed: () => _read(439), child: const Text('Yasin Suresi · Bilgisayar hattı')),
           const SizedBox(height: 16),
-          const Text('Okuyucunun menüsünden sure seçebilir, sayfa numarasıyla gidebilir ve ayraçlarınıza ulaşabilirsiniz. Yakınlaştırmak için iki parmak, tam ekran için çift dokunuş kullanın.'),
+          const Text('Bu baskıda Fatiha numarasızdır (0); basılı sayfa numaraları 1–604 arasındadır. Okuyucunun menüsünden sure seçebilir, sayfa numarasıyla gidebilir ve ayraçlarınıza ulaşabilirsiniz. Yakınlaştırmak için iki parmak, tam ekran için çift dokunuş kullanın.'),
         ] else if (store != null) ...[
-          Text('İndirilen sayfalar: ${store.downloaded.length} / 604'),
+          Text('Hazırlanan sayfalar: ${store.downloaded.length} / 605'),
           const SizedBox(height: 12),
-          LinearProgressIndicator(value: store.downloaded.length / 604),
+          LinearProgressIndicator(value: store.downloaded.length / 605),
           const SizedBox(height: 16),
           if (_downloading) OutlinedButton(onPressed: _pauseRequested ? null : () => setState(() => _pauseRequested = true),
             child: Text(_pauseRequested ? 'Mevcut sayfa tamamlanıyor…' : 'İndirmeyi duraklat'))

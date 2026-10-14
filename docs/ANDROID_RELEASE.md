@@ -1,67 +1,78 @@
 # Android development and release checks
 
-This version targets Android. No iOS distribution is prepared.
+Version 1.1.1+3 targets Android. No iOS distribution is prepared.
 
 ## Build on the existing Flutter workstation
 
 ```powershell
+git pull origin main
 flutter pub get
 flutter analyze
 flutter test
-flutter build apk --release
+flutter run --release -d R5CXB20Q1CD
 ```
 
-APK: `build/app/outputs/flutter-apk/app-release.apk`. The Gradle output
-directories have been aligned with Flutter to fix the earlier missing-APK error.
-This correction must be verified on the local Flutter workstation.
-Use the existing signing key to update an installed APK. Version: 1.1.0+2.
+For a standalone APK: `flutter build apk --release`.
+Output: `build/app/outputs/flutter-apk/app-release.apk`.
+Use the existing signing key to update an installed APK.
 
-## Mandatory device validation
+## Source and numbering
 
-- First launch shows information; acknowledgement survives restart.
-- Existing six Yasin assets still work without an internet connection.
-- Download starts only after explicit confirmation. Pause, restart and resume;
-  already validated pages are not downloaded again. Retry network and disk errors.
-- Verify all 604 pages actually download and can be decoded; check Fatiha, Bakara,
-  Yasin (440), page 439 and page 604 against the source mushaf.
-- Turn off internet and read downloaded pages. Check all 114 surah selections.
-- Invalid page input (empty, 0, 605) is rejected; 439 opens page 439.
-- Bookmarks and last page survive force-stop/relaunch. Update the existing APK.
-- Swipe in both directions, test slow swipes, zoom, rotation, first/last boundaries,
-  fast repeated taps, large font settings and reduced motion.
-- Check page curling visually on Galaxy S24+. Animations have not been device-tested.
-- Screen stays on in foreground and resumes normal timeout in background.
+The user supplied `content/kuran-bilgisayar-hatti.pdf` (24,129,254 bytes).
+Colophon: Diyanet İşleri Başkanlığı, Kur’an-ı Kerim (Rahle Boy), computer
+script by Süleyman Feyzullahoğlu, Ankara 2018. This is not a Diyanet-endorsed app.
+Original PDF SHA-256:
+`fa88e87198fa9cadee797cd3ac1d3d41e4c4c7776d97b4fee02c32e0a14cb0f7`.
 
-## Content provenance and remaining release gate
+The downloader retrieves this exact file from the immutable GitHub revision
+recorded in ReadingStorage.kt, using HTTPS and verifying its SHA-256 before
+opening it. Android PdfRenderer converts pages to PNG in private storage.
+No image/font substitutions are made. PDF has 616 physical pages:
+- PDF 1: blank; excluded.
+- PDF 2: unnumbered Fatiha, represented as page 0 in the app.
+- PDF 3–606: printed pages 1–604.
+- PDF 607–616: approval, prayers, index/colophon; excluded from the reader.
+- Yasin starts at printed page 439 (physical PDF 441).
 
-Images: `https://files.quran.app/hafs/madani/width_1024/page001.png` through
-`page604.png`. The legacy android.quran.com URL returned HTTP 301 to this HTTPS host, and
-the destination returned HTTP 200 image/png in the user's workstation check
-on 2026-10-14. The legacy URL construction is documented by Quran for Android's
-MadaniPageProvider and QuranFileUtils at upstream commit
-`a823af79a577d0d09db38681c4b6cfab4a5253a9`. The image generator identifies the underlying fonts and pages
-as belonging to King Fahd Quran Complex, separately from the generator's GPL
-code: https://github.com/quran/quran.com-images . No upstream application code
-is incorporated here. Surah names and page ranges are factual indexing metadata.
+All 114 surah starts were indexed from the PDF's surah banners, including
+the smaller Sad banner. The index is specific to this edition, not Madani.
+The supplied Yasin assets visually match physical PDF 441 onward.
 
-The page host is blocked in the cloud execution environment, so actual download
-availability, visual correctness and image distribution/use terms have NOT been
-verified here. Confirm applicable image usage terms with the content publisher
-before public distribution, or supply an appropriately licensed equivalent source.
-Do not describe this build as Play Store ready until these checks are complete.
+The previous Madani download and reading records are left in their separate
+private directory/preferences. They are not mixed with the new edition or
+silently mapped to different verses. This edition starts with its own saved
+page/bookmarks. Existing offline Yasin assets remain available until download.
+
+## Required local/device verification
+
+Flutter is unavailable in the cloud environment. Syntax parsing and PDF/index
+checks passed there; actual Flutter tests/build and device rendering remain
+required. Test:
+- First launch disclosure, explicit download confirmation, and relaunch.
+- Download the 24 MB PDF, verify progress through 605 prepared pages. Pause,
+  restart and resume without downloading the PDF again. Check disk/network errors.
+- Compare Fatiha, Bakara, Sad, Yasin 439, and final 604 against the PDF.
+- Read in airplane mode; search/select surahs and jump to 439.
+- Reject invalid input; allow 0 for Fatiha and 604 for the last page.
+- Bookmarks/last page survive force-stop and APK update.
+- Slowly drag a page at top/middle/bottom: fold tracks the finger. Short drags
+  return to the original page; completed turns save the target page.
+- Zoom, pinch, orientation, fast repeated gestures, and first/last boundaries.
+- Screen stays on in foreground; normal timeout resumes in background.
 
 ## Google Play preparation (not publication)
 
-- Run a release build and test the signed APK on a device first.
-- Preserve the production signing key; never commit it or its passwords.
-- Build an Android App Bundle: `flutter build appbundle --release`.
-- Verify the current Play target API policy and merged release manifest.
-- Publish a public privacy policy URL with developer identity/contact; match the
-  actual network, backup and local-storage behavior. The in-app screen alone is
-  not a substitute for the Play privacy policy and Data safety declaration.
-- Complete content rating, Data safety, store listing and any account-specific
-  testing requirements. No camera/location/contacts/storage runtime permissions
-  are requested. Internet is a normal manifest permission, not a runtime prompt.
-- This version has no analytics, ads or accounts. Download server receives network
-  connection information. Do not blindly select “no data collected” without
-  reviewing the provider and Play's definitions.
+Before public distribution, confirm the supplied PDF's applicable distribution
+terms with the publisher. The uploaded file itself is not evidence of a license.
+Use a signed tested APK first, then `flutter build appbundle --release`.
+Preserve the production signing key and keep credentials out of Git.
+Verify current Play target API policy, merged manifest and testing requirements.
+Publish a privacy policy URL with developer identity/contact and complete
+Data safety, content rating, store listing, and required account testing.
+The in-app information screen is not a replacement for these Play requirements.
+
+Only INTERNET is declared in the main manifest. No camera, microphone,
+location, contacts, notification or broad storage permission is requested.
+Reading state/pages remain in private storage; Android cloud backup is disabled.
+There are no analytics/ads/accounts. GitHub receives network connection
+information during downloads; privacy disclosures must describe this accurately.

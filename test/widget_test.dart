@@ -34,13 +34,13 @@ void main() {
 
   test('114 surahs cover every page and known boundaries', () {
     expect(surahs.length, 114);
-    expect(surahs[35].startPage, 440);
+    expect(surahs[35].startPage, 439);
     expect(surahs.last.endPage, 604);
-    for (var page = 1; page <= 604; page++) {
+    for (var page = 0; page <= 604; page++) {
       expect(surahsOnPage(page), isNotEmpty, reason: 'Page $page');
     }
-    expect(surahsOnPage(439).any((s) => s.number == 36), isFalse);
-    expect(surahsOnPage(440).any((s) => s.number == 36), isTrue);
+    expect(surahsOnPage(438).any((s) => s.number == 36), isFalse);
+    expect(surahsOnPage(439).any((s) => s.number == 36), isTrue);
   });
 
   test('last page and bookmark updates persist through a new store', () async {
@@ -70,6 +70,6 @@ void main() {
     expect(find.text('İndirmeyi başlat'), findsOneWidget);
     await tester.tap(find.text('İptal'));
     await tester.pumpAndSettle();
-    expect(find.text('İndirilen sayfalar: 0 / 604'), findsOneWidget);
+    expect(find.text('Hazırlanan sayfalar: 0 / 605'), findsOneWidget);
   });
 }

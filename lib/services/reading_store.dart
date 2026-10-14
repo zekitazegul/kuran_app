@@ -2,7 +2,8 @@ import 'package:flutter/services.dart';
 
 class ReadingStore {
   static const channel = MethodChannel('com.zekitazegul.kuranapp/reading');
-  static const pageCount = 604;
+  static const pageCount = 605;
+  static const lastNumberedPage = 604;
   final Set<int> bookmarks;
   final Set<int> downloaded;
   final String directory;
@@ -20,9 +21,9 @@ class ReadingStore {
     if (data == null) throw StateError('Okuma kayıtları yüklenemedi.');
     return ReadingStore(
       directory: data['directory'] as String,
-      lastPage: (data['lastPage'] as int).clamp(1, pageCount).toInt(),
+      lastPage: (data['lastPage'] as int).clamp(0, lastNumberedPage).toInt(),
       informationSeen: data['informationSeen'] == true,
-      bookmarks: Set<int>.from(data['bookmarks'] as List).where((p) => p >= 1 && p <= pageCount).toSet(),
+      bookmarks: Set<int>.from(data['bookmarks'] as List).where((p) => p >= 0 && p <= lastNumberedPage).toSet(),
       downloaded: Set<int>.from(data['downloaded'] as List),
     );
   }

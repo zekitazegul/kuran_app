@@ -23,12 +23,53 @@ class _QuranScreenState extends State<QuranScreen> with SingleTickerProviderStat
   Offset? _touchStart;
   int? _touchPointer;
   bool _multiTouch = false;
+  bool _dragging = false;
+  double _touchHeight = .85;
+  double _dragTilt = 0;
+  double _readerWidth = 1;
+  double _readerHeight = 1;
+
+  void _dragMove(PointerMoveEvent event) {
+    if (event.pointer != _touchPointer || _touchStart == null || _multiTouch ||
+        _preparing || _turn.isAnimating || _zoom.value.getMaxScaleOnAxis() > 1.01) return;
+    final delta = event.position - _touchStart!;
+    if (!_dragging) {
+      if (delta.dx.abs() < 8 || delta.dx.abs() <= delta.dy.abs()) return;
+      final target = _page + (delta.dx > 0 ? 1 : -1);
+      if (target < 0 || target > 604) return;
+      setState(() { _dragging = true; _target = target; });
+    }
+    final direction = _target! > _page ? 1 : -1;
+    final progress = (delta.dx * direction / (_readerWidth * 2.1)).clamp(0.0, .98).toDouble();
+    setState(() => _dragTilt = delta.dy / (1 - progress));
+    _turn.value = progress;
+  }
+
+  Future<void> _releaseDrag({required bool commit}) async {
+    if (!_dragging) return;
+    _dragging = false;
+    try {
+      if (commit) {
+        final target = _target!;
+        await _turn.forward().orCancel;
+        if (!mounted) return;
+        setState(() { _page = target; _target = null; });
+        _zoom.value = Matrix4.identity();
+        await _remember(target);
+      } else {
+        await _turn.reverse().orCancel;
+        if (mounted) setState(() => _target = null);
+      }
+    } on TickerCanceled {
+      // Reader closed while the paper was settling.
+    }
+  }
   late final AnimationController _turn;
 
   @override
   void initState() {
     super.initState();
-    _page = widget.initialPage.clamp(1, ReadingStore.pageCount).toInt();
+    _page = widget.initialPage.clamp(0, ReadingStore.lastNumberedPage).toInt();
     _turn = AnimationController(vsync: this, duration: const Duration(milliseconds: 650));
     _remember(_page);
   }
@@ -42,7 +83,7 @@ class _QuranScreenState extends State<QuranScreen> with SingleTickerProviderStat
   }
 
   Future<void> _go(int page, {bool animate = false}) async {
-    if (_target != null || _preparing || page < 1 || page > 604 || page == _page) return;
+    if (_target != null || _preparing || page < 0 || page > 604 || page == _page) return;
     _zoom.value = Matrix4.identity();
     if (!animate || MediaQuery.of(context).disableAnimations) {
       setState(() => _page = page);
@@ -54,7 +95,7 @@ class _QuranScreenState extends State<QuranScreen> with SingleTickerProviderStat
       await precacheImage(FileImage(File(widget.store.pagePath(page))), context,
         onError: (Object error, StackTrace? stack) => _error('Sayfa görüntüsü okunamadı.'));
       if (!mounted) return;
-      setState(() => _target = page);
+      setState(() { _target = page; _touchHeight = .85; _dragTilt = -_readerHeight * .08; });
       await _turn.forward(from: 0).orCancel;
       if (!mounted) return;
       setState(() { _page = page; _target = null; });
@@ -73,10 +114,10 @@ class _QuranScreenState extends State<QuranScreen> with SingleTickerProviderStat
         controller: controller, autofocus: true,
         keyboardType: TextInputType.number,
         inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-        decoration: const InputDecoration(labelText: 'Sayfa numarası (1–604)'),
+        decoration: const InputDecoration(labelText: 'Sayfa numarası (0–604; 0 = Fatiha)'),
         validator: (value) {
           final n = int.tryParse(value ?? '');
-          return n == null || n < 1 || n > 604 ? '1 ile 604 arasında bir sayı yazın.' : null;
+          return n == null || n < 0 || n > 604 ? '0 ile 604 arasında bir sayı yazın.' : null;
         },
         onFieldSubmitted: (_) { if (form.currentState!.validate()) Navigator.pop(context, int.parse(controller.text)); },
       )),
@@ -152,26 +193,39 @@ class _QuranScreenState extends State<QuranScreen> with SingleTickerProviderStat
           onDoubleTap: _toggleFullscreen,
           child: Listener(
             onPointerDown: (event) {
-              if (_touchPointer != null) { _multiTouch = true; return; }
+              if (_touchPointer != null) {
+                _multiTouch = true;
+                _releaseDrag(commit: false);
+                return;
+              }
+              if (_turn.isAnimating || _preparing || _target != null) return;
               _touchPointer = event.pointer;
               _touchStart = event.position;
+              _touchHeight = (event.localPosition.dy / _readerHeight).clamp(0.0, 1.0).toDouble();
               _multiTouch = false;
             },
+            onPointerMove: _dragMove,
             onPointerUp: (event) {
               if (event.pointer != _touchPointer) return;
               final delta = event.position - (_touchStart ?? event.position);
-              if (!_multiTouch && _zoom.value.getMaxScaleOnAxis() <= 1.01 &&
-                  delta.dx.abs() > 70 && delta.dx.abs() > delta.dy.abs()) {
-                _go(_page + (delta.dx > 0 ? 1 : -1), animate: true);
+              if (_dragging) {
+                _releaseDrag(commit: !_multiTouch && delta.dx.abs() >= 70 &&
+                  _turn.value > 0.01);
               }
               _touchPointer = null;
               _touchStart = null;
             },
-            onPointerCancel: (_) { _touchPointer = null; _touchStart = null; },
+            onPointerCancel: (_) {
+              _releaseDrag(commit: false);
+              _touchPointer = null; _touchStart = null;
+            },
             child: LayoutBuilder(builder: (context, constraints) {
+            _readerWidth = constraints.maxWidth;
+            _readerHeight = constraints.maxHeight;
             final child = _target == null ? _image(_page) : PageTurn(
               image: FileImage(File(widget.store.pagePath(_page))), animation: _turn,
-              toRight: _target! > _page, underneath: _image(_target!));
+              toRight: _target! > _page, underneath: _image(_target!),
+              touchHeight: _touchHeight, dragTilt: _dragTilt);
             return InteractiveViewer(transformationController: _zoom, minScale: 1, maxScale: 4,
               panEnabled: _target == null,
               child: SizedBox(width: constraints.maxWidth, height: constraints.maxHeight, child: child));
@@ -183,7 +237,7 @@ class _QuranScreenState extends State<QuranScreen> with SingleTickerProviderStat
             TextButton(onPressed: _jump, child: Text('$_page / 604')),
             IconButton(tooltip: widget.store.bookmarks.contains(_page) ? 'Ayracı kaldır' : 'Ayraç ekle',
               onPressed: busy || _bookmarkSaving ? null : _toggleBookmark, icon: Icon(widget.store.bookmarks.contains(_page) ? Icons.bookmark : Icons.bookmark_border)),
-            IconButton(tooltip: 'Önceki sayfa', onPressed: busy || _page == 1 ? null : () => _go(_page - 1, animate: true), icon: const Icon(Icons.chevron_right)),
+            IconButton(tooltip: 'Önceki sayfa', onPressed: busy || _page == 0 ? null : () => _go(_page - 1, animate: true), icon: const Icon(Icons.chevron_right)),
           ])),
       ])),
     );
