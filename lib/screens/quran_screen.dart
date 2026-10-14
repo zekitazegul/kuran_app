@@ -1,7 +1,6 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter/scheduler.dart' show TickerCanceled;
 import '../data/surahs.dart';
 import '../services/reading_store.dart';
 import '../widgets/page_turn.dart';
