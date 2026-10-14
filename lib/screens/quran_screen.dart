@@ -153,7 +153,7 @@ class _QuranScreenState extends State<QuranScreen> with SingleTickerProviderStat
       await _remember(page);
       return;
     }
-    _preparing = true;
+    setState(() => _preparing = true);
     try {
       await precacheImage(FileImage(File(widget.store.pagePath(page))), context,
         onError: (Object error, StackTrace? stack) => _error('Sayfa görüntüsü okunamadı.'));
@@ -165,7 +165,9 @@ class _QuranScreenState extends State<QuranScreen> with SingleTickerProviderStat
       await _remember(page);
     } on TickerCanceled {
       // The reader was closed during a page turn.
-    } finally { _preparing = false; }
+    } finally {
+      if (mounted) setState(() => _preparing = false);
+    }
   }
 
   Future<void> _jump() async {
@@ -361,11 +363,11 @@ class _QuranScreenState extends State<QuranScreen> with SingleTickerProviderStat
         )),
         if (!_fullscreen) Padding(padding: EdgeInsets.symmetric(horizontal: 8), child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceEvenly, children: [
-            IconButton(tooltip: context.t('Sonraki sayfa'), onPressed: busy || _page == widget.store.edition.lastPage ? null : () => _go(_page + 1, animate: true), icon: Icon(Icons.chevron_left)),
+            IconButton(tooltip: context.t('Sonraki sayfa'), onPressed: busy || _page == widget.store.edition.lastPage ? null : () => _go(_page + 1), icon: Icon(Icons.chevron_left)),
             TextButton(onPressed: _jump, child: Text('$_page / ${widget.store.edition.lastPage}')),
             IconButton(tooltip: widget.store.bookmarks.contains(_page) ? context.t('Ayracı kaldır') : context.t('Ayraç ekle'),
               onPressed: busy || _bookmarkSaving ? null : _toggleBookmark, icon: Icon(widget.store.bookmarks.contains(_page) ? Icons.bookmark : Icons.bookmark_border)),
-            IconButton(tooltip: context.t('Önceki sayfa'), onPressed: busy || _page == widget.store.edition.firstPage ? null : () => _go(_page - 1, animate: true), icon: Icon(Icons.chevron_right)),
+            IconButton(tooltip: context.t('Önceki sayfa'), onPressed: busy || _page == widget.store.edition.firstPage ? null : () => _go(_page - 1), icon: Icon(Icons.chevron_right)),
           ])),
       ])),
     );
