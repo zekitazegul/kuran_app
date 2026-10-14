@@ -1,6 +1,7 @@
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'page_fold.dart';
+import 'reading_page.dart';
 
 /// Interactive paper fold with a moving crease and a shaded reverse side.
 class PageTurn extends StatefulWidget {
@@ -10,9 +11,10 @@ class PageTurn extends StatefulWidget {
   final Widget underneath;
   final double touchHeight;
   final double dragTilt;
+  final Rect? crop;
   const PageTurn({super.key, required this.image, required this.animation,
     required this.toRight, required this.underneath,
-    this.touchHeight = 0.85, this.dragTilt = 0});
+    this.touchHeight = 0.85, this.dragTilt = 0, this.crop});
 
   @override
   State<PageTurn> createState() => _PageTurnState();
@@ -58,7 +60,7 @@ class _PageTurnState extends State<PageTurn> {
     AnimatedBuilder(animation: widget.animation, builder: (context, _) {
       if (_image == null) return const SizedBox.shrink();
       return CustomPaint(painter: _CurlPainter(_image!,
-        widget.animation.value, widget.toRight, widget.touchHeight, widget.dragTilt));
+        widget.animation.value, widget.toRight, widget.touchHeight, widget.dragTilt, widget.crop));
     }),
   ]);
 }
@@ -69,7 +71,8 @@ class _CurlPainter extends CustomPainter {
   final bool toRight;
   final double touchHeight;
   final double dragTilt;
-  _CurlPainter(this.image, this.progress, this.toRight, this.touchHeight, this.dragTilt);
+  final Rect? crop;
+  _CurlPainter(this.image, this.progress, this.toRight, this.touchHeight, this.dragTilt, this.crop);
 
   Path _path(List<Offset> points) {
     final path = Path();
@@ -82,10 +85,9 @@ class _CurlPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     if (progress >= 1) return;
-    final fitted = applyBoxFit(BoxFit.contain,
-      Size(image.width.toDouble(), image.height.toDouble()), size);
+    final source = sourceRect(image, crop);
+    final fitted = applyBoxFit(BoxFit.contain, source.size, size);
     final page = Alignment.center.inscribe(fitted.destination, Offset.zero & size);
-    final source = Rect.fromLTWH(0, 0, image.width.toDouble(), image.height.toDouble());
     if (progress <= 0.001) {
       canvas.drawImageRect(image, source, page, Paint()..filterQuality = FilterQuality.high);
       return;
@@ -138,5 +140,5 @@ class _CurlPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(_CurlPainter old) => old.image != image || old.progress != progress ||
-    old.toRight != toRight || old.touchHeight != touchHeight || old.dragTilt != dragTilt;
+    old.toRight != toRight || old.touchHeight != touchHeight || old.dragTilt != dragTilt || old.crop != crop;
 }

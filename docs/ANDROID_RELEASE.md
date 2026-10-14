@@ -1,6 +1,6 @@
 # Android development and release checks
 
-Version 1.1.1+3 targets Android. No iOS distribution is prepared.
+Version 1.1.2+4 targets Android. No iOS distribution is prepared.
 
 ## Build on the existing Flutter workstation
 
@@ -57,6 +57,12 @@ required. Test:
 - Bookmarks/last page survive force-stop and APK update.
 - Slowly drag a page at top/middle/bottom: fold tracks the finger. Short drags
   return to the original page; completed turns save the target page.
+- Tap left 40% for next page, right 40% for previous; central 20% toggles
+  borderless reading. Verify no turn after a pinch or vertical pan, and check
+  first/last boundaries. Existing downloaded images are kept unchanged.
+- In borderless mode inspect all verse edges, including special Fatiha/Bakara
+  title pages. Frames and outer headings/numbers should be absent. Wide screens
+  allow vertical panning to avoid cutting off verses. Tap center to restore UI.
 - Zoom, pinch, orientation, fast repeated gestures, and first/last boundaries.
 - Screen stays on in foreground; normal timeout resumes in background.
 

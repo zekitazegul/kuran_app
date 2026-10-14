@@ -1,9 +1,11 @@
 import 'dart:io';
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../data/surahs.dart';
 import '../services/reading_store.dart';
 import '../widgets/page_turn.dart';
+import '../widgets/reading_page.dart';
 
 class QuranScreen extends StatefulWidget {
   final ReadingStore store;
@@ -159,6 +161,8 @@ class _QuranScreenState extends State<QuranScreen> with SingleTickerProviderStat
   }
 
   void _toggleFullscreen() {
+    if (_target != null || _preparing) return;
+    _zoom.value = Matrix4.identity();
     setState(() => _fullscreen = !_fullscreen);
     SystemChrome.setEnabledSystemUIMode(_fullscreen ? SystemUiMode.immersiveSticky : SystemUiMode.edgeToEdge);
   }
@@ -171,9 +175,20 @@ class _QuranScreenState extends State<QuranScreen> with SingleTickerProviderStat
     super.dispose();
   }
 
-  Widget _image(int page) => Image.file(File(widget.store.pagePath(page)), fit: BoxFit.contain,
-    filterQuality: FilterQuality.high,
-    errorBuilder: (_, error, stack) => const Center(child: Text('Sayfa okunamadı. Ana ekrandan indirmeyi tekrar kontrol edin.')));
+  Widget _image(int page) => ReadingPage(
+    image: FileImage(File(widget.store.pagePath(page))),
+    crop: _fullscreen ? normalizedReadingCrop(page) : null,
+  );
+
+  void _tapPage(TapUpDetails details) {
+    if (_target != null || _preparing) return;
+    final fraction = details.localPosition.dx / _readerWidth;
+    if (fraction >= .4 && fraction <= .6) {
+      _toggleFullscreen();
+    } else if (_zoom.value.getMaxScaleOnAxis() <= 1.01) {
+      _go(_page + (fraction < .4 ? 1 : -1), animate: true);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -190,7 +205,8 @@ class _QuranScreenState extends State<QuranScreen> with SingleTickerProviderStat
             PopupMenuItem(value: 'full', child: Text('Tam ekran'))])]),
       body: SafeArea(top: !_fullscreen, bottom: !_fullscreen, child: Column(children: [
         Expanded(child: GestureDetector(
-          onDoubleTap: _toggleFullscreen,
+          behavior: HitTestBehavior.opaque,
+          onTapUp: _tapPage,
           child: Listener(
             onPointerDown: (event) {
               if (_touchPointer != null) {
@@ -222,13 +238,19 @@ class _QuranScreenState extends State<QuranScreen> with SingleTickerProviderStat
             child: LayoutBuilder(builder: (context, constraints) {
             _readerWidth = constraints.maxWidth;
             _readerHeight = constraints.maxHeight;
+            final crop = readingCrop(_page);
+            final sheetHeight = _fullscreen
+                ? math.max(constraints.maxHeight, constraints.maxWidth * crop.height / crop.width)
+                : constraints.maxHeight;
             final child = _target == null ? _image(_page) : PageTurn(
               image: FileImage(File(widget.store.pagePath(_page))), animation: _turn,
               toRight: _target! > _page, underneath: _image(_target!),
-              touchHeight: _touchHeight, dragTilt: _dragTilt);
+              touchHeight: _touchHeight * constraints.maxHeight / sheetHeight, dragTilt: _dragTilt,
+              crop: _fullscreen ? normalizedReadingCrop(_page) : null);
             return InteractiveViewer(transformationController: _zoom, minScale: 1, maxScale: 4,
+              constrained: false, alignment: Alignment.topCenter,
               panEnabled: _target == null,
-              child: SizedBox(width: constraints.maxWidth, height: constraints.maxHeight, child: child));
+              child: SizedBox(width: constraints.maxWidth, height: sheetHeight, child: child));
           })),
         )),
         if (!_fullscreen) Padding(padding: const EdgeInsets.symmetric(horizontal: 8), child: Row(
