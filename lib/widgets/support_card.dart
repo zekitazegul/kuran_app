@@ -4,11 +4,11 @@ import '../services/reading_store.dart';
 
 class SupportCard extends StatelessWidget {
   const SupportCard({super.key});
-  static const url = String.fromEnvironment('SUPPORT_URL', defaultValue: 'https://ko-fi.com/zetasoft');
+  static const url = String.fromEnvironment('SUPPORT_URL', defaultValue: 'https://zekitazegul.github.io/support/');
   bool get available {
     final uri = Uri.tryParse(url);
     return uri != null && uri.scheme == 'https' &&
-      ['buymeacoffee.com', 'www.buymeacoffee.com', 'ko-fi.com', 'www.ko-fi.com'].contains(uri.host);
+      ['buymeacoffee.com', 'www.buymeacoffee.com', 'ko-fi.com', 'www.ko-fi.com', 'zekitazegul.github.io'].contains(uri.host);
   }
   @override
   Widget build(BuildContext context) => Card(child: ListTile(leading: Icon(Icons.local_cafe_outlined),
@@ -25,7 +25,12 @@ class SupportCard extends StatelessWidget {
               FilledButton(onPressed: () => Navigator.pop(context, true), child: Text(context.t('Devam et')))],
           ));
           if (confirmed != true) return;
-          try { await ReadingStore.channel.invokeMethod<void>('openSupport', {'url': url}); }
+          if (!context.mounted) return;
+          final uri = Uri.parse(url);
+          final destination = uri.host == 'zekitazegul.github.io'
+            ? uri.replace(queryParameters: {...uri.queryParameters, 'lang': context.language}).toString()
+            : url;
+          try { await ReadingStore.channel.invokeMethod<void>('openSupport', {'url': destination}); }
           catch (_) { if (context.mounted) {
             ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(context.t('Destek bağlantısı açılamadı.'))));
           } }

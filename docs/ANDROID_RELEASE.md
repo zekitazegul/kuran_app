@@ -134,8 +134,8 @@ bookmark and save a page, then switch back. Computer downloads/bookmarks must
 remain unchanged. Repeat after relaunch; check Settings from both Home/reader.
 The Flutter SDK is absent in the cloud, so these tests are not claimed passed.
 
-Optional support: default builds use the developer-provided Ko-fi profile
-https://ko-fi.com/zetasoft. Override it with another owned HTTPS profile using
+Optional support: default builds use the developer-owned support page
+https://zekitazegul.github.io/support/. Override it with another owned HTTPS profile using
 `--dart-define=SUPPORT_URL=https://...` on the Flutter build/run command.
 Native code validates HTTPS and an exact provider hostname; opening the browser
 requires an explicit confirmation. There is no payment SDK, paid feature or
@@ -186,6 +186,11 @@ produced by the same pinned Flutter toolchain when it is refreshed locally.
 
 ### Developer support link
 
-The optional coffee support card defaults to https://ko-fi.com/zetasoft in both
+The optional coffee support card defaults to https://zekitazegul.github.io/support/ in both
 About and Settings. It opens externally after confirmation. No payment details
 are handled by the app. `SUPPORT_URL` remains an optional build-time override.
+
+The support page currently links to the developer-provided Tikkie request valid
+through 27 October 2026 (Europe/Amsterdam). Its button is hidden after that date.
+Renew the link and expiry in the website repository `support/index.html`; an app
+update is not needed. Verify amount/recipient and bank handoff on a real device.

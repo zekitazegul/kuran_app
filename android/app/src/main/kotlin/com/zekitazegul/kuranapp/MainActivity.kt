@@ -19,7 +19,8 @@ class MainActivity : FlutterActivity() {
                 try {
                     val uri = Uri.parse(requireNotNull(call.argument<String>("url")))
                     require(uri.scheme == "https" && uri.host in setOf(
-                        "buymeacoffee.com", "www.buymeacoffee.com", "ko-fi.com", "www.ko-fi.com"
+                        "buymeacoffee.com", "www.buymeacoffee.com", "ko-fi.com", "www.ko-fi.com",
+                        "zekitazegul.github.io"
                     )) { "Destek bağlantısı geçerli değil." }
                     startActivity(Intent(Intent.ACTION_VIEW, uri))
                     result.success(null)
