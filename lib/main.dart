@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'widgets/support_card.dart';
 import 'screens/about_screen.dart';
 import 'l10n/translations.dart';
@@ -57,6 +58,8 @@ class _HomeScreenState extends State<HomeScreen> {
   bool _downloading = false;
   bool _pauseRequested = false;
   bool _cancelRequested = false;
+  bool _returningToReading = false;
+  Completer<void>? _downloadStopped;
 
   @override
   void initState() { super.initState(); _load(); }
@@ -80,6 +83,7 @@ class _HomeScreenState extends State<HomeScreen> {
         FilledButton(onPressed: () => Navigator.pop(context, true), child: Text(context.t('İndirmeyi başlat')))],
     ));
     if (confirmed != true || !mounted) return;
+    _downloadStopped = Completer<void>();
     setState(() { _downloading = true; _pauseRequested = false; _cancelRequested = false; _error = null; _downloadError = false; });
     ReadingStore.channel.setMethodCallHandler((call) async {
       if (call.method != 'downloadProgress' || !mounted) return;
@@ -102,6 +106,8 @@ class _HomeScreenState extends State<HomeScreen> {
     } finally {
       ReadingStore.channel.setMethodCallHandler(null);
       if (mounted) setState(() => _downloading = false);
+      _downloadStopped?.complete();
+      _downloadStopped = null;
     }
   }
 
@@ -114,6 +120,27 @@ class _HomeScreenState extends State<HomeScreen> {
     ));
     if (confirmed != true || !mounted || !_downloading) return;
     setState(() { _cancelRequested = true; _pauseRequested = true; });
+  }
+
+  Future<void> _returnToReading({bool exitIfUnavailable = false}) async {
+    final store = _store;
+    if (store == null || _returningToReading) return;
+    setState(() { _returningToReading = true; _pauseRequested = true; });
+    try {
+      await _downloadStopped?.future;
+      if (!mounted) return;
+      if (store.ready || await store.restoreDownloadedEdition()) {
+        if (mounted) setState(() { _error = null; _downloadError = false; _cancelRequested = false; });
+      } else if (mounted) {
+        if (exitIfUnavailable) {
+          await SystemNavigator.pop();
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(context.t('Henüz tamamen indirilmiş bir hat yok.'))));
+        }
+      }
+    } catch (_) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(context.t('İndirilen hatta dönülemedi. Tekrar dene.'))));
+    } finally { if (mounted) setState(() => _returningToReading = false); }
   }
 
   void _about() {
@@ -146,13 +173,21 @@ class _HomeScreenState extends State<HomeScreen> {
         if (mounted) setState(() {});
       });
     }
-    return Scaffold(
-      appBar: AppBar(leading: Padding(padding: EdgeInsets.all(6),
+    return PopScope(
+      canPop: store == null || store.ready,
+      onPopInvokedWithResult: (didPop, result) {
+        if (!didPop) _returnToReading(exitIfUnavailable: true);
+      },
+      child: Scaffold(
+      appBar: AppBar(leading: store != null && !store.ready
+        ? IconButton(tooltip: context.t('Ana sayfaya dön'), icon: const Icon(Icons.arrow_back),
+            onPressed: _returningToReading ? null : () => _returnToReading())
+        : Padding(padding: EdgeInsets.all(6),
         child: InkWell(onTap: _about, child: Tooltip(message: context.t('Uygulama hakkında'),
           child: const QuranArtwork(size: 44, decorative: true)))),
         titleSpacing: 0, title: Text('KuranApp', style: TextStyle(fontWeight: FontWeight.w700)),
         actions: [IconButton(tooltip: context.t('Ayarlar'), icon: Icon(Icons.tune_rounded),
-          onPressed: store == null || _downloading ? null : () async {
+          onPressed: store == null || _downloading || _returningToReading ? null : () async {
             await Navigator.push(context, MaterialPageRoute<void>(builder: (_) => SettingsScreen(store: store)));
             if (mounted) setState(() {});
           }), LanguageSelector()]),
@@ -255,7 +290,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     child: Text(context.t('İndirmeyi iptal et'))),
                 ] else ...[
                   if (_cancelRequested) Text(context.t('İndirme iptal edildi. İndirilen sayfalar korundu.')),
-                  FilledButton.icon(onPressed: _download, icon: const Icon(Icons.download_rounded),
+                  FilledButton.icon(onPressed: _returningToReading ? null : _download, icon: const Icon(Icons.download_rounded),
                     label: Text(context.t(store.downloadedBytes == 0 && store.downloaded.isEmpty
                       ? 'İndirmeyi başlat' : 'İndirmeye devam et'))),
                 ],
@@ -263,7 +298,7 @@ class _HomeScreenState extends State<HomeScreen> {
           ],
           SizedBox(height: 24),
         ]))),
-    );
+    ));
   }
 }
 

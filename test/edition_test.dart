@@ -1,12 +1,51 @@
 import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/services.dart';
+import 'package:flutter/material.dart';
+import 'package:kuran_app/main.dart';
+import 'package:kuran_app/services/app_language.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kuran_app/data/quran_edition.dart';
 import 'package:kuran_app/services/reading_store.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
+
+  testWidgets('back from incomplete Husrev download restores installed edition and reading position', (tester) async {
+    final entries = jsonDecode(File('assets/editions.json').readAsStringSync()) as List;
+    var selected = 'husrev';
+    AppLanguage.instance.value = const Locale('tr');
+    final messenger = TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger;
+    messenger.setMockMethodCallHandler(ReadingStore.channel, (call) async {
+      switch (call.method) {
+        case 'findDownloadedEdition': return 'computer';
+        case 'selectEdition': selected = (call.arguments as Map)['id'] as String; return null;
+        case 'load': return {
+          'edition': entries.firstWhere((e) => (e as Map)['id'] == selected),
+          'editions': entries, 'directory': '/test/$selected',
+          'lastPage': selected == 'computer' ? 439 : 0,
+          'bookmarks': selected == 'computer' ? [439] : <int>[],
+          'downloaded': selected == 'computer' ? List<int>.generate(605, (i) => i) : [0, 1],
+          'informationSeen': true, 'guideSeen': true, 'pageAnimations': true,
+        };
+        default: throw PlatformException(code: 'UNEXPECTED_METHOD');
+      }
+    });
+    try {
+      await tester.pumpWidget(const KuranApp());
+      await tester.pumpAndSettle();
+      expect(find.text('Hüsrev hattını indir'), findsOneWidget);
+      await tester.binding.handlePopRoute();
+      await tester.pumpAndSettle();
+      expect(selected, 'computer');
+      expect(find.text('Okumaya devam et'), findsOneWidget);
+      expect(find.textContaining('439'), findsWidgets);
+      expect(find.text('Hüsrev hattını indir'), findsNothing);
+      await tester.pumpWidget(const SizedBox());
+    } finally {
+      messenger.setMockMethodCallHandler(ReadingStore.channel, null);
+    }
+  });
 
   test('each edition has an independent complete index and valid crop bounds', () async {
     final entries = jsonDecode(await File('assets/editions.json').readAsString()) as List;

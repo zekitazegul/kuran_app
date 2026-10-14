@@ -90,6 +90,13 @@ class ReadingStore {
 
   bool get sourceDownloaded => downloadedBytes >= edition.downloadBytes;
 
+  Future<bool> restoreDownloadedEdition() async {
+    final id = await channel.invokeMethod<String>('findDownloadedEdition');
+    if (id == null) return false;
+    await selectEdition(id);
+    return ready;
+  }
+
   Future<void> removeDownload() async {
     await channel.invokeMethod<void>('removeDownload', {'edition': edition.id});
     downloaded.clear();

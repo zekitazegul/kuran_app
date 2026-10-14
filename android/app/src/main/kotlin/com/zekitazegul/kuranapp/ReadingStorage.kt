@@ -73,8 +73,18 @@ class ReadingStorage(private val context: Context, requestedEdition: String? = n
         "downloaded" to (firstPage..lastPage).filter { validImage(pageFile(it)) }
     )
 
+    fun findDownloadedEdition(): String? {
+        val lastRead = global.getString("lastReadingEdition", null)
+        val ids = (0 until catalog.length()).map { catalog.getJSONObject(it).getString("id") }
+        return (listOfNotNull(lastRead) + ids).distinct().firstOrNull { id ->
+            val candidate = ReadingStorage(context, id)
+            (candidate.firstPage..candidate.lastPage).all { candidate.validImage(candidate.pageFile(it)) }
+        }
+    }
+
     fun savePage(page: Int) {
         require(page in firstPage..lastPage)
+        check(global.edit().putString("lastReadingEdition", edition.getString("id")).commit())
         check(preferences.edit().putInt("lastPage", page).commit()) { "Okuma kaydı yazılamadı." }
     }
 

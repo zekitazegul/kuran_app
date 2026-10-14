@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import '../services/app_language.dart';
 
 const translations = <String, Map<String, String>>{
+  'Ana sayfaya dön': {'en': 'Back to home', 'nl': 'Terug naar start'},
+  'Henüz tamamen indirilmiş bir hat yok.': {'en': 'No edition has been fully downloaded yet.', 'nl': 'Er is nog geen uitgave volledig gedownload.'},
+  'İndirilen hatta dönülemedi. Tekrar dene.': {'en': 'Could not return to the downloaded edition. Try again.', 'nl': 'Terugkeren naar de gedownloade uitgave is mislukt. Probeer het opnieuw.'},
   "Kaynaklar ve telif bilgileri": {"tr": "Kaynaklar ve telif bilgileri", "en": "Sources and copyright", "nl": "Bronnen en auteursrechten"},
   "Reklamsız ve ücretsiz": {"tr": "Reklamsız ve ücretsiz", "en": "Free and without ads", "nl": "Gratis en zonder advertenties"},
   "sourcesIntroduction": {"tr": "KuranApp, aşağıdaki PDF baskılarından alınan sayfa görsellerini ve ön izleme kesitlerini kullanır. Bu baskıların hat, tezhip, tasarım ve yayın hakları üzerinde sahiplik iddia etmiyoruz.", "en": "KuranApp uses page images and preview excerpts from the PDF editions listed below. We do not claim ownership of their calligraphy, ornamentation, design or publication rights.", "nl": "KuranApp gebruikt pagina-afbeeldingen en voorbeelden uit de onderstaande PDF-uitgaven. Wij claimen geen eigendom van de kalligrafie, versiering, vormgeving of publicatierechten."},
