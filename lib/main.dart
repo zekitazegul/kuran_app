@@ -1,3 +1,4 @@
+import 'widgets/support_card.dart';
 import 'screens/about_screen.dart';
 import 'l10n/translations.dart';
 import 'package:flutter/material.dart';
@@ -186,7 +187,7 @@ class _HomeScreenState extends State<HomeScreen> {
               final width = (constraints.maxWidth - 12) / 2;
               return Wrap(spacing: 12, runSpacing: 12, children: [
                 _QuickAction(width: width, icon: Icons.format_list_numbered_rounded,
-                  title: context.t('Sure / Cüz'), subtitle: context.t('{count} sure', {'count': store.edition.surahIndex.length}), onTap: () => _read(store.lastPage, panel: 'surah')),
+                  title: context.t('Bul ve oku'), subtitle: context.t('Sure · Cüz · Sayfa'), onTap: () => _read(store.lastPage, panel: 'surah')),
                 _QuickAction(width: width, icon: Icons.bookmarks_outlined,
                   title: context.t('Ayraçlarım'), subtitle: context.t('{count} kayıt', {'count': store.bookmarks.length}), onTap: () => _read(store.lastPage, panel: 'bookmarks')),
                 _QuickAction(width: width, icon: Icons.menu_book_outlined,
@@ -196,8 +197,7 @@ class _HomeScreenState extends State<HomeScreen> {
               ]);
             }),
             SizedBox(height: 20),
-            Card(child: ListTile(leading: Icon(Icons.numbers_rounded), title: Text(context.t('Sayfaya git')),
-              trailing: Icon(Icons.arrow_forward_rounded, size: 20), onTap: () => _read(store.lastPage, panel: 'jump'))),
+            const SupportCard(gentle: true),
           ] else if (store != null) ...[
             Card(child: Padding(padding: EdgeInsets.all(22), child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch, children: [

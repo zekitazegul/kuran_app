@@ -195,7 +195,7 @@ class _QuranScreenState extends State<QuranScreen> with SingleTickerProviderStat
 
   Future<void> _selectSurah() async {
     final selected = await showModalBottomSheet<int>(context: context, isScrollControlled: true,
-      builder: (context) => _SurahPicker(items: widget.store.edition.surahIndex));
+      builder: (context) => _SurahPicker(items: widget.store.edition.surahIndex, firstPage: widget.store.edition.firstPage, lastPage: widget.store.edition.lastPage));
     if (selected != null && mounted) await _go(selected);
   }
 
@@ -374,46 +374,80 @@ class _QuranScreenState extends State<QuranScreen> with SingleTickerProviderStat
 
 class _SurahPicker extends StatefulWidget {
   final List<Surah> items;
-  const _SurahPicker({required this.items});
+  final int firstPage;
+  final int lastPage;
+  const _SurahPicker({required this.items, required this.firstPage, required this.lastPage});
   @override
   State<_SurahPicker> createState() => _SurahPickerState();
 }
 class _SurahPickerState extends State<_SurahPicker> {
+  final _search = TextEditingController();
   String query = '';
-  bool showJuz = false;
+  int mode = 0;
+  @override
+  void dispose() { _search.dispose(); super.dispose(); }
+
   @override
   Widget build(BuildContext context) {
-    final normalized = normalizeSurahName(query);
-    final juzQuery = RegExp(r'^(cuz|juz|djoez)([0-9]*)$').firstMatch(normalized);
-    final juzMode = showJuz || juzQuery != null;
-    final number = juzQuery?.group(2) ?? normalized;
-    final juzNumbers = List.generate(30, (i) => i + 1)
-      .where((n) => number.isEmpty || n.toString() == number).toList();
-    final filtered = widget.items.where((s) => matchesSurah(s, query)).toList();
-    return SafeArea(child: SizedBox(height: MediaQuery.sizeOf(context).height * .8,
+    final normalized = normalizeSurahName(query).replace('.', '');
+    final juzMatch = RegExp(r'^(?:cuz|juz|djoez)([0-9]*)$').firstMatch(normalized)
+      ?? RegExp(r'^([0-9]+)(?:cuz|juz|djoez)$').firstMatch(normalized);
+    final pageMatch = RegExp(r'^(?:sayfa|page|pagina|s)([0-9]+)$').firstMatch(normalized);
+    final digits = juzMatch?.group(1) ?? pageMatch?.group(1) ?? normalized;
+    final number = int.tryParse(digits);
+    final onlyJuz = juzMatch != null;
+    final onlyPage = pageMatch != null;
+    final includeSurahs = (mode == 0 || mode == 1) && !onlyJuz && !onlyPage;
+    final includeJuz = (mode == 0 || mode == 2 || onlyJuz) && !onlyPage;
+    final includePages = (mode == 0 || mode == 3 || onlyPage) && !onlyJuz;
+    final filtered = includeSurahs ? widget.items.where((s) => matchesSurah(s, query)).toList() : <Surah>[];
+    final juzNumbers = includeJuz ? List.generate(30, (i) => i + 1)
+      .where((n) => digits.isEmpty || number == n).toList() : <int>[];
+    final pages = includePages && number != null && number >= widget.firstPage && number <= widget.lastPage
+      ? <int>[number] : <int>[];
+    final count = pages.length + filtered.length + juzNumbers.length;
+    return SafeArea(child: Padding(
+      padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(context).bottom),
+      child: SizedBox(height: MediaQuery.sizeOf(context).height * .8,
       child: Column(children: [
-        Padding(padding: const EdgeInsets.only(top: 12), child: Wrap(spacing: 8, children: [
-          ChoiceChip(label: Text(context.t('Sureler')), selected: !juzMode,
-            onSelected: (_) => setState(() { showJuz = false; query = ''; })),
-          ChoiceChip(label: Text(context.t('Cüzler')), selected: juzMode,
-            onSelected: (_) => setState(() { showJuz = true; query = ''; })),
+        Padding(padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+          child: Text(context.t('Bul ve oku'), style: Theme.of(context).textTheme.titleLarge)),
+        Padding(padding: const EdgeInsets.only(top: 12), child: Wrap(spacing: 6, children: [
+          for (final entry in const {0: 'Tümü', 1: 'Sureler', 2: 'Cüzler', 3: 'Sayfa'}.entries)
+            ChoiceChip(label: Text(context.t(entry.value)), selected: mode == entry.key,
+              onSelected: (_) => setState(() { mode = entry.key; })),
         ])),
-        Padding(padding: EdgeInsets.all(16), child: TextField(
-        key: ValueKey(showJuz),
-        decoration: InputDecoration(labelText: context.t('Sure veya cüz ara'), prefixIcon: Icon(Icons.search)),
-        onChanged: (v) => setState(() => query = v))),
-        Expanded(child: ListView.builder(itemCount: juzMode ? juzNumbers.length : filtered.length, itemBuilder: (_, i) {
-          if (juzMode) {
-            final juz = juzNumbers[i];
-            final page = juz == 1 ? 0 : (juz - 1) * 20 + 1;
-            return ListTile(title: Text(context.t('Cüz {number}', {'number': juz})),
-              trailing: Text(context.t('s. {page}', {'page': page})),
-              onTap: () => Navigator.pop(context, page));
+        Padding(padding: const EdgeInsets.all(16), child: TextField(
+          controller: _search,
+          decoration: InputDecoration(labelText: context.t('Sure adı, cüz veya sayfa numarası'),
+            hintText: context.t('Örn. Ali imran, cüz 3, 439'), prefixIcon: const Icon(Icons.search),
+            suffixIcon: query.isEmpty ? null : IconButton(tooltip: context.t('Aramayı temizle'),
+              icon: const Icon(Icons.close), onPressed: () { _search.clear(); setState(() => query = ''); })),
+          onChanged: (v) => setState(() => query = v))),
+        Expanded(child: count == 0
+          ? Center(child: Padding(padding: const EdgeInsets.all(24), child: Text(context.t('Sonuç bulunamadı. Sure adı, 1–30 arası cüz veya 0–604 arası sayfa yazabilirsin.'))))
+          : ListView.builder(itemCount: count, itemBuilder: (_, i) {
+          if (i < pages.length) {
+            final page = pages[i];
+            return ListTile(leading: const Icon(Icons.numbers),
+              title: Text(context.t('Sayfa {page}', {'page': page})),
+              trailing: const Icon(Icons.arrow_forward), onTap: () => Navigator.pop(context, page));
           }
-          final surah = filtered[i];
-          return ListTile(title: Text('${surah.number}. ${surahName(surah, context.language)}'), trailing: Text(context.t('s. {page}', {'page': surah.startPage})),
-            onTap: () => Navigator.pop(context, surah.startPage));
+          final index = i - pages.length;
+          if (index < filtered.length) {
+            final surah = filtered[index];
+            return ListTile(leading: const Icon(Icons.menu_book_outlined),
+              title: Text('${surah.number}. ${surahName(surah, context.language)}'),
+              trailing: Text(context.t('s. {page}', {'page': surah.startPage})),
+              onTap: () => Navigator.pop(context, surah.startPage));
+          }
+          final juz = juzNumbers[index - filtered.length];
+          final page = juz == 1 ? widget.firstPage : (juz - 1) * 20 + 1;
+          return ListTile(leading: const Icon(Icons.auto_stories_outlined),
+            title: Text(context.t('Cüz {number}', {'number': juz})),
+            trailing: Text(context.t('s. {page}', {'page': page})),
+            onTap: () => Navigator.pop(context, page));
         })),
-      ])));
+      ]))));
   }
 }

@@ -2,6 +2,20 @@ import 'package:flutter/material.dart';
 import '../services/app_language.dart';
 
 const translations = <String, Map<String, String>>{
+  'Bul ve oku': {'en': 'Find and read', 'nl': 'Zoek en lees'},
+  'Sure · Cüz · Sayfa': {'en': 'Surah · Juz · Page', 'nl': 'Soera · Djoez · Pagina'},
+  'Tümü': {'en': 'All', 'nl': 'Alles'},
+  'Sayfa': {'en': 'Page', 'nl': 'Pagina'},
+  'Sure adı, cüz veya sayfa numarası': {'en': 'Surah name, juz or page number', 'nl': 'Soeranaam, djoez of paginanummer'},
+  'Örn. Ali imran, cüz 3, 439': {'en': 'E.g. Ali Imran, juz 3, 439', 'nl': 'Bijv. Ali Imran, djoez 3, 439'},
+  'Aramayı temizle': {'en': 'Clear search', 'nl': 'Zoekopdracht wissen'},
+  'Sonuç bulunamadı. Sure adı, 1–30 arası cüz veya 0–604 arası sayfa yazabilirsin.': {'en': 'No results. Enter a surah name, juz 1–30 or page 0–604.', 'nl': 'Geen resultaten. Voer een soeranaam, djoez 1–30 of pagina 0–604 in.'},
+  'Birlikte güzelleştirelim': {'en': 'Make it better together', 'nl': 'Samen maken we het mooier'},
+  'Bir teşekkür, bir fikir ya da bir kahve… Katkının her türü değerli.': {'en': 'A thank-you, an idea or a coffee… Every contribution is appreciated.', 'nl': 'Een bedankje, een idee of een kopje koffie… Elke bijdrage is welkom.'},
+  'Fikrini paylaş': {'en': 'Share your thoughts', 'nl': 'Deel je ideeën'},
+  'Bir kahve ikram et': {'en': 'Buy a coffee', 'nl': 'Trakteer op koffie'},
+  'Tamamen isteğe bağlı · Geri bildirim ücretsiz': {'en': 'Entirely optional · Feedback is free', 'nl': 'Geheel vrijwillig · Feedback is gratis'},
+  'Destek ve geri bildirim sayfamız tarayıcıda açılacak. Mesaj göndermek ücretsiz, kahve ikramı tamamen isteğe bağlıdır.': {'en': 'Our support and feedback page will open in your browser. Feedback is free; buying a coffee is entirely optional.', 'nl': 'Onze steun- en feedbackpagina opent in je browser. Feedback is gratis; een kopje koffie aanbieden is geheel vrijwillig.'},
   'Uygulama hakkında': {'en': 'About the app', 'nl': 'Over de app'},
   'Geliştirici: Zeki Tazegul': {'en': 'Developer: Zeki Tazegul', 'nl': 'Ontwikkelaar: Zeki Tazegul'},
   'aboutDescription': {
