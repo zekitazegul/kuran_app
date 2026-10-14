@@ -26,7 +26,7 @@ class KuranApp extends StatelessWidget {
     locale: locale ?? Locale('tr'),
     supportedLocales: [Locale('tr'), Locale('en'), Locale('nl')],
     localizationsDelegates: GlobalMaterialLocalizations.delegates,
-    debugShowCheckedModeBanner: false, title: translate('Kuran App', locale?.languageCode ?? 'tr'),
+    debugShowCheckedModeBanner: false, title: 'KuranApp',
     theme: ThemeData(useMaterial3: true,
       scaffoldBackgroundColor: Color(0xFFF8F4EB),
       colorScheme: ColorScheme.fromSeed(seedColor: Color(0xFF164D43),
@@ -130,7 +130,7 @@ class _HomeScreenState extends State<HomeScreen> {
       appBar: AppBar(leading: Padding(padding: EdgeInsets.all(6),
         child: InkWell(onTap: _about, child: Tooltip(message: context.t('Uygulama hakkında'),
           child: const QuranArtwork(size: 44, decorative: true)))),
-        titleSpacing: 0, title: Text(context.t('Kur’an-ı Kerim'), style: TextStyle(fontWeight: FontWeight.w700)),
+        titleSpacing: 0, title: Text('KuranApp', style: TextStyle(fontWeight: FontWeight.w700)),
         actions: [IconButton(tooltip: context.t('Ayarlar'), icon: Icon(Icons.tune_rounded),
           onPressed: store == null || _downloading ? null : () async {
             await Navigator.push(context, MaterialPageRoute<void>(builder: (_) => SettingsScreen(store: store)));
@@ -167,7 +167,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       style: FilledButton.styleFrom(backgroundColor: Color(0xFFE5C383), foregroundColor: Color(0xFF173C32)),
                       onPressed: () => _read(store.lastPage), icon: Icon(Icons.play_arrow_rounded),
                       label: Text(context.t('Okumaya devam et')))),
-                  ] else Text(context.t(store?.edition.name ?? 'Kur’an-ı Kerim'), style: TextStyle(color: Color(0xFFE1E9DC))),
+                  ] else Text(context.t(store?.edition.name ?? 'KuranApp'), style: TextStyle(color: Color(0xFFE1E9DC))),
                 ])),
             ])),
           SizedBox(height: 24),
@@ -216,7 +216,7 @@ class _HomeScreenState extends State<HomeScreen> {
           SizedBox(height: 24),
           Row(mainAxisAlignment: MainAxisAlignment.center, children: [
             Icon(Icons.verified_outlined, size: 16, color: Color(0xFF8B7449)), SizedBox(width: 6),
-            Flexible(child: Text(context.t('{edition} · Reklamsız okuma', {'edition': context.t(store?.edition.name ?? 'Kur’an-ı Kerim')}), style: TextStyle(color: Color(0xFF776F61), fontSize: 12))),
+            Flexible(child: Text(context.t('{edition} · Reklamsız okuma', {'edition': context.t(store?.edition.name ?? 'KuranApp')}), style: TextStyle(color: Color(0xFF776F61), fontSize: 12))),
           ]),
         ]))),
     );

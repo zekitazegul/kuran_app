@@ -12,7 +12,7 @@ class AboutScreen extends StatelessWidget {
       actions: const [LanguageSelector()]),
     body: ListView(padding: const EdgeInsets.all(24), children: [
       const Center(child: QuranArtwork(size: 180, decorative: true)),
-      Text(context.t('Kur’an-ı Kerim'), textAlign: TextAlign.center,
+      Text('KuranApp', textAlign: TextAlign.center,
         style: Theme.of(context).textTheme.headlineMedium),
       const SizedBox(height: 20),
       Text(context.t('aboutDescription')),
