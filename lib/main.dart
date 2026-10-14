@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'screens/information_screen.dart';
 import 'screens/quran_screen.dart';
 import 'screens/surah_screen.dart';
@@ -58,8 +59,9 @@ class _HomeScreenState extends State<HomeScreen> {
         await store.downloadPage(page);
         if (mounted) setState(() {});
       }
-    } catch (_) {
-      if (mounted) setState(() => _error = 'İndirme tamamlanamadı. İnternet bağlantısını ve cihazdaki boş alanı kontrol edin. İndirilen sayfalar korunur; tekrar deneyerek devam edebilirsiniz.');
+    } catch (error) {
+      final detail = error is PlatformException ? (error.message ?? error.code) : error.toString();
+      if (mounted) setState(() => _error = 'İndirme tamamlanamadı: $detail\n\nİndirilen sayfalar korunur; tekrar deneyerek devam edebilirsiniz.');
     } finally {
       if (mounted) setState(() => _downloading = false);
     }

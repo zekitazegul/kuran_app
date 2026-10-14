@@ -72,7 +72,7 @@ class ReadingStorage(context: Context) {
         val target = pageFile(page)
         if (validImage(target)) return
         val temp = File(directory, target.name + ".part")
-        val connection = openPage(URL("https://android.quran.com/data/width1024/${target.name}"))
+        val connection = openPage(URL("https://android.quran.com/data/width_1024/${target.name}"))
         try {
             check(connection.responseCode == 200) { "Sayfa $page indirilemedi (HTTP ${connection.responseCode})." }
             check(connection.contentLengthLong <= 8_000_000) { "Beklenmeyen sayfa boyutu." }

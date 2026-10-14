@@ -34,7 +34,7 @@ Use the existing signing key to update an installed APK. Version: 1.1.0+2.
 
 ## Content provenance and remaining release gate
 
-Images: `https://android.quran.com/data/width1024/page001.png` through
+Images: `https://android.quran.com/data/width_1024/page001.png` through
 `page604.png`. This URL construction is documented by Quran for Android's
 MadaniPageProvider and QuranFileUtils at upstream commit
 `a823af79a577d0d09db38681c4b6cfab4a5253a9`. The image generator identifies the underlying fonts and pages
