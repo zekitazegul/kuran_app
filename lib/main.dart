@@ -159,13 +159,16 @@ class _HomeScreenState extends State<HomeScreen> {
                     child: Text(context.t('OKUMA VAKTİ'), style: TextStyle(color: Color(0xFFE5C383),
                       fontWeight: FontWeight.w600, letterSpacing: 2, fontSize: 11))),
                   SizedBox(height: 12),
-                  Center(child: SizedBox(width: 220, height: 200, child: Stack(alignment: Alignment.center, children: [
-                    Container(width: 155, height: 155, decoration: BoxDecoration(shape: BoxShape.circle,
-                      gradient: RadialGradient(colors: [Color(0x558DAD80), Color(0x008DAD80)]))),
-                    Semantics(button: true, label: context.t('Uygulama hakkında'),
-                      child: InkWell(onTap: _about, borderRadius: BorderRadius.circular(24),
-                        child: const QuranArtwork(size: 220, decorative: true))),
-                  ]))),
+                  if (store != null) ...[
+                    ClipRRect(borderRadius: BorderRadius.circular(14), child: Image.asset(
+                      'assets/previews/${store.edition.id}.png',
+                      width: double.infinity, fit: BoxFit.contain,
+                      semanticLabel: context.t('{edition} · Fetih suresinden hat örneği',
+                        {'edition': context.t(store.edition.name)}))),
+                    const SizedBox(height: 8),
+                    Text(context.t('Fetih suresinden hat örneği'),
+                      style: const TextStyle(color: Color(0xFFE1E9DC), fontSize: 12)),
+                  ] else const Center(child: QuranArtwork(size: 180, decorative: true)),
                   SizedBox(height: 20),
                   if (store != null && store.ready) ...[
                     Text('${store.edition.surahsOnPage(store.lastPage).map((s) => surahName(s, context.language)).join(' · ')}  /  ${store.lastPage == 0 ? context.t('Fatiha') : context.t('Sayfa {page}', {'page': store.lastPage})}',
@@ -210,10 +213,10 @@ class _HomeScreenState extends State<HomeScreen> {
             Card(child: Padding(padding: EdgeInsets.all(22), child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch, children: [
                 Text(context.t('Kur’an sayfalarını indir'), style: Theme.of(context).textTheme.titleLarge),
-                SizedBox(height: 8), Text(context.t('Toplam boyut: {size} MB', {'size': (store.edition.downloadBytes / 1000000).toStringAsFixed(1)})),
+                SizedBox(height: 8), Text(context.t('İndirilecek sayfalar: {size} MB', {'size': (store.edition.downloadBytes / 1000000).toStringAsFixed(1)})),
                 SizedBox(height: 20),
                 LinearProgressIndicator(value: (store.downloadedBytes / store.edition.downloadBytes).clamp(0.0, 1.0), borderRadius: BorderRadius.circular(8), minHeight: 6),
-                SizedBox(height: 10), Text(context.t('İndirilen sayfalar: {done} MB · Kalan: {remaining} MB', {
+                SizedBox(height: 10), Text(context.t('İndirilen: {done} MB · Kalan: {remaining} MB', {
                   'done': (store.downloadedBytes / 1000000).toStringAsFixed(1),
                   'remaining': ((store.edition.downloadBytes - store.downloadedBytes).clamp(0, store.edition.downloadBytes) / 1000000).toStringAsFixed(1)})),
                 if (store.downloadedBytes >= store.edition.downloadBytes) ...[

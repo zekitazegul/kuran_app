@@ -2,6 +2,10 @@ import 'package:flutter/material.dart';
 import '../services/app_language.dart';
 
 const translations = <String, Map<String, String>>{
+  'İndirilecek sayfalar: {size} MB': {'en': 'Pages to download: {size} MB', 'nl': 'Te downloaden pagina’s: {size} MB'},
+  'İndirilen: {done} MB · Kalan: {remaining} MB': {'en': 'Downloaded: {done} MB · Remaining: {remaining} MB', 'nl': 'Gedownload: {done} MB · Resterend: {remaining} MB'},
+  'Fetih suresinden hat örneği': {'en': 'Script preview from Surah Al-Fath', 'nl': 'Schriftvoorbeeld uit soera Al-Fath'},
+  '{edition} · Fetih suresinden hat örneği': {'en': '{edition} · Script preview from Surah Al-Fath', 'nl': '{edition} · Schriftvoorbeeld uit soera Al-Fath'},
   'Kur’an sayfalarını indir': {'en': 'Download Quran pages', 'nl': 'Koranpagina’s downloaden'},
   'Toplam boyut: {size} MB': {'en': 'Total size: {size} MB', 'nl': 'Totale grootte: {size} MB'},
   'İndirilen sayfalar: {done} MB · Kalan: {remaining} MB': {'en': 'Downloaded pages: {done} MB · Remaining: {remaining} MB', 'nl': 'Gedownloade pagina’s: {done} MB · Resterend: {remaining} MB'},
