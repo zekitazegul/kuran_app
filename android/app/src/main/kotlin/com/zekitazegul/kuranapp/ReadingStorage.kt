@@ -11,11 +11,38 @@ import java.net.URL
 import java.util.Locale
 import java.security.MessageDigest
 import javax.net.ssl.HttpsURLConnection
+import org.json.JSONArray
+import org.json.JSONObject
 
 /** Private, local-only reading state and validated, resumable page downloads. */
-class ReadingStorage(context: Context) {
-    private val preferences = context.getSharedPreferences("reading-computer-v1", Context.MODE_PRIVATE)
-    private val directory = File(context.filesDir, "computer-script-v1").apply { mkdirs() }
+class ReadingStorage(private val context: Context, requestedEdition: String? = null) {
+    // Keep existing computer-script preferences/files intact during upgrades.
+    private val global = context.getSharedPreferences("reading-computer-v1", Context.MODE_PRIVATE)
+    private val catalog = JSONArray(context.assets.open("flutter_assets/assets/editions.json")
+        .bufferedReader().use { it.readText() })
+    private val edition = findEdition(requestedEdition ?: global.getString("selectedEdition", "computer")!!)
+    private val preferences = context.getSharedPreferences(edition.getString("preferences"), Context.MODE_PRIVATE)
+    private val directory = File(context.filesDir, edition.getString("directory")).apply { mkdirs() }
+    private val firstPage = edition.getInt("firstPage")
+    private val lastPage = edition.getInt("lastPage")
+
+    private fun findEdition(id: String): JSONObject = (0 until catalog.length())
+        .map { catalog.getJSONObject(it) }.firstOrNull { it.getString("id") == id }
+        ?: error("Bu hat henüz kullanıma sunulmadı.")
+
+    private fun toCodec(value: Any?): Any? = when (value) {
+        is JSONObject -> value.keys().asSequence().associateWith { toCodec(value.get(it)) }
+        is JSONArray -> (0 until value.length()).map { toCodec(value.get(it)) }
+        JSONObject.NULL -> null
+        else -> value
+    }
+
+    fun selectEdition(id: String): Map<String, Any?> {
+        findEdition(id)
+        val state = ReadingStorage(context, id).load()
+        check(global.edit().putString("selectedEdition", id).commit())
+        return state
+    }
 
     private fun pageFile(page: Int) = File(directory, String.format(Locale.US, "page%03d.png", page))
 
@@ -30,40 +57,42 @@ class ReadingStorage(context: Context) {
         return options.outWidth in 500..4096 && options.outHeight in 500..8192
     }
 
-    fun load(): Map<String, Any> = mapOf(
+    fun load(): Map<String, Any?> = mapOf(
+        "edition" to toCodec(edition),
+        "editions" to toCodec(catalog),
         "directory" to directory.path,
-        "lastPage" to preferences.getInt("lastPage", 0),
-        "informationSeen" to preferences.getBoolean("informationSeen", false),
-        "guideSeen" to preferences.getBoolean("guideSeen", false),
-        "pageAnimations" to preferences.getBoolean("pageAnimations", true),
+        "lastPage" to preferences.getInt("lastPage", firstPage),
+        "informationSeen" to global.getBoolean("informationSeen", false),
+        "guideSeen" to global.getBoolean("guideSeen", false),
+        "pageAnimations" to global.getBoolean("pageAnimations", true),
         "bookmarks" to preferences.getStringSet("bookmarks", emptySet())!!.mapNotNull { it.toIntOrNull() },
-        "downloaded" to (0..604).filter { validImage(pageFile(it)) }
+        "downloaded" to (firstPage..lastPage).filter { validImage(pageFile(it)) }
     )
 
     fun savePage(page: Int) {
-        require(page in 0..604)
+        require(page in firstPage..lastPage)
         check(preferences.edit().putInt("lastPage", page).commit()) { "Okuma kaydı yazılamadı." }
     }
 
     fun saveBookmarks(pages: List<Int>) {
-        require(pages.all { it in 0..604 })
+        require(pages.all { it in firstPage..lastPage })
         check(preferences.edit().putStringSet("bookmarks", pages.map { it.toString() }.toSet()).commit())
     }
 
     fun acknowledge() {
-        check(preferences.edit().putBoolean("informationSeen", true).commit())
+        check(global.edit().putBoolean("informationSeen", true).commit())
     }
 
     fun acknowledgeGuide() {
-        check(preferences.edit().putBoolean("guideSeen", true).commit())
+        check(global.edit().putBoolean("guideSeen", true).commit())
     }
 
     fun setPageAnimations(enabled: Boolean) {
-        check(preferences.edit().putBoolean("pageAnimations", enabled).commit())
+        check(global.edit().putBoolean("pageAnimations", enabled).commit())
     }
 
-    private val sourceUrl = "https://raw.githubusercontent.com/zekitazegul/kuran_app/93f3416c2341a23589fe69a591e7d1f09135b3bf/content/kuran-bilgisayar-hatti.pdf"
-    private val expectedSha256 = "fa88e87198fa9cadee797cd3ac1d3d41e4c4c7776d97b4fee02c32e0a14cb0f7"
+    private val sourceUrl = edition.getString("url")
+    private val expectedSha256 = edition.getString("sha256")
 
     private fun openSource(): HttpsURLConnection {
         var current = URL(sourceUrl)
@@ -101,17 +130,18 @@ class ReadingStorage(context: Context) {
                         val count = input.read(buffer)
                         if (count == -1) break
                         total += count
-                        check(total <= 32_000_000) { "Beklenmeyen PDF boyutu." }
+                        check(total <= edition.getLong("bytes")) { "Beklenmeyen PDF boyutu." }
                         digest.update(buffer, 0, count)
                         output.write(buffer, 0, count)
                     }
                 }
             }
             val actual = digest.digest().joinToString("") { "%02x".format(it.toInt() and 255) }
+            check(temp.length() == edition.getLong("bytes")) { "PDF boyutu doğrulanamadı." }
             check(actual == expectedSha256) { "PDF doğrulaması başarısız; dosya kullanılmadı." }
             ParcelFileDescriptor.open(temp, ParcelFileDescriptor.MODE_READ_ONLY).use { descriptor ->
                 PdfRenderer(descriptor).use { renderer ->
-                    check(renderer.pageCount == 616) { "PDF sayfa sayısı beklenenden farklı." }
+                    check(renderer.pageCount == edition.getInt("pdfPages")) { "PDF sayfa sayısı beklenenden farklı." }
                 }
             }
             check(temp.renameTo(file)) { "PDF kaydedilemedi." }
@@ -123,7 +153,7 @@ class ReadingStorage(context: Context) {
     }
 
     fun downloadPage(page: Int) {
-        require(page in 0..604)
+        require(page in firstPage..lastPage)
         val target = pageFile(page)
         if (validImage(target)) return
         val source = sourcePdf()
@@ -133,7 +163,7 @@ class ReadingStorage(context: Context) {
                 PdfRenderer(descriptor).use { renderer ->
                     // PDF page 1 is blank. PDF 2 is unnumbered Fatiha; PDF 3
                     // is printed page 1. Printed page 604 is PDF page 606.
-                    renderer.openPage(page + 1).use { pdfPage ->
+                    renderer.openPage(page - firstPage + edition.getInt("pdfOffset")).use { pdfPage ->
                         val width = 1400
                         val height = (width.toDouble() * pdfPage.height / pdfPage.width).toInt()
                         val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)

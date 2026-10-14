@@ -3,7 +3,6 @@ import 'package:flutter/services.dart';
 import 'screens/information_screen.dart';
 import 'screens/guide_screen.dart';
 import 'screens/settings_screen.dart';
-import 'data/surahs.dart';
 import 'screens/quran_screen.dart';
 import 'screens/surah_screen.dart';
 import 'services/reading_store.dart';
@@ -59,15 +58,15 @@ class _HomeScreenState extends State<HomeScreen> {
   Future<void> _download() async {
     final store = _store!;
     final confirmed = await showDialog<bool>(context: context, builder: (context) => AlertDialog(
-      title: const Text('Bilgisayar hatlı Kur’an’ı indir'),
-      content: const Text('Bilgisayar hatlı PDF (yaklaşık 24 MB) indirilecek ve sayfalar cihazınızda hazırlanacak. Hazırlanan görseller ek depolama alanı kullanır. Wi-Fi kullanmanız önerilir. İndirme sırasında uygulamayı açık tutun; duraklatıp daha sonra kaldığınız yerden sürdürebilirsiniz.'),
+      title: Text('${store.edition.name} · Mushafı indir'),
+      content: const Text('Seçili hattın PDF’si indirilecek ve sayfalar cihazınızda hazırlanacak. Hazırlanan görseller ek depolama alanı kullanır. Wi-Fi kullanmanız önerilir. İndirme sırasında uygulamayı açık tutun; duraklatıp daha sonra kaldığınız yerden sürdürebilirsiniz.'),
       actions: [TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('İptal')),
         FilledButton(onPressed: () => Navigator.pop(context, true), child: const Text('İndirmeyi başlat'))],
     ));
     if (confirmed != true || !mounted) return;
     setState(() { _downloading = true; _pauseRequested = false; _error = null; });
     try {
-      for (var page = 0; page <= 604; page++) {
+      for (var page = store.edition.firstPage; page <= store.edition.lastPage; page++) {
         if (_pauseRequested || !mounted) break;
         if (store.downloaded.contains(page)) continue;
         await store.downloadPage(page);
@@ -107,7 +106,7 @@ class _HomeScreenState extends State<HomeScreen> {
     return Scaffold(
       appBar: AppBar(title: const Text('Kur’an-ı Kerim', style: TextStyle(fontWeight: FontWeight.w700)),
         actions: [IconButton(tooltip: 'Ayarlar', icon: const Icon(Icons.tune_rounded),
-          onPressed: store == null ? null : () async {
+          onPressed: store == null || _downloading ? null : () async {
             await Navigator.push(context, MaterialPageRoute<void>(builder: (_) => SettingsScreen(store: store)));
             if (mounted) setState(() {});
           })]),
@@ -132,7 +131,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     fontSize: 32, height: 1.2, fontWeight: FontWeight.w600)),
                   const SizedBox(height: 20),
                   if (store != null && store.ready) ...[
-                    Text('${surahsOnPage(store.lastPage).map((s) => s.name).join(' · ')}  /  ${store.lastPage == 0 ? 'Fatiha' : 'Sayfa ${store.lastPage}'}',
+                    Text('${store.edition.surahsOnPage(store.lastPage).map((s) => s.name).join(' · ')}  /  ${store.lastPage == 0 ? 'Fatiha' : 'Sayfa ${store.lastPage}'}',
                       style: const TextStyle(color: Color(0xFFE1E9DC))),
                     const SizedBox(height: 12),
                     SizedBox(width: double.infinity, child: FilledButton.icon(
@@ -154,13 +153,13 @@ class _HomeScreenState extends State<HomeScreen> {
               final width = (constraints.maxWidth - 12) / 2;
               return Wrap(spacing: 12, runSpacing: 12, children: [
                 _QuickAction(width: width, icon: Icons.format_list_numbered_rounded,
-                  title: 'Sureler', subtitle: '114 sure', onTap: () => _read(store.lastPage, panel: 'surah')),
+                  title: 'Sureler', subtitle: '${store.edition.surahIndex.length} sure', onTap: () => _read(store.lastPage, panel: 'surah')),
                 _QuickAction(width: width, icon: Icons.bookmarks_outlined,
                   title: 'Ayraçlarım', subtitle: '${store.bookmarks.length} kayıt', onTap: () => _read(store.lastPage, panel: 'bookmarks')),
                 _QuickAction(width: width, icon: Icons.menu_book_outlined,
-                  title: 'Baştan oku', subtitle: 'Fatiha Suresi', onTap: () => _read(0)),
+                  title: 'Baştan oku', subtitle: 'Fatiha Suresi', onTap: () => _read(store.edition.firstPage)),
                 _QuickAction(width: width, icon: Icons.auto_stories_outlined,
-                  title: 'Yasin Suresi', subtitle: 'Sayfa 439', onTap: () => _read(439)),
+                  title: 'Yasin Suresi', subtitle: 'Sayfa ${store.edition.yasinPage}', onTap: () => _read(store.edition.yasinPage)),
               ]);
             }),
             const SizedBox(height: 20),
@@ -172,8 +171,8 @@ class _HomeScreenState extends State<HomeScreen> {
                 Text('Mushafını hazırla', style: Theme.of(context).textTheme.titleLarge),
                 const SizedBox(height: 8), const Text('Bir kez indir, her yerde çevrimdışı oku.'),
                 const SizedBox(height: 20),
-                LinearProgressIndicator(value: store.downloaded.length / 605, borderRadius: BorderRadius.circular(8), minHeight: 6),
-                const SizedBox(height: 10), Text('Hazırlanan sayfalar: ${store.downloaded.length} / 605'),
+                LinearProgressIndicator(value: store.downloaded.length / store.edition.pageCount, borderRadius: BorderRadius.circular(8), minHeight: 6),
+                const SizedBox(height: 10), Text('Hazırlanan sayfalar: ${store.downloaded.length} / ${store.edition.pageCount}'),
                 const SizedBox(height: 18),
                 if (_downloading) OutlinedButton(onPressed: _pauseRequested ? null : () => setState(() => _pauseRequested = true),
                   child: Text(_pauseRequested ? 'Mevcut sayfa tamamlanıyor…' : 'İndirmeyi duraklat'))
@@ -188,9 +187,9 @@ class _HomeScreenState extends State<HomeScreen> {
               child: const Text('Yasin Suresi · Çevrimdışı')),
           ],
           const SizedBox(height: 24),
-          const Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-            Icon(Icons.verified_outlined, size: 16, color: Color(0xFF8B7449)), SizedBox(width: 6),
-            Flexible(child: Text('Bilgisayar hattı · Reklamsız okuma', style: TextStyle(color: Color(0xFF776F61), fontSize: 12))),
+          Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+            const Icon(Icons.verified_outlined, size: 16, color: Color(0xFF8B7449)), const SizedBox(width: 6),
+            Flexible(child: Text('${store?.edition.name ?? 'Kur’an-ı Kerim'} · Reklamsız okuma', style: const TextStyle(color: Color(0xFF776F61), fontSize: 12))),
           ]),
         ]))),
     );

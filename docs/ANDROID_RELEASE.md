@@ -1,6 +1,6 @@
 # Android development and release checks
 
-Version 1.2.0+6 targets Android. No iOS distribution is prepared.
+Version 1.2.1+7 targets Android. No iOS distribution is prepared.
 
 ## Build on the existing Flutter workstation
 
@@ -97,9 +97,29 @@ Verify toggle off for tap, drag and bottom-pull navigation, then relaunch to che
 persistence. Android reduced-motion settings also suppress page animations.
 Check home tiles and Settings at large system font sizes and in landscape.
 
-Hüsrev is explicitly unavailable pending a supplied, authorized PDF/source and
-its own edition-specific surah index, crops and saved reading state. It must not
-be presented as an active switch or simulated with an unrelated font.
+The edition catalog is `assets/editions.json`, bundled for both Flutter and the
+native downloader. Computer script and supplied Hat 2 are independently
+selectable in Settings. Each has an immutable source URL, exact byte count,
+SHA-256, own PDF offset, first/last page, 114-surah index and crop rectangles.
+Hat 2 has different odd/even margins. Its footer metadata was indexed separately;
+the unbracketed “86 TÂRIK” footer is accounted for explicitly.
+
+Computer files/preferences keep their original names; no migration/reset occurs.
+Selected edition, animation preference and first-use flags remain global. Each
+edition retains separate downloads, bookmarks and last-read position. Changing
+edition from the reader returns to Home if a download is needed. Settings are
+unavailable during an active Home download to avoid mixing editions.
+
+Hüsrev remains unavailable: its uploaded PDF exceeded the 32 MiB transfer limit
+and could not be read in this environment. Obtain an accessible download URL or
+an upload within the supported size, then inspect its real page/index layout.
+Do not relabel Hat 2 as Hüsrev or fabricate its page mapping.
+
+Local tests: `flutter analyze` and `flutter test` (including edition isolation).
+On device, select Hat 2, download it, check every navigation feature/crop, add a
+bookmark and save a page, then switch back. Computer downloads/bookmarks must
+remain unchanged. Repeat after relaunch; check Settings from both Home/reader.
+The Flutter SDK is absent in the cloud, so these tests are not claimed passed.
 
 Optional support: default builds have no payment URL. Configure an owned HTTPS
 Buy Me a Coffee or Ko-fi profile only after the developer supplies the link,

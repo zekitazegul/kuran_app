@@ -13,7 +13,6 @@ class MainActivity : FlutterActivity() {
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
-        val storage = ReadingStorage(applicationContext)
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger,
             "com.zekitazegul.kuranapp/reading").setMethodCallHandler { call, result ->
             if (call.method == "openSupport") {
@@ -31,7 +30,9 @@ class MainActivity : FlutterActivity() {
             }
             storageExecutor.execute {
                 try {
+                    val storage = ReadingStorage(applicationContext, call.argument<String>("edition"))
                     val value: Any? = when (call.method) {
+                        "selectEdition" -> storage.selectEdition(requireNotNull(call.argument<String>("id")))
                         "load" -> storage.load()
                         "savePage" -> storage.savePage(requireNotNull(call.argument<Int>("page"))).let { null }
                         "saveBookmarks" -> storage.saveBookmarks(requireNotNull(call.argument<List<Int>>("pages"))).let { null }

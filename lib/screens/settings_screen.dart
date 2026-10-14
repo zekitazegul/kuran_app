@@ -41,12 +41,24 @@ class _SettingsScreenState extends State<SettingsScreen> {
       const SizedBox(height: 24),
       _heading('KUR’AN HATTI'),
       Card(child: Column(children: [
-        ListTile(leading: const Icon(Icons.menu_book_outlined), title: const Text('Bilgisayar hattı'),
-          subtitle: const Text('Diyanet · Süleyman Feyzullahoğlu'),
-          trailing: Icon(Icons.check_circle, color: Theme.of(context).colorScheme.primary)),
+        for (final edition in widget.store.editions) ListTile(
+          enabled: !_saving, leading: const Icon(Icons.menu_book_outlined),
+          title: Text(edition.name), subtitle: Text(edition.description),
+          trailing: edition.id == widget.store.edition.id
+            ? Icon(Icons.check_circle, color: Theme.of(context).colorScheme.primary)
+            : const Icon(Icons.circle_outlined),
+          onTap: edition.id == widget.store.edition.id || _saving ? null : () async {
+            setState(() => _saving = true);
+            try {
+              await widget.store.selectEdition(edition.id);
+              if (mounted && !widget.store.ready) _message('Bu hattı ana ekrandan indirebilirsin.');
+            } catch (_) { if (mounted) _message('Hat seçimi kaydedilemedi.'); }
+            finally { if (mounted) setState(() => _saving = false); }
+          },
+        ),
         const Divider(height: 1, indent: 16, endIndent: 16),
         const ListTile(enabled: false, leading: Icon(Icons.draw_outlined), title: Text('Hüsrev hattı'),
-          subtitle: Text('Henüz kullanıma sunulmadı')),
+          subtitle: Text('Kaynak dosyanın aktarılması bekleniyor')),
       ])),
       const SizedBox(height: 24),
       _heading('YARDIM VE BİLGİ'),

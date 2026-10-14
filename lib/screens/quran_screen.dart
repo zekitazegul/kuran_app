@@ -43,7 +43,7 @@ class _QuranScreenState extends State<QuranScreen> with SingleTickerProviderStat
     if (notification is OverscrollNotification && notification.dragDetails != null &&
         notification.overscroll > 0 && notification.metrics.extentAfter <= 0 &&
         _landscape && !_zoomed && !_multiTouch && _target == null &&
-        !_preparing && _page < 604) {
+        !_preparing && _page < widget.store.edition.lastPage) {
       _bottomPull += notification.overscroll;
       if (_bottomPull >= 55) {
         _bottomPull = 0;
@@ -71,7 +71,7 @@ class _QuranScreenState extends State<QuranScreen> with SingleTickerProviderStat
     if (!_dragging) {
       if (delta.dx.abs() < 8 || delta.dx.abs() <= delta.dy.abs()) return;
       final target = _page + (delta.dx > 0 ? 1 : -1);
-      if (target < 0 || target > 604) return;
+      if (target < widget.store.edition.firstPage || target > widget.store.edition.lastPage) return;
       if (!widget.store.pageAnimations || MediaQuery.of(context).disableAnimations) return;
       setState(() { _dragging = true; _target = target; });
     }
@@ -106,7 +106,7 @@ class _QuranScreenState extends State<QuranScreen> with SingleTickerProviderStat
   @override
   void initState() {
     super.initState();
-    _page = widget.initialPage.clamp(0, ReadingStore.lastNumberedPage).toInt();
+    _page = widget.initialPage.clamp(widget.store.edition.firstPage, widget.store.edition.lastPage).toInt();
     _turn = AnimationController(vsync: this, duration: const Duration(milliseconds: 650));
     _remember(_page);
     if (widget.initialPanel != null) {
@@ -128,7 +128,7 @@ class _QuranScreenState extends State<QuranScreen> with SingleTickerProviderStat
   }
 
   Future<void> _go(int page, {bool animate = false}) async {
-    if (_target != null || _preparing || page < 0 || page > 604 || page == _page) return;
+    if (_target != null || _preparing || page < widget.store.edition.firstPage || page > widget.store.edition.lastPage || page == _page) return;
     _resetReadingPosition();
     if (!animate || !widget.store.pageAnimations || MediaQuery.of(context).disableAnimations) {
       setState(() => _page = page);
@@ -159,10 +159,10 @@ class _QuranScreenState extends State<QuranScreen> with SingleTickerProviderStat
         controller: controller, autofocus: true,
         keyboardType: TextInputType.number,
         inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-        decoration: const InputDecoration(labelText: 'Sayfa numarası (0–604; 0 = Fatiha)'),
+        decoration: InputDecoration(labelText: 'Sayfa numarası (${widget.store.edition.firstPage}–${widget.store.edition.lastPage})'),
         validator: (value) {
           final n = int.tryParse(value ?? '');
-          return n == null || n < 0 || n > 604 ? '0 ile 604 arasında bir sayı yazın.' : null;
+          return n == null || n < widget.store.edition.firstPage || n > widget.store.edition.lastPage ? '${widget.store.edition.firstPage} ile ${widget.store.edition.lastPage} arasında bir sayı yazın.' : null;
         },
         onFieldSubmitted: (_) { if (form.currentState!.validate()) Navigator.pop(context, int.parse(controller.text)); },
       )),
@@ -177,7 +177,7 @@ class _QuranScreenState extends State<QuranScreen> with SingleTickerProviderStat
 
   Future<void> _selectSurah() async {
     final selected = await showModalBottomSheet<int>(context: context, isScrollControlled: true,
-      builder: (context) => _SurahPicker());
+      builder: (context) => _SurahPicker(items: widget.store.edition.surahIndex));
     if (selected != null && mounted) await _go(selected);
   }
 
@@ -187,7 +187,7 @@ class _QuranScreenState extends State<QuranScreen> with SingleTickerProviderStat
       child: pages.isEmpty ? const Padding(padding: EdgeInsets.all(32), child: Text('Henüz ayraç yok. Okuduğunuz sayfada ayraç simgesine dokunun.'))
       : ListView(children: [const ListTile(title: Text('Ayraçlar')),
         for (final page in pages) ListTile(title: Text('Sayfa $page'),
-          subtitle: Text(surahsOnPage(page).map((s) => s.name).join(', ')),
+          subtitle: Text(widget.store.edition.surahsOnPage(page).map((s) => s.name).join(', ')),
           onTap: () => Navigator.pop(context, page))]),
     ));
     if (selected != null && mounted) await _go(selected);
@@ -221,7 +221,7 @@ class _QuranScreenState extends State<QuranScreen> with SingleTickerProviderStat
 
   Widget _image(int page) => ReadingPage(
     image: FileImage(File(widget.store.pagePath(page))),
-    crop: _fullscreen ? normalizedReadingCrop(page) : null,
+    crop: _fullscreen ? widget.store.edition.normalizedCrop(page) : null,
   );
 
   void _tapPage(TapUpDetails details) {
@@ -248,15 +248,23 @@ class _QuranScreenState extends State<QuranScreen> with SingleTickerProviderStat
     }
     _landscape = orientation == Orientation.landscape;
     return Scaffold(backgroundColor: const Color(0xFFE9E1D1),
-      appBar: _fullscreen ? null : AppBar(title: Text(surahsOnPage(_page).map((s) => s.name).join(' · ')),
+      appBar: _fullscreen ? null : AppBar(title: Text(widget.store.edition.surahsOnPage(_page).map((s) => s.name).join(' · ')),
         actions: [IconButton(tooltip: 'Sayfaya git', onPressed: _jump, icon: const Icon(Icons.numbers)),
-          PopupMenuButton<String>(onSelected: (v) {
+          PopupMenuButton<String>(enabled: !busy && !_bookmarkSaving, onSelected: (v) {
             if (v == 'surah') _selectSurah();
             if (v == 'bookmarks') _bookmarks();
             if (v == 'full') _toggleFullscreen();
             if (v == 'settings') {
+              final previous = widget.store.edition.id;
               Navigator.push(context, MaterialPageRoute<void>(builder: (_) => SettingsScreen(store: widget.store)))
-                .then((_) { if (mounted) setState(() {}); });
+                .then((_) {
+                  if (!mounted) return;
+                  if (previous != widget.store.edition.id) {
+                    if (!widget.store.ready) { Navigator.pop(context); return; }
+                    _resetReadingPosition();
+                    setState(() => _page = widget.store.lastPage);
+                  } else { setState(() {}); }
+                });
             }
           }, itemBuilder: (_) => const [PopupMenuItem(value: 'surah', child: Text('Sure seç')),
             PopupMenuItem(value: 'bookmarks', child: Text('Ayraçlar')),
@@ -302,8 +310,8 @@ class _QuranScreenState extends State<QuranScreen> with SingleTickerProviderStat
             child: LayoutBuilder(builder: (context, constraints) {
             _readerWidth = constraints.maxWidth;
             _readerHeight = constraints.maxHeight;
-            final crop = readingCrop(_page);
-            final aspect = _fullscreen ? crop.height / crop.width : 779.528 / 538.583;
+            final crop = widget.store.edition.crop(_page);
+            final aspect = _fullscreen ? crop.height / crop.width : widget.store.edition.pdfSize.height / widget.store.edition.pdfSize.width;
             final sheetHeight = _fullscreen || _landscape
                 ? math.max(constraints.maxHeight, constraints.maxWidth * aspect)
                 : constraints.maxHeight;
@@ -312,7 +320,7 @@ class _QuranScreenState extends State<QuranScreen> with SingleTickerProviderStat
               toRight: _target! > _page, underneath: _image(_target!),
               touchHeight: (_touchHeight * constraints.maxHeight +
                 (_verticalScroll.hasClients ? _verticalScroll.offset : 0)) / sheetHeight, dragTilt: _dragTilt,
-              crop: _fullscreen ? normalizedReadingCrop(_page) : null);
+              crop: _fullscreen ? widget.store.edition.normalizedCrop(_page) : null);
             return InteractiveViewer(transformationController: _zoom, minScale: 1, maxScale: 4,
               alignment: Alignment.topCenter,
               panEnabled: _zoomed && _target == null,
@@ -334,11 +342,11 @@ class _QuranScreenState extends State<QuranScreen> with SingleTickerProviderStat
         )),
         if (!_fullscreen) Padding(padding: const EdgeInsets.symmetric(horizontal: 8), child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceEvenly, children: [
-            IconButton(tooltip: 'Sonraki sayfa', onPressed: busy || _page == 604 ? null : () => _go(_page + 1, animate: true), icon: const Icon(Icons.chevron_left)),
-            TextButton(onPressed: _jump, child: Text('$_page / 604')),
+            IconButton(tooltip: 'Sonraki sayfa', onPressed: busy || _page == widget.store.edition.lastPage ? null : () => _go(_page + 1, animate: true), icon: const Icon(Icons.chevron_left)),
+            TextButton(onPressed: _jump, child: Text('$_page / ${widget.store.edition.lastPage}')),
             IconButton(tooltip: widget.store.bookmarks.contains(_page) ? 'Ayracı kaldır' : 'Ayraç ekle',
               onPressed: busy || _bookmarkSaving ? null : _toggleBookmark, icon: Icon(widget.store.bookmarks.contains(_page) ? Icons.bookmark : Icons.bookmark_border)),
-            IconButton(tooltip: 'Önceki sayfa', onPressed: busy || _page == 0 ? null : () => _go(_page - 1, animate: true), icon: const Icon(Icons.chevron_right)),
+            IconButton(tooltip: 'Önceki sayfa', onPressed: busy || _page == widget.store.edition.firstPage ? null : () => _go(_page - 1, animate: true), icon: const Icon(Icons.chevron_right)),
           ])),
       ])),
     );
@@ -346,6 +354,8 @@ class _QuranScreenState extends State<QuranScreen> with SingleTickerProviderStat
 }
 
 class _SurahPicker extends StatefulWidget {
+  final List<Surah> items;
+  const _SurahPicker({required this.items});
   @override
   State<_SurahPicker> createState() => _SurahPickerState();
 }
@@ -353,7 +363,7 @@ class _SurahPickerState extends State<_SurahPicker> {
   String query = '';
   @override
   Widget build(BuildContext context) {
-    final filtered = surahs.where((s) => normalizeSurahName(s.name).contains(normalizeSurahName(query)) || s.number.toString() == query).toList();
+    final filtered = widget.items.where((s) => normalizeSurahName(s.name).contains(normalizeSurahName(query)) || s.number.toString() == query).toList();
     return SafeArea(child: SizedBox(height: MediaQuery.sizeOf(context).height * .8,
       child: Column(children: [Padding(padding: const EdgeInsets.all(16), child: TextField(
         decoration: const InputDecoration(labelText: 'Sure adı veya numarası', prefixIcon: Icon(Icons.search)),
