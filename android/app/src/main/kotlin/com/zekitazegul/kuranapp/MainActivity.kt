@@ -13,8 +13,9 @@ class MainActivity : FlutterActivity() {
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
-        MethodChannel(flutterEngine.dartExecutor.binaryMessenger,
-            "com.zekitazegul.kuranapp/reading").setMethodCallHandler { call, result ->
+        val readingChannel = MethodChannel(flutterEngine.dartExecutor.binaryMessenger,
+            "com.zekitazegul.kuranapp/reading")
+        readingChannel.setMethodCallHandler { call, result ->
             if (call.method == "openSupport") {
                 try {
                     val uri = Uri.parse(requireNotNull(call.argument<String>("url")))
@@ -31,7 +32,12 @@ class MainActivity : FlutterActivity() {
             }
             storageExecutor.execute {
                 try {
-                    val storage = ReadingStorage(applicationContext, call.argument<String>("edition"))
+                    val storage = ReadingStorage(applicationContext, call.argument<String>("edition")) { id, bytes, total ->
+                        runOnUiThread {
+                            readingChannel.invokeMethod("downloadProgress", mapOf(
+                                "edition" to id, "bytes" to bytes, "total" to total))
+                        }
+                    }
                     val value: Any? = when (call.method) {
                         "selectEdition" -> storage.selectEdition(requireNotNull(call.argument<String>("id")))
                         "load" -> storage.load()

@@ -16,6 +16,8 @@ void main() {
     for (final entry in entries) {
       final edition = QuranEdition.fromMap(entry as Map);
       expect(edition.surahIndex.length, 114);
+      expect(edition.downloadBytes, entry['bytes']);
+      expect(edition.downloadBytes, greaterThan(0));
       for (var page = edition.firstPage; page <= edition.lastPage; page++) {
         expect(edition.surahsOnPage(page), isNotEmpty, reason: '${edition.id}: $page');
         final crop = edition.normalizedCrop(page);

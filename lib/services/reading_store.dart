@@ -10,6 +10,7 @@ class ReadingStore {
   String directory;
   QuranEdition edition;
   List<QuranEdition> editions;
+  int downloadedBytes;
   int lastPage;
   bool informationSeen;
   bool guideSeen;
@@ -19,7 +20,7 @@ class ReadingStore {
 
   ReadingStore({required this.directory, required this.lastPage,
     required this.informationSeen, required this.bookmarks, required this.downloaded,
-    this.guideSeen = false, this.pageAnimations = true, this.language, this.edgeTapWidth = 160 / 2.54,
+    this.downloadedBytes = 0, this.guideSeen = false, this.pageAnimations = true, this.language, this.edgeTapWidth = 160 / 2.54,
     this.edition = QuranEdition.computer, this.editions = const [QuranEdition.computer]});
 
   bool get ready => downloaded.length == edition.pageCount;
@@ -32,6 +33,7 @@ class ReadingStore {
     return ReadingStore(
       edition: edition,
       editions: data['editions'] is List ? (data['editions'] as List).map((e) => QuranEdition.fromMap(e as Map)).toList() : [QuranEdition.computer],
+      downloadedBytes: (data['downloadedBytes'] as num?)?.toInt() ?? 0,
       directory: data['directory'] as String,
       lastPage: (data['lastPage'] as int).clamp(edition.firstPage, edition.lastPage).toInt(),
       informationSeen: data['informationSeen'] == true,
@@ -81,12 +83,14 @@ class ReadingStore {
     editions = selected.editions;
     directory = selected.directory;
     lastPage = selected.lastPage;
+    downloadedBytes = selected.downloadedBytes;
     bookmarks..clear()..addAll(selected.bookmarks);
     downloaded..clear()..addAll(selected.downloaded);
   }
 
   Future<void> downloadPage(int page) async {
     await channel.invokeMethod<void>('downloadPage', {'edition': edition.id, 'page': page});
+    downloadedBytes = edition.downloadBytes;
     downloaded.add(page);
   }
 }

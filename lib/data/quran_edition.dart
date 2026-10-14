@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'surahs.dart';
 
 class QuranEdition {
+  final int downloadBytes;
   final String id;
   final String name;
   final String description;
@@ -20,7 +21,7 @@ class QuranEdition {
     required this.firstPage, required this.lastPage, required this.pdfSize,
     required this.cropOdd, required this.cropEven, required this.cropFirst,
     required this.cropSecond, required this.surahIndex,
-    this.pageSizes = const [], this.pageCrops = const []});
+    this.downloadBytes = 24129254, this.pageSizes = const [], this.pageCrops = const []});
 
   static const computer = QuranEdition(id: 'computer', name: 'Bilgisayar hattı',
     description: 'Diyanet · Süleyman Feyzullahoğlu', firstPage: 0, lastPage: 604,
@@ -35,7 +36,7 @@ class QuranEdition {
       return Rect.fromLTRB(values[0].toDouble(), values[1].toDouble(),
         values[2].toDouble(), values[3].toDouble());
     }
-    return QuranEdition(id: data['id'] as String, name: data['name'] as String,
+    return QuranEdition(downloadBytes: (data['bytes'] as num).toInt(), id: data['id'] as String, name: data['name'] as String,
       description: data['description'] as String, firstPage: data['firstPage'] as int,
       lastPage: data['lastPage'] as int,
       pdfSize: Size((data['pdfWidth'] as num).toDouble(), (data['pdfHeight'] as num).toDouble()),

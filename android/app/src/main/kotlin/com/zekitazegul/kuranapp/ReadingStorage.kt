@@ -15,7 +15,8 @@ import org.json.JSONArray
 import org.json.JSONObject
 
 /** Private, local-only reading state and validated, resumable page downloads. */
-class ReadingStorage(private val context: Context, requestedEdition: String? = null) {
+class ReadingStorage(private val context: Context, requestedEdition: String? = null,
+    private val onDownloadProgress: ((String, Long, Long) -> Unit)? = null) {
     // Keep existing computer-script preferences/files intact during upgrades.
     private val global = context.getSharedPreferences("reading-computer-v1", Context.MODE_PRIVATE)
     private val catalog = JSONArray(context.assets.open("flutter_assets/assets/editions.json")
@@ -61,6 +62,7 @@ class ReadingStorage(private val context: Context, requestedEdition: String? = n
         "edition" to toCodec(edition),
         "editions" to toCodec(catalog),
         "directory" to directory.path,
+        "downloadedBytes" to File(directory, "kuran.pdf").let { if (it.isFile) it.length() else 0L },
         "language" to global.getString("language", null),
         "edgeTapWidth" to (context.resources.displayMetrics.xdpi / 2.54 / context.resources.displayMetrics.density),
         "lastPage" to preferences.getInt("lastPage", firstPage),
@@ -123,8 +125,12 @@ class ReadingStorage(private val context: Context, requestedEdition: String? = n
 
     private fun sourcePdf(): File {
         val file = File(directory, "kuran.pdf")
-        if (file.isFile) return file
+        if (file.isFile) {
+            onDownloadProgress?.invoke(edition.getString("id"), file.length(), edition.getLong("bytes"))
+            return file
+        }
         val temp = File(directory, "kuran.pdf.part")
+        onDownloadProgress?.invoke(edition.getString("id"), 0L, edition.getLong("bytes"))
         val connection = openSource()
         try {
             check(connection.responseCode == 200) { "Kur’an PDF’si indirilemedi (HTTP ${connection.responseCode})." }
@@ -133,6 +139,7 @@ class ReadingStorage(private val context: Context, requestedEdition: String? = n
                 temp.outputStream().use { output ->
                     val buffer = ByteArray(65_536)
                     var total = 0L
+                    var lastProgressAt = 0L
                     while (true) {
                         val count = input.read(buffer)
                         if (count == -1) break
@@ -140,6 +147,11 @@ class ReadingStorage(private val context: Context, requestedEdition: String? = n
                         check(total <= edition.getLong("bytes")) { "Beklenmeyen PDF boyutu." }
                         digest.update(buffer, 0, count)
                         output.write(buffer, 0, count)
+                        val now = android.os.SystemClock.elapsedRealtime()
+                        if (now - lastProgressAt >= 150L) {
+                            onDownloadProgress?.invoke(edition.getString("id"), total, edition.getLong("bytes"))
+                            lastProgressAt = now
+                        }
                     }
                 }
             }
@@ -151,6 +163,7 @@ class ReadingStorage(private val context: Context, requestedEdition: String? = n
                     check(renderer.pageCount == edition.getInt("pdfPages")) { "PDF sayfa sayısı beklenenden farklı." }
                 }
             }
+            onDownloadProgress?.invoke(edition.getString("id"), temp.length(), edition.getLong("bytes"))
             check(temp.renameTo(file)) { "PDF kaydedilemedi." }
             return file
         } finally {

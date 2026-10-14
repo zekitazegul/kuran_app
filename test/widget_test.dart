@@ -96,7 +96,8 @@ void main() {
     expect(find.text('İndirmeyi başlat'), findsOneWidget);
     await tester.tap(find.text('İptal'));
     await tester.pumpAndSettle();
-    expect(find.text('Hazırlanan sayfalar: 0 / 605'), findsOneWidget);
+    expect(find.text('Toplam boyut: 24.1 MB'), findsOneWidget);
+    expect(find.text('İndirilen sayfalar: 0.0 MB · Kalan: 24.1 MB'), findsOneWidget);
   });
   testWidgets('animation switch persists and help remains accessible', (tester) async {
     final store = await ReadingStore.load();

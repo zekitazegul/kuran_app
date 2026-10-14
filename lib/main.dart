@@ -80,6 +80,13 @@ class _HomeScreenState extends State<HomeScreen> {
     ));
     if (confirmed != true || !mounted) return;
     setState(() { _downloading = true; _pauseRequested = false; _error = null; _downloadError = false; });
+    ReadingStore.channel.setMethodCallHandler((call) async {
+      if (call.method != 'downloadProgress' || !mounted) return;
+      final data = call.arguments as Map;
+      if (data['edition'] != store.edition.id) return;
+      final bytes = (data['bytes'] as num).toInt();
+      if (bytes != store.downloadedBytes) setState(() => store.downloadedBytes = bytes);
+    });
     try {
       for (var page = store.edition.firstPage; page <= store.edition.lastPage; page++) {
         if (_pauseRequested || !mounted) break;
@@ -92,6 +99,7 @@ class _HomeScreenState extends State<HomeScreen> {
       final raw = error is PlatformException ? (error.message ?? error.code) : error.toString();
       setState(() { _error = raw; _downloadError = true; });
     } finally {
+      ReadingStore.channel.setMethodCallHandler(null);
       if (mounted) setState(() => _downloading = false);
     }
   }
@@ -201,11 +209,19 @@ class _HomeScreenState extends State<HomeScreen> {
           ] else if (store != null) ...[
             Card(child: Padding(padding: EdgeInsets.all(22), child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-                Text(context.t('Mushafını hazırla'), style: Theme.of(context).textTheme.titleLarge),
-                SizedBox(height: 8), Text(context.t('Bir kez indir, her yerde çevrimdışı oku.')),
+                Text(context.t('Kur’an sayfalarını indir'), style: Theme.of(context).textTheme.titleLarge),
+                SizedBox(height: 8), Text(context.t('Toplam boyut: {size} MB', {'size': (store.edition.downloadBytes / 1000000).toStringAsFixed(1)})),
                 SizedBox(height: 20),
-                LinearProgressIndicator(value: store.downloaded.length / store.edition.pageCount, borderRadius: BorderRadius.circular(8), minHeight: 6),
-                SizedBox(height: 10), Text(context.t('Hazırlanan sayfalar: {done} / {total}', {'done': store.downloaded.length, 'total': store.edition.pageCount})),
+                LinearProgressIndicator(value: (store.downloadedBytes / store.edition.downloadBytes).clamp(0.0, 1.0), borderRadius: BorderRadius.circular(8), minHeight: 6),
+                SizedBox(height: 10), Text(context.t('İndirilen sayfalar: {done} MB · Kalan: {remaining} MB', {
+                  'done': (store.downloadedBytes / 1000000).toStringAsFixed(1),
+                  'remaining': ((store.edition.downloadBytes - store.downloadedBytes).clamp(0, store.edition.downloadBytes) / 1000000).toStringAsFixed(1)})),
+                if (store.downloadedBytes >= store.edition.downloadBytes) ...[
+                  const SizedBox(height: 8),
+                  Text(context.t('İndirme tamamlandı. Sayfalar okumaya açılıyor…')),
+                  const SizedBox(height: 8),
+                  LinearProgressIndicator(value: store.downloaded.length / store.edition.pageCount),
+                ],
                 SizedBox(height: 18),
                 if (_downloading) OutlinedButton(onPressed: _pauseRequested ? null : () => setState(() => _pauseRequested = true),
                   child: Text(_pauseRequested ? context.t('Mevcut sayfa tamamlanıyor…') : context.t('İndirmeyi duraklat')))
