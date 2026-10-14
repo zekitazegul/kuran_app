@@ -4,7 +4,6 @@ import 'screens/information_screen.dart';
 import 'screens/guide_screen.dart';
 import 'screens/settings_screen.dart';
 import 'screens/quran_screen.dart';
-import 'screens/surah_screen.dart';
 import 'services/reading_store.dart';
 
 void main() => runApp(const KuranApp());
@@ -179,12 +178,6 @@ class _HomeScreenState extends State<HomeScreen> {
                 else FilledButton.icon(onPressed: _download, icon: const Icon(Icons.download_rounded),
                   label: Text(store.downloaded.isEmpty ? 'Tam Kur’an’ı indir' : 'İndirmeye devam et')),
               ]))),
-          ],
-          if (store == null || !store.ready) ...[
-            const SizedBox(height: 16),
-            OutlinedButton(onPressed: () => Navigator.push(context, MaterialPageRoute<void>(
-              builder: (_) => const SurahScreen(surahName: 'Yasin Suresi', pageCount: 6))),
-              child: const Text('Yasin Suresi · Çevrimdışı')),
           ],
           const SizedBox(height: 24),
           Row(mainAxisAlignment: MainAxisAlignment.center, children: [

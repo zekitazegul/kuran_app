@@ -77,7 +77,7 @@ void main() {
     await tester.pumpAndSettle();
     expect(guideSeen, isTrue);
     expect(find.text('Tam Kur’an’ı indir'), findsOneWidget);
-    expect(find.text('Yasin Suresi · Çevrimdışı'), findsOneWidget);
+    expect(find.text('Yasin Suresi · Çevrimdışı'), findsNothing);
     await tester.scrollUntilVisible(find.text('Tam Kur’an’ı indir'), 300);
     await tester.tap(find.text('Tam Kur’an’ı indir'));
     await tester.pumpAndSettle();

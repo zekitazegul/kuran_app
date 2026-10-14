@@ -1,6 +1,6 @@
 # Android development and release checks
 
-Version 1.2.1+7 targets Android. No iOS distribution is prepared.
+Version 1.2.2+8 targets Android. No iOS distribution is prepared.
 
 ## Build on the existing Flutter workstation
 
@@ -36,12 +36,13 @@ No image/font substitutions are made. PDF has 616 physical pages:
 
 All 114 surah starts were indexed from the PDF's surah banners, including
 the smaller Sad banner. The index is specific to this edition, not Madani.
-The supplied Yasin assets visually match physical PDF 441 onward.
+The original standalone Yasin images and their legacy reader have been removed.
+Yasin now uses the selected complete PDF edition only.
 
 The previous Madani download and reading records are left in their separate
 private directory/preferences. They are not mixed with the new edition or
 silently mapped to different verses. This edition starts with its own saved
-page/bookmarks. Existing offline Yasin assets remain available until download.
+page/bookmarks. There is no standalone Yasin fallback; the selected edition must be downloaded.
 
 ## Required local/device verification
 
