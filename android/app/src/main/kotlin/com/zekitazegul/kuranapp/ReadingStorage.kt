@@ -34,6 +34,8 @@ class ReadingStorage(context: Context) {
         "directory" to directory.path,
         "lastPage" to preferences.getInt("lastPage", 0),
         "informationSeen" to preferences.getBoolean("informationSeen", false),
+        "guideSeen" to preferences.getBoolean("guideSeen", false),
+        "pageAnimations" to preferences.getBoolean("pageAnimations", true),
         "bookmarks" to preferences.getStringSet("bookmarks", emptySet())!!.mapNotNull { it.toIntOrNull() },
         "downloaded" to (0..604).filter { validImage(pageFile(it)) }
     )
@@ -50,6 +52,14 @@ class ReadingStorage(context: Context) {
 
     fun acknowledge() {
         check(preferences.edit().putBoolean("informationSeen", true).commit())
+    }
+
+    fun acknowledgeGuide() {
+        check(preferences.edit().putBoolean("guideSeen", true).commit())
+    }
+
+    fun setPageAnimations(enabled: Boolean) {
+        check(preferences.edit().putBoolean("pageAnimations", enabled).commit())
     }
 
     private val sourceUrl = "https://raw.githubusercontent.com/zekitazegul/kuran_app/93f3416c2341a23589fe69a591e7d1f09135b3bf/content/kuran-bilgisayar-hatti.pdf"

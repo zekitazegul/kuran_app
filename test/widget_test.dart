@@ -1,25 +1,33 @@
+import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kuran_app/main.dart';
 import 'package:kuran_app/data/surahs.dart';
 import 'package:kuran_app/services/reading_store.dart';
+import 'package:kuran_app/screens/settings_screen.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
   var acknowledged = false;
+  var guideSeen = false;
+  var animations = true;
   var lastPage = 439;
   var bookmarks = <int>[439];
 
   setUp(() {
     acknowledged = false;
+    guideSeen = false;
+    animations = true;
     lastPage = 439;
     bookmarks = [439];
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
       .setMockMethodCallHandler(ReadingStore.channel, (call) async {
         switch (call.method) {
           case 'load': return {'directory': '/tmp/quran-test', 'lastPage': lastPage,
-            'informationSeen': acknowledged, 'bookmarks': bookmarks, 'downloaded': <int>[]};
+            'informationSeen': acknowledged, 'guideSeen': guideSeen, 'pageAnimations': animations, 'bookmarks': bookmarks, 'downloaded': <int>[]};
           case 'acknowledge': acknowledged = true; return null;
+          case 'acknowledgeGuide': guideSeen = true; return null;
+          case 'setPageAnimations': animations = (call.arguments as Map)['enabled'] as bool; return null;
           case 'savePage': lastPage = (call.arguments as Map)['page'] as int; return null;
           case 'saveBookmarks': bookmarks = List<int>.from((call.arguments as Map)['pages'] as List); return null;
           default: throw PlatformException(code: 'UNEXPECTED_METHOD');
@@ -63,8 +71,14 @@ void main() {
     await tester.tap(find.text('Anladım, devam et'));
     await tester.pumpAndSettle();
     expect(acknowledged, isTrue);
+    expect(find.text('Kullanım kılavuzu'), findsOneWidget);
+    await tester.scrollUntilVisible(find.text('Okumaya başlayalım'), 400);
+    await tester.tap(find.text('Okumaya başlayalım'));
+    await tester.pumpAndSettle();
+    expect(guideSeen, isTrue);
     expect(find.text('Tam Kur’an’ı indir'), findsOneWidget);
     expect(find.text('Yasin Suresi · Çevrimdışı'), findsOneWidget);
+    await tester.scrollUntilVisible(find.text('Tam Kur’an’ı indir'), 300);
     await tester.tap(find.text('Tam Kur’an’ı indir'));
     await tester.pumpAndSettle();
     expect(find.text('İndirmeyi başlat'), findsOneWidget);
@@ -72,4 +86,20 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Hazırlanan sayfalar: 0 / 605'), findsOneWidget);
   });
+  testWidgets('animation switch persists and help remains accessible', (tester) async {
+    final store = await ReadingStore.load();
+    await tester.pumpWidget(MaterialApp(home: SettingsScreen(store: store)));
+    await tester.pumpAndSettle();
+    expect(store.pageAnimations, isTrue);
+    await tester.tap(find.byType(SwitchListTile));
+    await tester.pumpAndSettle();
+    expect(store.pageAnimations, isFalse);
+    final restored = await ReadingStore.load();
+    expect(restored.pageAnimations, isFalse);
+    await tester.scrollUntilVisible(find.text('Kullanım kılavuzu'), 200);
+    await tester.tap(find.text('Kullanım kılavuzu'));
+    await tester.pumpAndSettle();
+    expect(find.text('Okumaya hoş geldin'), findsOneWidget);
+  });
+
 }

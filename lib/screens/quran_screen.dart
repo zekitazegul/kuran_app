@@ -6,11 +6,13 @@ import '../data/surahs.dart';
 import '../services/reading_store.dart';
 import '../widgets/page_turn.dart';
 import '../widgets/reading_page.dart';
+import 'settings_screen.dart';
 
 class QuranScreen extends StatefulWidget {
   final ReadingStore store;
   final int initialPage;
-  const QuranScreen({super.key, required this.store, required this.initialPage});
+  final String? initialPanel;
+  const QuranScreen({super.key, required this.store, required this.initialPage, this.initialPanel});
   @override
   State<QuranScreen> createState() => _QuranScreenState();
 }
@@ -70,8 +72,10 @@ class _QuranScreenState extends State<QuranScreen> with SingleTickerProviderStat
       if (delta.dx.abs() < 8 || delta.dx.abs() <= delta.dy.abs()) return;
       final target = _page + (delta.dx > 0 ? 1 : -1);
       if (target < 0 || target > 604) return;
+      if (!widget.store.pageAnimations || MediaQuery.of(context).disableAnimations) return;
       setState(() { _dragging = true; _target = target; });
     }
+    if (!widget.store.pageAnimations || MediaQuery.of(context).disableAnimations) return;
     final direction = _target! > _page ? 1 : -1;
     final progress = (delta.dx * direction / (_readerWidth * 2.1)).clamp(0.0, .98).toDouble();
     setState(() => _dragTilt = delta.dy / (1 - progress));
@@ -105,6 +109,14 @@ class _QuranScreenState extends State<QuranScreen> with SingleTickerProviderStat
     _page = widget.initialPage.clamp(0, ReadingStore.lastNumberedPage).toInt();
     _turn = AnimationController(vsync: this, duration: const Duration(milliseconds: 650));
     _remember(_page);
+    if (widget.initialPanel != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        if (widget.initialPanel == 'surah') _selectSurah();
+        if (widget.initialPanel == 'bookmarks') _bookmarks();
+        if (widget.initialPanel == 'jump') _jump();
+      });
+    }
   }
 
   void _error(String message) {
@@ -118,7 +130,7 @@ class _QuranScreenState extends State<QuranScreen> with SingleTickerProviderStat
   Future<void> _go(int page, {bool animate = false}) async {
     if (_target != null || _preparing || page < 0 || page > 604 || page == _page) return;
     _resetReadingPosition();
-    if (!animate || MediaQuery.of(context).disableAnimations) {
+    if (!animate || !widget.store.pageAnimations || MediaQuery.of(context).disableAnimations) {
       setState(() => _page = page);
       await _remember(page);
       return;
@@ -242,9 +254,14 @@ class _QuranScreenState extends State<QuranScreen> with SingleTickerProviderStat
             if (v == 'surah') _selectSurah();
             if (v == 'bookmarks') _bookmarks();
             if (v == 'full') _toggleFullscreen();
+            if (v == 'settings') {
+              Navigator.push(context, MaterialPageRoute<void>(builder: (_) => SettingsScreen(store: widget.store)))
+                .then((_) { if (mounted) setState(() {}); });
+            }
           }, itemBuilder: (_) => const [PopupMenuItem(value: 'surah', child: Text('Sure seç')),
             PopupMenuItem(value: 'bookmarks', child: Text('Ayraçlar')),
-            PopupMenuItem(value: 'full', child: Text('Tam ekran'))])]),
+            PopupMenuItem(value: 'full', child: Text('Tam ekran')),
+            PopupMenuItem(value: 'settings', child: Text('Ayarlar'))])]),
       body: SafeArea(top: !_fullscreen, bottom: !_fullscreen, child: Column(children: [
         Expanded(child: GestureDetector(
           behavior: HitTestBehavior.opaque,
@@ -269,6 +286,11 @@ class _QuranScreenState extends State<QuranScreen> with SingleTickerProviderStat
               if (_dragging) {
                 _releaseDrag(commit: !_multiTouch && delta.dx.abs() >= 70 &&
                   _turn.value > 0.01);
+              }
+              if (!_multiTouch && (!widget.store.pageAnimations || MediaQuery.of(context).disableAnimations) &&
+                  _zoom.value.getMaxScaleOnAxis() <= 1.01 &&
+                  delta.dx.abs() >= 70 && delta.dx.abs() > delta.dy.abs()) {
+                _go(_page + (delta.dx > 0 ? 1 : -1));
               }
               _touchPointer = null;
               _touchStart = null;

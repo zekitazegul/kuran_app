@@ -1,6 +1,6 @@
 # Android development and release checks
 
-Version 1.1.3+5 targets Android. No iOS distribution is prepared.
+Version 1.2.0+6 targets Android. No iOS distribution is prepared.
 
 ## Build on the existing Flutter workstation
 
@@ -86,3 +86,27 @@ location, contacts, notification or broad storage permission is requested.
 Reading state/pages remain in private storage; Android cloud backup is disabled.
 There are no analytics/ads/accounts. GitHub receives network connection
 information during downloads; privacy disclosures must describe this accurately.
+
+
+## Home, guide and preferences
+
+First launch runs privacy information and a usage guide once; each is reachable
+from Settings afterwards. The guide flag and animation toggle are persisted in
+the existing computer-script preferences without resetting downloads/bookmarks.
+Verify toggle off for tap, drag and bottom-pull navigation, then relaunch to check
+persistence. Android reduced-motion settings also suppress page animations.
+Check home tiles and Settings at large system font sizes and in landscape.
+
+Hüsrev is explicitly unavailable pending a supplied, authorized PDF/source and
+its own edition-specific surah index, crops and saved reading state. It must not
+be presented as an active switch or simulated with an unrelated font.
+
+Optional support: default builds have no payment URL. Configure an owned HTTPS
+Buy Me a Coffee or Ko-fi profile only after the developer supplies the link,
+using `--dart-define=SUPPORT_URL=https://...` on the Flutter build/run command.
+Native code validates HTTPS and an exact provider hostname; opening the browser
+requires an explicit confirmation. There is no payment SDK, paid feature or
+financial credential in the app. The missing-link state must not open a fake
+checkout. Recheck current Google Play payment policy for the intended region
+and the exact support flow before publication; do not assume external payment
+links are universally permitted.

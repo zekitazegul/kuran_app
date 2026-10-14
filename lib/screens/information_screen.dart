@@ -16,7 +16,7 @@ class InformationScreen extends StatelessWidget {
         '• Uygulamaya özel depolama: İndirilen sayfalar, ayraçlar ve son okunan sayfa cihazınızda saklanır. Galerinize veya diğer dosyalarınıza erişilmez. Uygulamayı kaldırmak bu kayıtları siler. Android bulut yedeklemesi bu sürümde kapalıdır.\n\n'
         '• Ekran: Uygulama ön plandayken ekran otomatik kapanmaz. Bu, pil tüketimini artırabilir. Başka uygulamaya geçtiğinizde normal ekran zaman aşımı geri gelir.\n\n'
         'Kamera, mikrofon, konum, rehber, bildirim veya genel dosya erişimi izni istenmez. Hesap, reklam ve analiz SDK’sı bulunmaz. Okuma geçmişiniz ve ayraçlarınız tarafımızca bir sunucuya gönderilmez.\n\n'
-        'Bu ekran bir Android izin talebi değildir; uygulamanın davranışlarını açıklayan bilgilendirmedir.\n\n'
+        'İsteğe bağlı geliştirici desteği etkinleştirildiğinde ödeme, seçiminizle dış tarayıcıdaki sağlayıcı üzerinden yapılır. Ödeme bilgileri uygulamada işlenmez; sağlayıcının gizlilik koşulları geçerlidir.\n\nBu ekran bir Android izin talebi değildir; uygulamanın davranışlarını açıklayan bilgilendirmedir.\n\n'
         'Kaynak: Kullanıcının sağladığı Diyanet İşleri Başkanlığı, Kur’an-ı Kerim (Rahle Boy), bilgisayar hatlı PDF. Hattat: Süleyman Feyzullahoğlu. PDF’deki numarasız Fatiha ve basılı 1–604 sayfaları korunur; sure seçimi bu baskıya göre yapılır. Bu uygulama Diyanet tarafından onaylanmış resmî bir uygulama değildir.'),
       const SizedBox(height: 24),
       if (onContinue != null) FilledButton(onPressed: () async {

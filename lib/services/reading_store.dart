@@ -9,9 +9,12 @@ class ReadingStore {
   final String directory;
   int lastPage;
   bool informationSeen;
+  bool guideSeen;
+  bool pageAnimations;
 
   ReadingStore({required this.directory, required this.lastPage,
-    required this.informationSeen, required this.bookmarks, required this.downloaded});
+    required this.informationSeen, required this.bookmarks, required this.downloaded,
+    this.guideSeen = false, this.pageAnimations = true});
 
   bool get ready => downloaded.length == pageCount;
   String pagePath(int page) => '$directory/page${page.toString().padLeft(3, '0')}.png';
@@ -23,6 +26,8 @@ class ReadingStore {
       directory: data['directory'] as String,
       lastPage: (data['lastPage'] as int).clamp(0, lastNumberedPage).toInt(),
       informationSeen: data['informationSeen'] == true,
+      guideSeen: data['guideSeen'] == true,
+      pageAnimations: data['pageAnimations'] != false,
       bookmarks: Set<int>.from(data['bookmarks'] as List).where((p) => p >= 0 && p <= lastNumberedPage).toSet(),
       downloaded: Set<int>.from(data['downloaded'] as List),
     );
@@ -43,6 +48,16 @@ class ReadingStore {
   Future<void> acknowledgeInformation() async {
     await channel.invokeMethod<void>('acknowledge');
     informationSeen = true;
+  }
+
+  Future<void> acknowledgeGuide() async {
+    await channel.invokeMethod<void>('acknowledgeGuide');
+    guideSeen = true;
+  }
+
+  Future<void> setPageAnimations(bool enabled) async {
+    await channel.invokeMethod<void>('setPageAnimations', {'enabled': enabled});
+    pageAnimations = enabled;
   }
 
   Future<void> downloadPage(int page) async {

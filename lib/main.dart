@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'screens/information_screen.dart';
+import 'screens/guide_screen.dart';
+import 'screens/settings_screen.dart';
+import 'data/surahs.dart';
 import 'screens/quran_screen.dart';
 import 'screens/surah_screen.dart';
 import 'services/reading_store.dart';
@@ -13,7 +16,18 @@ class KuranApp extends StatelessWidget {
   Widget build(BuildContext context) => MaterialApp(
     debugShowCheckedModeBanner: false, title: 'Kuran App',
     theme: ThemeData(useMaterial3: true,
-      colorScheme: ColorScheme.fromSeed(seedColor: Colors.green)),
+      scaffoldBackgroundColor: const Color(0xFFF8F4EB),
+      colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF164D43),
+        primary: const Color(0xFF164D43), secondary: const Color(0xFFB28A46),
+        surface: const Color(0xFFFFFCF5)),
+      appBarTheme: const AppBarTheme(backgroundColor: Color(0xFFF8F4EB),
+        foregroundColor: Color(0xFF163D35), centerTitle: false, elevation: 0),
+      filledButtonTheme: FilledButtonThemeData(style: FilledButton.styleFrom(
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 18),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)))),
+      cardTheme: CardThemeData(elevation: 0, color: const Color(0xFFFFFCF5),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(22),
+          side: const BorderSide(color: Color(0xFFE8DFCC))))),
     home: const HomeScreen(),
   );
 }
@@ -67,8 +81,8 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-  Future<void> _read(int page) async {
-    await Navigator.push(context, MaterialPageRoute<void>(builder: (_) => QuranScreen(store: _store!, initialPage: page)));
+  Future<void> _read(int page, {String? panel}) async {
+    await Navigator.push(context, MaterialPageRoute<void>(builder: (_) => QuranScreen(store: _store!, initialPage: page, initialPanel: panel)));
     if (mounted) setState(() {});
   }
 
@@ -84,49 +98,134 @@ class _HomeScreenState extends State<HomeScreen> {
         if (mounted) setState(() {});
       });
     }
+    if (store != null && !store.guideSeen) {
+      return GuideScreen(onContinue: () async {
+        await store.acknowledgeGuide();
+        if (mounted) setState(() {});
+      });
+    }
     return Scaffold(
-      appBar: AppBar(title: const Text('Kuran App'), actions: [
-        IconButton(tooltip: 'Gizlilik ve erişimler', icon: const Icon(Icons.privacy_tip_outlined),
-          onPressed: () => Navigator.push(context, MaterialPageRoute<void>(builder: (_) => const InformationScreen()))),
-      ]),
-      body: ListView(padding: const EdgeInsets.all(24), children: [
-        const Icon(Icons.menu_book, size: 80), const SizedBox(height: 16),
-        const Text('Kur’an-ı Kerim', textAlign: TextAlign.center,
-          style: TextStyle(fontSize: 30, fontWeight: FontWeight.bold)),
-        const SizedBox(height: 8),
-        const Text('Bilgisayar hattı · 114 sure', textAlign: TextAlign.center),
-        const SizedBox(height: 24),
-        if (store == null && _error == null) const Center(child: CircularProgressIndicator()),
-        if (_error != null) Padding(padding: const EdgeInsets.only(bottom: 16), child: Text(_error!, style: TextStyle(color: Theme.of(context).colorScheme.error))),
-        if (store == null && _error != null) OutlinedButton(onPressed: _load, child: const Text('Tekrar dene')),
-        if (store != null && store.ready) ...[
-          FilledButton.icon(onPressed: () => _read(store.lastPage), icon: const Icon(Icons.auto_stories),
-            label: Text('Kaldığım yerden devam et · Sayfa ${store.lastPage}')),
-          const SizedBox(height: 12),
-          OutlinedButton(onPressed: () => _read(0), child: const Text('Baştan oku')),
-          const SizedBox(height: 12),
-          OutlinedButton(onPressed: () => _read(439), child: const Text('Yasin Suresi · Bilgisayar hattı')),
-          const SizedBox(height: 16),
-          const Text('Bu baskıda Fatiha numarasızdır (0); basılı sayfa numaraları 1–604 arasındadır. Okuyucunun menüsünden sure seçebilir, sayfa numarasıyla gidebilir ve ayraçlarınıza ulaşabilirsiniz. Soldaki alana dokunarak sonraki, sağdaki alana dokunarak önceki sayfaya geçin. Ortadaki alana dokunarak çerçevesiz okuma modunu açıp kapatın. İki parmakla yakınlaştırabilirsiniz. Yatay görünümde yukarı kaydırarak okuyun; sayfanın sonunda yukarı kaydırmaya devam ederek sonraki sayfaya geçin.'),
-        ] else if (store != null) ...[
-          Text('Hazırlanan sayfalar: ${store.downloaded.length} / 605'),
-          const SizedBox(height: 12),
-          LinearProgressIndicator(value: store.downloaded.length / 605),
-          const SizedBox(height: 16),
-          if (_downloading) OutlinedButton(onPressed: _pauseRequested ? null : () => setState(() => _pauseRequested = true),
-            child: Text(_pauseRequested ? 'Mevcut sayfa tamamlanıyor…' : 'İndirmeyi duraklat'))
-          else FilledButton.icon(onPressed: _download, icon: const Icon(Icons.download),
-            label: Text(store.downloaded.isEmpty ? 'Tam Kur’an’ı indir' : 'İndirmeye devam et')),
-          const SizedBox(height: 16),
-          const Text('Tam Kur’an bir kez indirildikten sonra internetsiz okunabilir. Mevcut Yasin sayfaları indirme gerektirmez.'),
-        ],
-        if (store == null || !store.ready) ...[
+      appBar: AppBar(title: const Text('Kur’an-ı Kerim', style: TextStyle(fontWeight: FontWeight.w700)),
+        actions: [IconButton(tooltip: 'Ayarlar', icon: const Icon(Icons.tune_rounded),
+          onPressed: store == null ? null : () async {
+            await Navigator.push(context, MaterialPageRoute<void>(builder: (_) => SettingsScreen(store: store)));
+            if (mounted) setState(() {});
+          })]),
+      body: Center(child: ConstrainedBox(constraints: const BoxConstraints(maxWidth: 680),
+        child: ListView(padding: const EdgeInsets.fromLTRB(20, 12, 20, 32), children: [
+          Container(decoration: BoxDecoration(borderRadius: BorderRadius.circular(28),
+            gradient: const LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight,
+              colors: [Color(0xFF164D43), Color(0xFF092F2A)])),
+            clipBehavior: Clip.antiAlias,
+            child: Stack(children: [
+              const Positioned(top: -45, right: -45, child: _Ornament()),
+              Padding(padding: const EdgeInsets.all(26), child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  Container(padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    decoration: BoxDecoration(color: const Color(0x22E5C383), borderRadius: BorderRadius.circular(20)),
+                    child: const Text('OKUMA VAKTİ', style: TextStyle(color: Color(0xFFE5C383),
+                      fontWeight: FontWeight.w600, letterSpacing: 2, fontSize: 11))),
+                  const SizedBox(height: 24),
+                  const Icon(Icons.auto_stories_rounded, color: Color(0xFFE5C383), size: 40),
+                  const SizedBox(height: 14),
+                  const Text('Her sayfada\nbir huzur.', style: TextStyle(color: Colors.white,
+                    fontSize: 32, height: 1.2, fontWeight: FontWeight.w600)),
+                  const SizedBox(height: 20),
+                  if (store != null && store.ready) ...[
+                    Text('${surahsOnPage(store.lastPage).map((s) => s.name).join(' · ')}  /  ${store.lastPage == 0 ? 'Fatiha' : 'Sayfa ${store.lastPage}'}',
+                      style: const TextStyle(color: Color(0xFFE1E9DC))),
+                    const SizedBox(height: 12),
+                    SizedBox(width: double.infinity, child: FilledButton.icon(
+                      style: FilledButton.styleFrom(backgroundColor: const Color(0xFFE5C383), foregroundColor: const Color(0xFF173C32)),
+                      onPressed: () => _read(store.lastPage), icon: const Icon(Icons.play_arrow_rounded),
+                      label: const Text('Okumaya devam et'))),
+                  ] else const Text('Mushafını yanında taşı.', style: TextStyle(color: Color(0xFFE1E9DC))),
+                ])),
+            ])),
           const SizedBox(height: 24),
-          OutlinedButton(onPressed: () => Navigator.push(context, MaterialPageRoute<void>(
-            builder: (_) => const SurahScreen(surahName: 'Yasin Suresi', pageCount: 6))),
-            child: const Text('Yasin Suresi · Çevrimdışı')),
-        ],
-      ]),
+          if (store == null && _error == null) const Center(child: CircularProgressIndicator()),
+          if (_error != null) Padding(padding: const EdgeInsets.only(bottom: 16),
+            child: Text(_error!, style: TextStyle(color: Theme.of(context).colorScheme.error))),
+          if (store == null && _error != null) OutlinedButton(onPressed: _load, child: const Text('Tekrar dene')),
+          if (store != null && store.ready) ...[
+            Text('Kütüphanem', style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700)),
+            const SizedBox(height: 12),
+            LayoutBuilder(builder: (context, constraints) {
+              final width = (constraints.maxWidth - 12) / 2;
+              return Wrap(spacing: 12, runSpacing: 12, children: [
+                _QuickAction(width: width, icon: Icons.format_list_numbered_rounded,
+                  title: 'Sureler', subtitle: '114 sure', onTap: () => _read(store.lastPage, panel: 'surah')),
+                _QuickAction(width: width, icon: Icons.bookmarks_outlined,
+                  title: 'Ayraçlarım', subtitle: '${store.bookmarks.length} kayıt', onTap: () => _read(store.lastPage, panel: 'bookmarks')),
+                _QuickAction(width: width, icon: Icons.menu_book_outlined,
+                  title: 'Baştan oku', subtitle: 'Fatiha Suresi', onTap: () => _read(0)),
+                _QuickAction(width: width, icon: Icons.auto_stories_outlined,
+                  title: 'Yasin Suresi', subtitle: 'Sayfa 439', onTap: () => _read(439)),
+              ]);
+            }),
+            const SizedBox(height: 20),
+            Card(child: ListTile(leading: const Icon(Icons.numbers_rounded), title: const Text('Sayfaya git'),
+              trailing: const Icon(Icons.arrow_forward_rounded, size: 20), onTap: () => _read(store.lastPage, panel: 'jump'))),
+          ] else if (store != null) ...[
+            Card(child: Padding(padding: const EdgeInsets.all(22), child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+                Text('Mushafını hazırla', style: Theme.of(context).textTheme.titleLarge),
+                const SizedBox(height: 8), const Text('Bir kez indir, her yerde çevrimdışı oku.'),
+                const SizedBox(height: 20),
+                LinearProgressIndicator(value: store.downloaded.length / 605, borderRadius: BorderRadius.circular(8), minHeight: 6),
+                const SizedBox(height: 10), Text('Hazırlanan sayfalar: ${store.downloaded.length} / 605'),
+                const SizedBox(height: 18),
+                if (_downloading) OutlinedButton(onPressed: _pauseRequested ? null : () => setState(() => _pauseRequested = true),
+                  child: Text(_pauseRequested ? 'Mevcut sayfa tamamlanıyor…' : 'İndirmeyi duraklat'))
+                else FilledButton.icon(onPressed: _download, icon: const Icon(Icons.download_rounded),
+                  label: Text(store.downloaded.isEmpty ? 'Tam Kur’an’ı indir' : 'İndirmeye devam et')),
+              ]))),
+          ],
+          if (store == null || !store.ready) ...[
+            const SizedBox(height: 16),
+            OutlinedButton(onPressed: () => Navigator.push(context, MaterialPageRoute<void>(
+              builder: (_) => const SurahScreen(surahName: 'Yasin Suresi', pageCount: 6))),
+              child: const Text('Yasin Suresi · Çevrimdışı')),
+          ],
+          const SizedBox(height: 24),
+          const Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+            Icon(Icons.verified_outlined, size: 16, color: Color(0xFF8B7449)), SizedBox(width: 6),
+            Flexible(child: Text('Bilgisayar hattı · Reklamsız okuma', style: TextStyle(color: Color(0xFF776F61), fontSize: 12))),
+          ]),
+        ]))),
     );
   }
+}
+
+class _QuickAction extends StatelessWidget {
+  final double width;
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final VoidCallback onTap;
+  const _QuickAction({required this.width, required this.icon, required this.title,
+    required this.subtitle, required this.onTap});
+  @override
+  Widget build(BuildContext context) => SizedBox(width: width, child: Card(margin: EdgeInsets.zero,
+    clipBehavior: Clip.antiAlias, child: InkWell(onTap: onTap, child: Padding(
+      padding: const EdgeInsets.all(18), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Container(padding: const EdgeInsets.all(10), decoration: BoxDecoration(
+          color: const Color(0xFFF0E8D5), borderRadius: BorderRadius.circular(13)),
+          child: Icon(icon, color: const Color(0xFF7E6533), size: 24)),
+        const SizedBox(height: 14), Text(title, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 16)),
+        const SizedBox(height: 4), Text(subtitle, style: const TextStyle(color: Color(0xFF827A6C), fontSize: 12)),
+      ])))));
+}
+
+class _Ornament extends StatelessWidget {
+  const _Ornament();
+  @override
+  Widget build(BuildContext context) => Transform.rotate(angle: .45,
+    child: SizedBox(width: 180, height: 180, child: Stack(alignment: Alignment.center, children: [
+      for (var i = 0; i < 4; i++) Transform.rotate(angle: i * .39,
+        child: Container(width: 125, height: 125,
+          decoration: BoxDecoration(border: Border.all(color: const Color(0x24E5C383), width: 1.5)))),
+      Container(width: 170, height: 170, decoration: BoxDecoration(shape: BoxShape.circle,
+        border: Border.all(color: const Color(0x18E5C383)))),
+    ])));
 }

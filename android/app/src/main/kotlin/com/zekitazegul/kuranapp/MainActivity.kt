@@ -1,6 +1,8 @@
 package com.zekitazegul.kuranapp
 
 import android.view.WindowManager
+import android.content.Intent
+import android.net.Uri
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
 import java.util.concurrent.Executors
@@ -14,12 +16,27 @@ class MainActivity : FlutterActivity() {
         val storage = ReadingStorage(applicationContext)
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger,
             "com.zekitazegul.kuranapp/reading").setMethodCallHandler { call, result ->
+            if (call.method == "openSupport") {
+                try {
+                    val uri = Uri.parse(requireNotNull(call.argument<String>("url")))
+                    require(uri.scheme == "https" && uri.host in setOf(
+                        "buymeacoffee.com", "www.buymeacoffee.com", "ko-fi.com", "www.ko-fi.com"
+                    )) { "Destek bağlantısı geçerli değil." }
+                    startActivity(Intent(Intent.ACTION_VIEW, uri))
+                    result.success(null)
+                } catch (error: Exception) {
+                    result.error("SUPPORT_ERROR", "Destek bağlantısı açılamadı.", null)
+                }
+                return@setMethodCallHandler
+            }
             storageExecutor.execute {
                 try {
                     val value: Any? = when (call.method) {
                         "load" -> storage.load()
                         "savePage" -> storage.savePage(requireNotNull(call.argument<Int>("page"))).let { null }
                         "saveBookmarks" -> storage.saveBookmarks(requireNotNull(call.argument<List<Int>>("pages"))).let { null }
+                        "acknowledgeGuide" -> storage.acknowledgeGuide().let { null }
+                        "setPageAnimations" -> storage.setPageAnimations(requireNotNull(call.argument<Boolean>("enabled"))).let { null }
                         "acknowledge" -> storage.acknowledge().let { null }
                         "downloadPage" -> storage.downloadPage(requireNotNull(call.argument<Int>("page"))).let { null }
                         else -> {
