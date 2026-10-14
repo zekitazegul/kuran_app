@@ -389,7 +389,7 @@ class _SurahPickerState extends State<_SurahPicker> {
 
   @override
   Widget build(BuildContext context) {
-    final normalized = normalizeSurahName(query).replace('.', '');
+    final normalized = normalizeSurahName(query).replaceAll('.', '');
     final juzMatch = RegExp(r'^(?:cuz|juz|djoez)([0-9]*)$').firstMatch(normalized)
       ?? RegExp(r'^([0-9]+)(?:cuz|juz|djoez)$').firstMatch(normalized);
     final pageMatch = RegExp(r'^(?:sayfa|page|pagina|s)([0-9]+)$').firstMatch(normalized);
