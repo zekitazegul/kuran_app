@@ -10,7 +10,7 @@ void main() {
 
   test('each edition has an independent complete index and valid crop bounds', () async {
     final entries = jsonDecode(await File('assets/editions.json').readAsString()) as List;
-    expect(entries.length, 2);
+    expect(entries.length, 3);
     expect(entries.map((e) => (e as Map)['directory']).toSet().length, entries.length);
     expect(entries.map((e) => (e as Map)['preferences']).toSet().length, entries.length);
     for (final entry in entries) {
@@ -29,11 +29,23 @@ void main() {
     }
   });
 
+  test('Husrev uses its own PDF offset and variable page dimensions', () async {
+    final entries = jsonDecode(await File('assets/editions.json').readAsString()) as List;
+    final data = entries.firstWhere((entry) => (entry as Map)['id'] == 'husrev') as Map;
+    final edition = QuranEdition.fromMap(data);
+    expect(data['pdfOffset'], 0);
+    expect(data['pdfPages'], 605);
+    expect(edition.pageSizes.length, 605);
+    expect(edition.pageCrops.length, 605);
+    expect(edition.pageSize(0).height, isNot(edition.pageSize(439).height));
+    expect(edition.yasinPage, 439);
+  });
+
   test('switching editions preserves downloads, bookmarks and last page independently', () async {
     final entries = jsonDecode(await File('assets/editions.json').readAsString()) as List;
     var selected = 'computer';
-    final pages = {'computer': 439, 'hat2': 0};
-    final bookmarks = <String, List<int>>{'computer': [439], 'hat2': []};
+    final pages = {'computer': 439, 'hat2': 0, 'husrev': 0};
+    final bookmarks = <String, List<int>>{'computer': [439], 'hat2': [], 'husrev': []};
     final messenger = TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger;
     messenger.setMockMethodCallHandler(ReadingStore.channel, (call) async {
       final args = call.arguments as Map? ?? {};
@@ -71,6 +83,18 @@ void main() {
       await store.selectEdition('hat2');
       expect(store.lastPage, 12);
       expect(store.bookmarks, {12});
+      await store.selectEdition('husrev');
+      expect(store.edition.id, 'husrev');
+      expect(store.lastPage, 0);
+      expect(store.bookmarks, isEmpty);
+      await store.savePage(439);
+      await store.toggleBookmark(439);
+      await store.selectEdition('computer');
+      expect(store.lastPage, 439);
+      expect(store.bookmarks, {439, 440});
+      await store.selectEdition('husrev');
+      expect(store.lastPage, 439);
+      expect(store.bookmarks, {439});
     } finally {
       messenger.setMockMethodCallHandler(ReadingStore.channel, null);
     }

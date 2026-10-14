@@ -1,6 +1,6 @@
 # Android development and release checks
 
-Version 1.2.2+8 targets Android. No iOS distribution is prepared.
+Version 1.2.3+9 targets Android. No iOS distribution is prepared.
 
 ## Build on the existing Flutter workstation
 
@@ -18,7 +18,7 @@ Use the existing signing key to update an installed APK.
 
 ## Source and numbering
 
-The user supplied `content/kuran-bilgisayar-hatti.pdf` (24,129,254 bytes).
+The original computer-script source is `content/kuran-bilgisayar-hatti.pdf` (24,129,254 bytes).
 Colophon: Diyanet İşleri Başkanlığı, Kur’an-ı Kerim (Rahle Boy), computer
 script by Süleyman Feyzullahoğlu, Ankara 2018. This is not a Diyanet-endorsed app.
 Original PDF SHA-256:
@@ -50,7 +50,8 @@ Flutter is unavailable in the cloud environment. Syntax parsing and PDF/index
 checks passed there; actual Flutter tests/build and device rendering remain
 required. Test:
 - First launch disclosure, explicit download confirmation, and relaunch.
-- Download the 24 MB PDF, verify progress through 605 prepared pages. Pause,
+- Download each selected PDF (computer ~24 MB, Hat 2 ~28 MB, Hüsrev ~74 MB),
+  verify progress through 605 prepared pages. Pause,
   restart and resume without downloading the PDF again. Check disk/network errors.
 - Compare Fatiha, Bakara, Sad, Yasin 439, and final 604 against the PDF.
 - Read in airplane mode; search/select surahs and jump to 439.
@@ -99,7 +100,7 @@ persistence. Android reduced-motion settings also suppress page animations.
 Check home tiles and Settings at large system font sizes and in landscape.
 
 The edition catalog is `assets/editions.json`, bundled for both Flutter and the
-native downloader. Computer script and supplied Hat 2 are independently
+native downloader. Computer script, supplied Hat 2 and Hüsrev are independently
 selectable in Settings. Each has an immutable source URL, exact byte count,
 SHA-256, own PDF offset, first/last page, 114-surah index and crop rectangles.
 Hat 2 has different odd/even margins. Its footer metadata was indexed separately;
@@ -111,13 +112,24 @@ edition retains separate downloads, bookmarks and last-read position. Changing
 edition from the reader returns to Home if a download is needed. Settings are
 unavailable during an active Home download to avoid mixing editions.
 
-Hüsrev remains unavailable: its uploaded PDF exceeded the 32 MiB transfer limit
-and could not be read in this environment. Obtain an accessible download URL or
-an upload within the supported size, then inspect its real page/index layout.
-Do not relabel Hat 2 as Hüsrev or fabricate its page mapping.
+Hüsrev source is now present at `content/kuran-husrev-hatti.pdf`, added by the
+user in commit 76729c0. File is 74,138,596 bytes, SHA-256
+`c3f4173f8c410db4301f1c21152ff901c8323eb702971c6c8aab7f0ca51a7ba6`.
+It has 605 scanned pages with no text layer, no blank cover and no end matter.
+PDF index 0 = Fatiha (app page 0), index 439 = Yasin (app page 439).
+All 114 surah panels were independently identified using their broad gold fill,
+then checked against chronological order, page coverage and the known starts.
+The resulting starts agree with the existing computer-script edition.
+Individual physical page heights and crop bounds are supplied for all 605 pages;
+Dart layout/cropping uses those instead of assuming one fixed PDF aspect ratio.
+Opening pages have individually inspected text-area crops.
+
+The original computer-script and Hat 2 entries, file directories/preferences,
+source revisions and SHA-256 values remain unchanged. Hüsrev uses `husrev-v1`
+and `reading-husrev-v1`. Switching must never reset another edition's records.
 
 Local tests: `flutter analyze` and `flutter test` (including edition isolation).
-On device, select Hat 2, download it, check every navigation feature/crop, add a
+On device, select Hat 2 and Hüsrev, download each, check navigation/crops, add a
 bookmark and save a page, then switch back. Computer downloads/bookmarks must
 remain unchanged. Repeat after relaunch; check Settings from both Home/reader.
 The Flutter SDK is absent in the cloud, so these tests are not claimed passed.

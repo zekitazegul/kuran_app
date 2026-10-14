@@ -56,9 +56,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
             finally { if (mounted) setState(() => _saving = false); }
           },
         ),
-        const Divider(height: 1, indent: 16, endIndent: 16),
-        const ListTile(enabled: false, leading: Icon(Icons.draw_outlined), title: Text('Hüsrev hattı'),
-          subtitle: Text('Kaynak dosyanın aktarılması bekleniyor')),
       ])),
       const SizedBox(height: 24),
       _heading('YARDIM VE BİLGİ'),

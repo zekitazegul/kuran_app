@@ -311,7 +311,7 @@ class _QuranScreenState extends State<QuranScreen> with SingleTickerProviderStat
             _readerWidth = constraints.maxWidth;
             _readerHeight = constraints.maxHeight;
             final crop = widget.store.edition.crop(_page);
-            final aspect = _fullscreen ? crop.height / crop.width : widget.store.edition.pdfSize.height / widget.store.edition.pdfSize.width;
+            final aspect = _fullscreen ? crop.height / crop.width : widget.store.edition.pageSize(_page).height / widget.store.edition.pageSize(_page).width;
             final sheetHeight = _fullscreen || _landscape
                 ? math.max(constraints.maxHeight, constraints.maxWidth * aspect)
                 : constraints.maxHeight;

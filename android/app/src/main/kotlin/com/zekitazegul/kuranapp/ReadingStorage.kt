@@ -161,8 +161,8 @@ class ReadingStorage(private val context: Context, requestedEdition: String? = n
         try {
             ParcelFileDescriptor.open(source, ParcelFileDescriptor.MODE_READ_ONLY).use { descriptor ->
                 PdfRenderer(descriptor).use { renderer ->
-                    // PDF page 1 is blank. PDF 2 is unnumbered Fatiha; PDF 3
-                    // is printed page 1. Printed page 604 is PDF page 606.
+                    // Each edition defines its own offset. Hüsrev starts at
+                    // physical PDF page 1; the other PDFs have a blank cover.
                     renderer.openPage(page - firstPage + edition.getInt("pdfOffset")).use { pdfPage ->
                         val width = 1400
                         val height = (width.toDouble() * pdfPage.height / pdfPage.width).toInt()

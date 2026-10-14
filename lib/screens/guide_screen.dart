@@ -23,9 +23,9 @@ class GuideScreen extends StatelessWidget {
       const _GuideTile(Icons.bookmarks_outlined, 'Kaldığın yer kaybolmaz',
         'Son okunan sayfa otomatik kaydedilir. Okuyucudaki ayraç simgesiyle birden fazla sayfayı saklayabilirsin.'),
       const _GuideTile(Icons.format_list_numbered, 'Sure ve sayfa seçimi',
-        'Ana ekrandan veya okuyucu menüsünden sure seç, ayraçlarını aç ya da sayfa numarası yaz. Bilgisayar hatlı baskıda Fatiha 0, diğer sayfalar 1–604 olarak gösterilir.'),
+        'Ana ekrandan veya okuyucu menüsünden sure seç, ayraçlarını aç ya da sayfa numarası yaz. Mevcut baskılarda Fatiha 0, diğer sayfalar 1–604 olarak gösterilir. Her hattın ayraçları ve son okunan sayfası ayrı saklanır.'),
       const _GuideTile(Icons.cloud_download_outlined, 'Bir kez indir, çevrimdışı oku',
-        'Tam mushafı ilk kullanımda indir. Yaklaşık 24 MB PDF indirilir; sayfa hazırlama ek alan kullanır. Duraklatıp devam edebilirsin. İndirme sırasında uygulamayı açık tut.'),
+        'Tam mushafı ilk kullanımda indir. PDF boyutu seçilen hatta göre değişir; sayfa hazırlama ek alan kullanır. Duraklatıp devam edebilirsin. İndirme sırasında uygulamayı açık tut.'),
       if (onContinue != null) Padding(padding: const EdgeInsets.only(top: 16), child: FilledButton(
         onPressed: () async {
           try { await onContinue!(); } catch (_) {

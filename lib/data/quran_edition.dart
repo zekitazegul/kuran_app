@@ -13,11 +13,14 @@ class QuranEdition {
   final Rect cropFirst;
   final Rect cropSecond;
   final List<Surah> surahIndex;
+  final List<Size> pageSizes;
+  final List<Rect> pageCrops;
 
   const QuranEdition({required this.id, required this.name, required this.description,
     required this.firstPage, required this.lastPage, required this.pdfSize,
     required this.cropOdd, required this.cropEven, required this.cropFirst,
-    required this.cropSecond, required this.surahIndex});
+    required this.cropSecond, required this.surahIndex,
+    this.pageSizes = const [], this.pageCrops = const []});
 
   static const computer = QuranEdition(id: 'computer', name: 'Bilgisayar hattı',
     description: 'Diyanet · Süleyman Feyzullahoğlu', firstPage: 0, lastPage: 604,
@@ -37,6 +40,14 @@ class QuranEdition {
       lastPage: data['lastPage'] as int,
       pdfSize: Size((data['pdfWidth'] as num).toDouble(), (data['pdfHeight'] as num).toDouble()),
       cropOdd: rect('cropOdd'), cropEven: rect('cropEven'), cropFirst: rect('cropFirst'), cropSecond: rect('cropSecond'),
+      pageSizes: ((data['pageSizes'] as List?) ?? const []).map((entry) {
+        final row = List<num>.from(entry as List);
+        return Size(row[0].toDouble(), row[1].toDouble());
+      }).toList(),
+      pageCrops: ((data['pageCrops'] as List?) ?? const []).map((entry) {
+        final row = List<num>.from(entry as List);
+        return Rect.fromLTRB(row[0].toDouble(), row[1].toDouble(), row[2].toDouble(), row[3].toDouble());
+      }).toList(),
       surahIndex: (data['surahs'] as List).map((entry) {
         final row = List<int>.from(entry as List);
         return Surah(row[0], surahs[row[0] - 1].name, row[1], row[2]);
@@ -45,12 +56,21 @@ class QuranEdition {
 
   int get pageCount => lastPage - firstPage + 1;
   int get yasinPage => surahIndex[35].startPage;
-  Rect crop(int page) => page == firstPage ? cropFirst : page == firstPage + 1
-    ? cropSecond : page.isOdd ? cropOdd : cropEven;
+  Size pageSize(int page) {
+    final index = page - firstPage;
+    return index >= 0 && index < pageSizes.length ? pageSizes[index] : pdfSize;
+  }
+  Rect crop(int page) {
+    final index = page - firstPage;
+    if (index >= 0 && index < pageCrops.length) return pageCrops[index];
+    return page == firstPage ? cropFirst : page == firstPage + 1
+      ? cropSecond : page.isOdd ? cropOdd : cropEven;
+  }
   Rect normalizedCrop(int page) {
     final r = crop(page);
-    return Rect.fromLTRB(r.left / pdfSize.width, r.top / pdfSize.height,
-      r.right / pdfSize.width, r.bottom / pdfSize.height);
+    final size = pageSize(page);
+    return Rect.fromLTRB(r.left / size.width, r.top / size.height,
+      r.right / size.width, r.bottom / size.height);
   }
   List<Surah> surahsOnPage(int page) => surahIndex.where((s) => s.startPage <= page && page <= s.endPage).toList();
 }
