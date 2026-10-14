@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../services/app_language.dart';
 
 const translations = <String, Map<String, String>>{
+  "Bu sayfada secde ayeti var.\n{surah} · {chapter}:{verse}": {"en": "This page contains a verse of prostration.\n{surah} · {chapter}:{verse}", "nl": "Deze pagina bevat een neerwerpingsvers.\n{surah} · {chapter}:{verse}"},
   'Beğen': {'en': 'Like', 'nl': 'Vind ik leuk'},
   'Ana sayfaya dön': {'en': 'Back to home', 'nl': 'Terug naar start'},
   'Henüz tamamen indirilmiş bir hat yok.': {'en': 'No edition has been fully downloaded yet.', 'nl': 'Er is nog geen uitgave volledig gedownload.'},

@@ -1,3 +1,4 @@
+import '../widgets/sajdah_notice.dart';
 import '../l10n/translations.dart';
 import 'dart:io';
 import 'dart:math' as math;
@@ -291,7 +292,8 @@ class _QuranScreenState extends State<QuranScreen> with SingleTickerProviderStat
             PopupMenuItem(value: 'bookmarks', child: Text(context.t('Ayraçlar'))),
             PopupMenuItem(value: 'full', child: Text(context.t('Tam ekran'))),
             PopupMenuItem(value: 'settings', child: Text(context.t('Ayarlar')))]), LanguageSelector()]),
-      body: SafeArea(top: !_fullscreen, bottom: !_fullscreen, child: Column(children: [
+      body: Stack(fit: StackFit.expand, children: [
+      SafeArea(top: !_fullscreen, bottom: !_fullscreen, child: Column(children: [
         Expanded(child: GestureDetector(
           key: const ValueKey('quran-reading-surface'),
           behavior: HitTestBehavior.opaque,
@@ -371,6 +373,9 @@ class _QuranScreenState extends State<QuranScreen> with SingleTickerProviderStat
             IconButton(tooltip: context.t('Önceki sayfa'), onPressed: busy || _page == widget.store.edition.firstPage ? null : () => _go(_page - 1), icon: Icon(Icons.chevron_right)),
           ])),
       ])),
+      Positioned(top: 12, left: 20, right: 20, child: SafeArea(
+        child: SajdahNotice(page: _page, editionId: widget.store.edition.id))),
+      ]),
     );
   }
 }
