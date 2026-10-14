@@ -1,3 +1,4 @@
+import 'sources_screen.dart';
 import 'package:flutter/material.dart';
 import '../l10n/translations.dart';
 import '../widgets/language_selector.dart';
@@ -20,6 +21,11 @@ class AboutScreen extends StatelessWidget {
       Text(context.t('Geliştirici: Zeki Tazegul'),
         style: Theme.of(context).textTheme.titleMedium),
       const SizedBox(height: 24),
+      ListTile(leading: const Icon(Icons.copyright_outlined),
+        title: Text(context.t('Kaynaklar ve telif bilgileri')),
+        trailing: const Icon(Icons.chevron_right),
+        onTap: () => Navigator.push(context,
+          MaterialPageRoute<void>(builder: (_) => const SourcesScreen()))),
       Text(context.t('Bir kahveyle destek ol'), style: Theme.of(context).textTheme.titleLarge),
       const SizedBox(height: 8),
       Text(context.t('supportInvitation')),

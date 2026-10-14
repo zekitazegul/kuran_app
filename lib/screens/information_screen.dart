@@ -1,3 +1,4 @@
+import 'sources_screen.dart';
 import '../widgets/language_selector.dart';
 import '../l10n/translations.dart';
 import 'package:flutter/material.dart';
@@ -15,6 +16,12 @@ class InformationScreen extends StatelessWidget {
       Text(context.t('Uygulama neye erişir?'), style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
       SizedBox(height: 16),
       Text(context.t('privacyBody')),
+      ListTile(leading: const Icon(Icons.copyright_outlined),
+        title: Text(context.t('Kaynaklar ve telif bilgileri')),
+        trailing: const Icon(Icons.chevron_right),
+        onTap: () => Navigator.push(context,
+          MaterialPageRoute<void>(builder: (_) => const SourcesScreen()))),
+
       SizedBox(height: 24),
       if (onContinue != null) FilledButton(onPressed: () async {
         try { await onContinue!(); } catch (_) {

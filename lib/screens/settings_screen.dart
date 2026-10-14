@@ -1,3 +1,4 @@
+import 'sources_screen.dart';
 import '../widgets/support_card.dart';
 import 'about_screen.dart';
 import '../widgets/language_selector.dart';
@@ -90,6 +91,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
         ListTile(leading: const Icon(Icons.info_outline), title: Text(context.t('Uygulama hakkında')),
           trailing: const Icon(Icons.chevron_right), onTap: () => Navigator.push(context,
             MaterialPageRoute<void>(builder: (_) => const AboutScreen()))),
+      ListTile(leading: const Icon(Icons.copyright_outlined),
+        title: Text(context.t('Kaynaklar ve telif bilgileri')),
+        trailing: const Icon(Icons.chevron_right),
+        onTap: () => Navigator.push(context,
+          MaterialPageRoute<void>(builder: (_) => const SourcesScreen()))),
         ListTile(leading: Icon(Icons.help_outline), title: Text(context.t('Kullanım kılavuzu')),
           trailing: Icon(Icons.chevron_right), onTap: () => Navigator.push(context,
             MaterialPageRoute<void>(builder: (_) => GuideScreen()))),

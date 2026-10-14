@@ -98,7 +98,10 @@ void main() {
     expect(find.text('Gizlilik ve uygulama erişimleri'), findsOneWidget);
     expect(find.text('İndirmeyi başlat'), findsNothing);
     await tester.scrollUntilVisible(find.text('Anladım, devam et'), 400);
-    await tester.tap(find.text('Anladım, devam et'));
+    final informationButton = find.widgetWithText(FilledButton, 'Anladım, devam et');
+    await tester.ensureVisible(informationButton);
+    await tester.pumpAndSettle();
+    await tester.tap(informationButton);
     await tester.pumpAndSettle();
     expect(acknowledged, isTrue);
     expect(find.text('Kullanım kılavuzu'), findsOneWidget);

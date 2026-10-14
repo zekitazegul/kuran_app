@@ -194,3 +194,12 @@ The support page currently links to the developer-provided Tikkie request valid
 through 27 October 2026 (Europe/Amsterdam). Its button is hidden after that date.
 Renew the link and expiry in the website repository `support/index.html`; an app
 update is not needed. Verify amount/recipient and bank handoff on a real device.
+
+### Sources and advertising policy
+
+KuranApp remains free and without ads; no advertising SDK is integrated.
+About, Settings and Privacy link to Sources and copyright (TR/EN/NL).
+Diyanet and Ahıska credits are taken from PDF page 616 of their respective
+files. The Hüsrev Altınbaşak / Hayrat Neşriyat association is user supplied
+and explicitly unverified for the particular 605-page scan. Attribution
+is not a verified distribution licence; no publisher endorsement is claimed.
