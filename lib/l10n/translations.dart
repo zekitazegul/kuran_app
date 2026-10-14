@@ -2,6 +2,14 @@ import 'package:flutter/material.dart';
 import '../services/app_language.dart';
 
 const translations = <String, Map<String, String>>{
+  'Seçilen hat cihazına indirilecek. Wi-Fi kullanmanı ve işlem boyunca uygulamayı açık tutmanı öneririz. İndirmeyi duraklatıp daha sonra devam edebilirsin.': {'en': 'The selected edition will be downloaded to your device. We recommend Wi-Fi and keeping the app open during the process. You can pause and resume later.', 'nl': 'De gekozen uitgave wordt naar je apparaat gedownload. We raden wifi aan en adviseren de app tijdens het proces open te houden. Je kunt pauzeren en later verdergaan.'},
+  "2 / 2 · Sayfalar cihaza indiriliyor": {"en": "2 / 2 · Downloading pages to your device", "nl": "2 / 2 · Pagina’s downloaden naar je apparaat"},
+  "İndirilen: {done}/{total}": {"en": "Downloaded: {done}/{total}", "nl": "Gedownload: {done}/{total}"},
+  "İndirme durduruluyor…": {"en": "Stopping download…", "nl": "Download stoppen…"},
+  "İndirmeyi iptal et": {"en": "Cancel download", "nl": "Download annuleren"},
+  "İndirme mevcut sayfadan sonra durdurulacak. İndirilen sayfalar korunur; daha sonra devam edebilirsin.": {"en": "The download will stop after the current page. Downloaded pages are kept so you can resume later.", "nl": "De download stopt na de huidige pagina. Gedownloade pagina’s blijven bewaard, zodat je later verder kunt gaan."},
+  "İndirme iptal edildi. İndirilen sayfalar korundu.": {"en": "Download cancelled. Downloaded pages were kept.", "nl": "Download geannuleerd. Gedownloade pagina’s zijn bewaard."},
+  "{edition} · Kur’an sayfalarını indir": {"en": "{edition} · Download Quran pages", "nl": "{edition} · Koranpagina’s downloaden"},
   "Hattı cihazımdan kaldır": {"en": "Remove edition from my device", "nl": "Schriftuitgave van mijn apparaat verwijderen"},
   "{edition} dosyaları cihazdan silinecek. Ayraçların ve son okuduğun sayfa korunacak. Tekrar okumak için bu hattı yeniden indirmen gerekir.": {"en": "Files for {edition} will be deleted from this device. Your bookmarks and last-read page will be kept. Download this edition again to read it.", "nl": "De bestanden van {edition} worden van dit apparaat verwijderd. Je bladwijzers en laatst gelezen pagina blijven bewaard. Download deze uitgave opnieuw om te lezen."},
   "Kaldır": {"en": "Remove", "nl": "Verwijderen"},

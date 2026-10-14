@@ -56,6 +56,7 @@ class _HomeScreenState extends State<HomeScreen> {
   bool _downloadError = false;
   bool _downloading = false;
   bool _pauseRequested = false;
+  bool _cancelRequested = false;
 
   @override
   void initState() { super.initState(); _load(); }
@@ -73,13 +74,13 @@ class _HomeScreenState extends State<HomeScreen> {
   Future<void> _download() async {
     final store = _store!;
     final confirmed = await showDialog<bool>(context: context, builder: (context) => AlertDialog(
-      title: Text(context.t('{edition} · Mushafı indir', {'edition': context.t(store.edition.name)})),
-      content: Text(context.t('Seçili hattın PDF’si indirilecek ve sayfalar cihazınızda hazırlanacak. Hazırlanan görseller ek depolama alanı kullanır. Wi-Fi kullanmanız önerilir. İndirme sırasında uygulamayı açık tutun; duraklatıp daha sonra kaldığınız yerden sürdürebilirsiniz.')),
+      title: Text(context.t('{edition} · Kur’an sayfalarını indir', {'edition': context.t(store.edition.name)})),
+      content: Text(context.t('Seçilen hat cihazına indirilecek. Wi-Fi kullanmanı ve işlem boyunca uygulamayı açık tutmanı öneririz. İndirmeyi duraklatıp daha sonra devam edebilirsin.')),
       actions: [TextButton(onPressed: () => Navigator.pop(context, false), child: Text(context.t('İptal'))),
         FilledButton(onPressed: () => Navigator.pop(context, true), child: Text(context.t('İndirmeyi başlat')))],
     ));
     if (confirmed != true || !mounted) return;
-    setState(() { _downloading = true; _pauseRequested = false; _error = null; _downloadError = false; });
+    setState(() { _downloading = true; _pauseRequested = false; _cancelRequested = false; _error = null; _downloadError = false; });
     ReadingStore.channel.setMethodCallHandler((call) async {
       if (call.method != 'downloadProgress' || !mounted) return;
       final data = call.arguments as Map;
@@ -102,6 +103,17 @@ class _HomeScreenState extends State<HomeScreen> {
       ReadingStore.channel.setMethodCallHandler(null);
       if (mounted) setState(() => _downloading = false);
     }
+  }
+
+  Future<void> _cancelDownload() async {
+    final confirmed = await showDialog<bool>(context: context, builder: (dialogContext) => AlertDialog(
+      title: Text(dialogContext.t('İndirmeyi iptal et')),
+      content: Text(dialogContext.t('İndirme mevcut sayfadan sonra durdurulacak. İndirilen sayfalar korunur; daha sonra devam edebilirsin.')),
+      actions: [TextButton(onPressed: () => Navigator.pop(dialogContext, false), child: Text(dialogContext.t('Vazgeç'))),
+        FilledButton(onPressed: () => Navigator.pop(dialogContext, true), child: Text(dialogContext.t('İndirmeyi iptal et')))],
+    ));
+    if (confirmed != true || !mounted || !_downloading) return;
+    setState(() { _cancelRequested = true; _pauseRequested = true; });
   }
 
   void _about() {
@@ -216,7 +228,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 SizedBox(height: 8), Text(context.t('İndirilecek sayfalar: {size} MB', {'size': (store.edition.downloadBytes / 1000000).toStringAsFixed(1)})),
                 SizedBox(height: 20),
                 Text(context.t(store.sourceDownloaded
-                  ? '2 / 2 · Sayfalar cihazda hazırlanıyor'
+                  ? '2 / 2 · Sayfalar cihaza indiriliyor'
                   : '1 / 2 · Dosya indiriliyor')),
                 const SizedBox(height: 8),
                 LinearProgressIndicator(value: store.sourceDownloaded
@@ -229,18 +241,21 @@ class _HomeScreenState extends State<HomeScreen> {
                     'done': (store.downloadedBytes / 1000000).toStringAsFixed(1),
                     'remaining': ((store.edition.downloadBytes - store.downloadedBytes).clamp(0, store.edition.downloadBytes) / 1000000).toStringAsFixed(1)}))
                 else ...[
-                  Text(context.t('Hazır: {done} / {total} sayfa · Kalan: {remaining}', {
-                    'done': store.downloaded.length, 'total': store.edition.pageCount,
-                    'remaining': store.edition.pageCount - store.downloaded.length})),
-                  const SizedBox(height: 8),
-                  Text(context.t('PDF cihazında. Okuma için sayfalar hazırlanıyor; ek internet indirmesi yapılmıyor.')),
+                  Text(context.t('İndirilen: {done}/{total}', {
+                    'done': store.downloaded.length, 'total': store.edition.pageCount})),
                 ],
                 SizedBox(height: 18),
-                if (_downloading) OutlinedButton(onPressed: _pauseRequested ? null : () => setState(() => _pauseRequested = true),
-                  child: Text(_pauseRequested ? context.t('Mevcut sayfa tamamlanıyor…') : context.t(store.sourceDownloaded ? 'Hazırlamayı duraklat' : 'İndirmeyi duraklat')))
-                else FilledButton.icon(onPressed: _download, icon: Icon(Icons.download_rounded),
-                  label: Text(store.sourceDownloaded ? context.t('Sayfaları hazırlamaya devam et')
-                    : store.downloaded.isEmpty ? context.t('Tam Kur’an’ı indir') : context.t('İndirmeye devam et'))),
+                if (_downloading) ...[
+                  OutlinedButton(onPressed: _pauseRequested ? null : () => setState(() => _pauseRequested = true),
+                    child: Text(context.t(_pauseRequested ? 'İndirme durduruluyor…' : 'İndirmeyi duraklat'))),
+                  TextButton(onPressed: _pauseRequested ? null : _cancelDownload,
+                    child: Text(context.t('İndirmeyi iptal et'))),
+                ] else ...[
+                  if (_cancelRequested) Text(context.t('İndirme iptal edildi. İndirilen sayfalar korundu.')),
+                  FilledButton.icon(onPressed: _download, icon: const Icon(Icons.download_rounded),
+                    label: Text(context.t(store.downloadedBytes == 0 && store.downloaded.isEmpty
+                      ? 'İndirmeyi başlat' : 'İndirmeye devam et'))),
+                ],
               ]))),
           ],
           SizedBox(height: 24),

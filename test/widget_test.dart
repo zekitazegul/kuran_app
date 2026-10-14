@@ -96,7 +96,7 @@ void main() {
     await tester.pumpWidget(const KuranApp());
     await tester.pumpAndSettle();
     expect(find.text('Gizlilik ve uygulama erişimleri'), findsOneWidget);
-    expect(find.text('Tam Kur’an’ı indir'), findsNothing);
+    expect(find.text('İndirmeyi başlat'), findsNothing);
     await tester.scrollUntilVisible(find.text('Anladım, devam et'), 400);
     await tester.tap(find.text('Anladım, devam et'));
     await tester.pumpAndSettle();
@@ -110,15 +110,15 @@ void main() {
     await tester.tap(continueButton);
     await tester.pumpAndSettle();
     expect(guideSeen, isTrue);
-    expect(find.text('Tam Kur’an’ı indir'), findsOneWidget);
+    expect(find.text('İndirmeyi başlat'), findsOneWidget);
     expect(find.text('Yasin Suresi · Çevrimdışı'), findsNothing);
-    final downloadButton = find.widgetWithText(FilledButton, 'Tam Kur’an’ı indir');
+    final downloadButton = find.widgetWithText(FilledButton, 'İndirmeyi başlat');
     await tester.ensureVisible(downloadButton);
     await tester.pumpAndSettle();
     expect(downloadButton.hitTestable(), findsOneWidget);
     await tester.tap(downloadButton);
     await tester.pumpAndSettle();
-    expect(find.text('İndirmeyi başlat'), findsOneWidget);
+    expect(find.widgetWithText(AlertDialog, 'İndirmeyi başlat'), findsOneWidget);
     await tester.tap(find.text('İptal'));
     await tester.pumpAndSettle();
     expect(find.text('İndirilecek sayfalar: 24.1 MB'), findsOneWidget);
