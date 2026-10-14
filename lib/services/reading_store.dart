@@ -20,7 +20,7 @@ class ReadingStore {
     if (data == null) throw StateError('Okuma kayıtları yüklenemedi.');
     return ReadingStore(
       directory: data['directory'] as String,
-      lastPage: (data['lastPage'] as int).clamp(1, pageCount),
+      lastPage: (data['lastPage'] as int).clamp(1, pageCount).toInt(),
       informationSeen: data['informationSeen'] == true,
       bookmarks: Set<int>.from(data['bookmarks'] as List).where((p) => p >= 1 && p <= pageCount).toSet(),
       downloaded: Set<int>.from(data['downloaded'] as List),

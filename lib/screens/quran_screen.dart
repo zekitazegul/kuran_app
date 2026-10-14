@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter/scheduler.dart' show TickerCanceled;
 import '../data/surahs.dart';
 import '../services/reading_store.dart';
 import '../widgets/page_turn.dart';
@@ -28,7 +29,7 @@ class _QuranScreenState extends State<QuranScreen> with SingleTickerProviderStat
   @override
   void initState() {
     super.initState();
-    _page = widget.initialPage.clamp(1, ReadingStore.pageCount);
+    _page = widget.initialPage.clamp(1, ReadingStore.pageCount).toInt();
     _turn = AnimationController(vsync: this, duration: const Duration(milliseconds: 650));
     _remember(_page);
   }
