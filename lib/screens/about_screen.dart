@@ -21,6 +21,16 @@ class AboutScreen extends StatelessWidget {
       const SizedBox(height: 20),
       Text(context.t('aboutDescription')),
       const SizedBox(height: 20),
+      Card(child: Padding(padding: const EdgeInsets.all(20), child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text(context.t('v1 · Mevcut sürüm'), style: Theme.of(context).textTheme.titleMedium),
+          const SizedBox(height: 8), Text(context.t('versionOneSummary')),
+          const SizedBox(height: 20),
+          Text(context.t('v2 · Planlanan geliştirme'), style: Theme.of(context).textTheme.titleMedium),
+          const SizedBox(height: 8), Text(context.t('versionTwoPlan')),
+          const SizedBox(height: 20), Text(context.t('freeVersionPolicy')),
+        ]))),
+      const SizedBox(height: 20),
       Text(context.t('Geliştirici: Zeki Tazegul'),
         style: Theme.of(context).textTheme.titleMedium),
       const SizedBox(height: 24),
