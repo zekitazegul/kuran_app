@@ -61,7 +61,7 @@ class _QuranScreenState extends State<QuranScreen> with SingleTickerProviderStat
     }
     if (notification is OverscrollNotification && notification.dragDetails != null &&
         notification.overscroll > 0 && notification.metrics.extentAfter <= 0 &&
-        _landscape && !_zoomed && !_multiTouch && _target == null &&
+        _landscape && !_zoomed && !_multiTouch && !_exitFromBottomEdge && _target == null &&
         !_preparing && _page < widget.store.edition.lastPage) {
       _bottomPull += notification.overscroll;
       if (_bottomPull >= 55) {
@@ -77,6 +77,7 @@ class _QuranScreenState extends State<QuranScreen> with SingleTickerProviderStat
   Offset? _touchStart;
   int? _touchPointer;
   bool _multiTouch = false;
+  bool _exitFromBottomEdge = false;
   bool _dragging = false;
   double _touchHeight = .85;
   double _dragTilt = 0;
@@ -270,9 +271,8 @@ class _QuranScreenState extends State<QuranScreen> with SingleTickerProviderStat
     if (_target != null || _preparing) return;
     // Android physical DPI approximates a 1 cm strip at each edge.
     final region = readerTapRegion(details.localPosition.dx, _readerWidth, widget.store.edgeTapWidth);
-    if (region == ReaderTapRegion.fullscreen) {
-      _toggleFullscreen();
-    } else if (_zoom.value.getMaxScaleOnAxis() <= 1.01) {
+    if (region == ReaderTapRegion.fullscreen) return;
+    if (_zoom.value.getMaxScaleOnAxis() <= 1.01) {
       _go(_page + (region == ReaderTapRegion.nextPage ? 1 : -1), animate: true);
     }
   }
@@ -331,6 +331,7 @@ class _QuranScreenState extends State<QuranScreen> with SingleTickerProviderStat
                 return;
               }
               if (_turn.isAnimating || _preparing || _target != null) return;
+              _exitFromBottomEdge = _fullscreen && event.localPosition.dy >= _readerHeight - 56;
               _touchPointer = event.pointer;
               _touchStart = event.position;
               _touchHeight = (event.localPosition.dy / _readerHeight).clamp(0.0, 1.0).toDouble();
@@ -340,6 +341,15 @@ class _QuranScreenState extends State<QuranScreen> with SingleTickerProviderStat
             onPointerUp: (event) {
               if (event.pointer != _touchPointer) return;
               final delta = event.position - (_touchStart ?? event.position);
+              if (_exitFromBottomEdge && _fullscreen && !_multiTouch && !_zoomed &&
+                  _target == null && !_dragging && !_preparing &&
+                  delta.dy < -70 && delta.dy.abs() > delta.dx.abs()) {
+                _exitFromBottomEdge = false;
+                _touchPointer = null; _touchStart = null;
+                _toggleFullscreen();
+                return;
+              }
+              _exitFromBottomEdge = false;
               if (_dragging) {
                 _releaseDrag(commit: !_multiTouch && delta.dx.abs() >= 70 &&
                   _turn.value > 0.01);
@@ -354,7 +364,7 @@ class _QuranScreenState extends State<QuranScreen> with SingleTickerProviderStat
             },
             onPointerCancel: (_) {
               _releaseDrag(commit: false);
-              _touchPointer = null; _touchStart = null;
+              _touchPointer = null; _touchStart = null; _exitFromBottomEdge = false;
             },
             child: LayoutBuilder(builder: (context, constraints) {
             _readerWidth = constraints.maxWidth;

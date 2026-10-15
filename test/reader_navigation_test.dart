@@ -75,10 +75,13 @@ void main() {
     expect(find.text('441 / 604'), findsOneWidget);
     await tester.pumpWidget(const SizedBox());
   });
-  testWidgets('double taps alternate outer and inner frame; single tap exits', (tester) async {
+  testWidgets('only double taps zoom; bottom-edge upward swipe exits fullscreen', (tester) async {
     await tester.pumpWidget(MaterialApp(home: QuranScreen(store: store, initialPage: 439)));
     await tester.pumpAndSettle();
     ReadingPage page() => tester.widget<ReadingPage>(find.byType(ReadingPage));
+    expect(page().crop, isNull);
+    await tester.tapAt(tester.getCenter(find.byKey(const ValueKey('quran-reading-surface'))));
+    await tester.pump(kDoubleTapTimeout); await tester.pumpAndSettle();
     expect(page().crop, isNull);
     Future<void> doubleTap() async {
       final center = tester.getCenter(find.byKey(const ValueKey('quran-reading-surface')));
@@ -94,6 +97,11 @@ void main() {
     expect(page().crop, store.edition.normalizedOuterCrop(439));
     await tester.tapAt(tester.getCenter(find.byKey(const ValueKey('quran-reading-surface'))));
     await tester.pump(kDoubleTapTimeout); await tester.pumpAndSettle();
+    expect(page().crop, store.edition.normalizedOuterCrop(439));
+    expect(find.byType(AppBar), findsNothing);
+    final bounds = tester.getRect(find.byKey(const ValueKey('quran-reading-surface')));
+    await tester.dragFrom(Offset(bounds.center.dx, bounds.bottom - 35), const Offset(0, -140));
+    await tester.pumpAndSettle();
     expect(page().crop, isNull);
     expect(find.byType(AppBar), findsOneWidget);
     await tester.pumpWidget(const SizedBox());

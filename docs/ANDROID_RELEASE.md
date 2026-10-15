@@ -256,3 +256,13 @@ At the root, Android Back displays the explicitly requested `Exit?` dialog with
 from reader/settings continues navigating normally. From an incomplete download,
 an installed edition is restored first; if none exists, exit confirmation is
 shown. First-run language/privacy/guide screens also ask before exiting.
+
+### Tap/exit gesture adjustment
+
+A single center tap no longer toggles fullscreen. Edge taps still turn pages.
+Double-tap retains outer/inner frame modes. Exit fullscreen either by pulling
+down from the top of the page or swiping upward from the bottom 56 logical pixels
+of the reading surface (at least 70 logical pixels). The bottom-edge exit strip
+suppresses landscape auto-next while that gesture is active, so ordinary upward
+scrolling elsewhere still advances to the next page at the bottom. Pinch zoom
+must be reset before either fullscreen exit gesture. Guide updated in TR/EN/NL.
