@@ -1,3 +1,4 @@
+import '../data/quran_edition.dart';
 import 'personalization_screen.dart';
 import 'listening_screen.dart';
 import 'sources_screen.dart';
@@ -22,18 +23,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
   bool _saving = false;
   void _message(String text) => ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(context.t(text))));
 
-  Future<void> _removeDownload() async {
+  Future<void> _removeDownload(QuranEdition edition) async {
+    if (_saving) return;
     final confirmed = await showDialog<bool>(context: context, builder: (dialogContext) => AlertDialog(
       title: Text(dialogContext.t('Hattı cihazımdan kaldır')),
       content: Text(dialogContext.t('{edition} dosyaları cihazdan silinecek. Ayraçların ve son okuduğun sayfa korunacak. Tekrar okumak için bu hattı yeniden indirmen gerekir.',
-        {'edition': dialogContext.t(widget.store.edition.name)})),
+        {'edition': dialogContext.t(edition.name)})),
       actions: [TextButton(onPressed: () => Navigator.pop(dialogContext, false), child: Text(dialogContext.t('Vazgeç'))),
         FilledButton(onPressed: () => Navigator.pop(dialogContext, true), child: Text(dialogContext.t('Kaldır')))],
     ));
     if (confirmed != true || !mounted) return;
     setState(() => _saving = true);
     try {
-      await widget.store.removeDownload();
+      await widget.store.removeDownload(editionId: edition.id);
       PaintingBinding.instance.imageCache.clear();
       PaintingBinding.instance.imageCache.clearLiveImages();
       if (mounted) _message('Hat cihazından kaldırıldı.');
@@ -79,9 +81,18 @@ class _SettingsScreenState extends State<SettingsScreen> {
         for (final edition in widget.store.editions) ListTile(
           enabled: !_saving, leading: Icon(Icons.menu_book_outlined),
           title: Text(context.t(edition.name)), subtitle: Text(context.t(edition.description)),
-          trailing: edition.id == widget.store.edition.id
-            ? Icon(Icons.check_circle, color: Theme.of(context).colorScheme.primary)
-            : Icon(Icons.circle_outlined),
+          trailing: Row(mainAxisSize: MainAxisSize.min, children: [
+            edition.id == widget.store.edition.id
+              ? Icon(Icons.check_circle, color: Theme.of(context).colorScheme.primary)
+              : const Icon(Icons.circle_outlined),
+            const SizedBox(width: 4),
+            IconButton(key: ValueKey('remove-edition-${edition.id}'),
+              tooltip: context.t('{edition} · Cihazdan kaldır', {'edition': context.t(edition.name)}),
+              icon: const Icon(Icons.delete_outline),
+              onPressed: _saving || !(widget.store.downloadedEditions.contains(edition.id) ||
+                (edition.id == widget.store.edition.id && (widget.store.downloadedBytes > 0 || widget.store.downloaded.isNotEmpty)))
+                ? null : () => _removeDownload(edition)),
+          ]),
           onTap: edition.id == widget.store.edition.id || _saving ? null : () async {
             setState(() => _saving = true);
             try {
@@ -93,14 +104,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
         ),
       ])),
       SizedBox(height: 24),
-      Card(child: ListTile(
-        leading: const Icon(Icons.delete_outline),
-        title: Text(context.t('Hattı cihazımdan kaldır')),
-        subtitle: Text(context.t(widget.store.edition.name)),
-        enabled: !_saving && (widget.store.downloadedBytes > 0 || widget.store.downloaded.isNotEmpty),
-        onTap: _saving ? null : _removeDownload,
-      )),
-      const SizedBox(height: 24),
       _heading(context.t('YARDIM VE BİLGİ')),
       Card(child: Column(children: [
         ListTile(leading: const Icon(Icons.info_outline), title: Text(context.t('Uygulama hakkında')),

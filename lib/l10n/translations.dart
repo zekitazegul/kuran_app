@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../services/app_language.dart';
 
 const translations = <String, Map<String, String>>{
+  '{edition} · Cihazdan kaldır': {'en': '{edition} · Remove from device', 'nl': '{edition} · Van apparaat verwijderen'},
   'Çıkış?': {'en': 'Exit?', 'nl': 'Afsluiten?'},
   'Tamam': {'en': 'OK', 'nl': 'OK'},
   "Sol kenardaki yaklaşık 1 cm şeride dokun: sonraki sayfa. Sağ kenardaki şeride dokun: önceki sayfa. Ortaya tek dokunmak görünümü değiştirmez.": {"en": "Tap the left 1 cm strip for the next page and the right strip for the previous page. A single tap in the center does not change the view.", "nl": "Tik op de linker strook van ongeveer 1 cm voor de volgende pagina en rechts voor de vorige. Een enkele tik in het midden verandert de weergave niet."},

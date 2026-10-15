@@ -75,10 +75,15 @@ class ReadingStorage(private val context: Context, requestedEdition: String? = n
         return options.outWidth in 500..4096 && options.outHeight in 500..8192
     }
 
+    private fun downloadedEditionIds(): List<String> = (0 until catalog.length()).map { catalog.getJSONObject(it) }
+        .filter { entry -> File(context.filesDir, entry.getString("directory")).listFiles()?.any { it.isFile } == true }
+        .map { it.getString("id") }
+
     fun load(): Map<String, Any?> = mapOf(
         "uiPreferences" to toCodec(JSONObject(global.getString("uiPreferences", "{}")!!)),
         "edition" to toCodec(edition),
         "editions" to toCodec(catalog),
+        "downloadedEditions" to downloadedEditionIds(),
         "directory" to directory.path,
         "downloadedBytes" to File(directory, "kuran.pdf").let { if (it.isFile) it.length() else 0L },
         "language" to global.getString("language", null),

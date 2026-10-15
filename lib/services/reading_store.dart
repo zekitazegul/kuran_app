@@ -8,6 +8,7 @@ class ReadingStore {
   static const lastNumberedPage = 604;
   final Set<int> bookmarks;
   final Set<int> downloaded;
+  final Set<String> downloadedEditions;
   String directory;
   QuranEdition edition;
   List<QuranEdition> editions;
@@ -21,8 +22,9 @@ class ReadingStore {
 
   ReadingStore({required this.directory, required this.lastPage,
     required this.informationSeen, required this.bookmarks, required this.downloaded,
-    this.downloadedBytes = 0, this.guideSeen = false, this.pageAnimations = true, this.language, this.edgeTapWidth = 160 / 2.54,
-    this.edition = QuranEdition.computer, this.editions = const [QuranEdition.computer]});
+    Set<String>? downloadedEditions, this.downloadedBytes = 0, this.guideSeen = false, this.pageAnimations = true, this.language, this.edgeTapWidth = 160 / 2.54,
+    this.edition = QuranEdition.computer, this.editions = const [QuranEdition.computer]})
+      : downloadedEditions = downloadedEditions ?? <String>{};
 
   bool get ready => downloaded.length == edition.pageCount;
   String pagePath(int page) => '$directory/page${page.toString().padLeft(3, '0')}.png';
@@ -33,6 +35,9 @@ class ReadingStore {
     AppPreferences.instance.restore(data['uiPreferences'] as Map?);
     final edition = data['edition'] is Map ? QuranEdition.fromMap(data['edition'] as Map) : QuranEdition.computer;
     return ReadingStore(
+      downloadedEditions: data['downloadedEditions'] is List
+        ? Set<String>.from(data['downloadedEditions'] as List)
+        : ((data['downloadedBytes'] as num? ?? 0) > 0 || (data['downloaded'] as List).isNotEmpty) ? {edition.id} : <String>{},
       edition: edition,
       editions: data['editions'] is List ? (data['editions'] as List).map((e) => QuranEdition.fromMap(e as Map)).toList() : [QuranEdition.computer],
       downloadedBytes: (data['downloadedBytes'] as num?)?.toInt() ?? 0,
@@ -86,6 +91,7 @@ class ReadingStore {
     directory = selected.directory;
     lastPage = selected.lastPage;
     downloadedBytes = selected.downloadedBytes;
+    downloadedEditions..clear()..addAll(selected.downloadedEditions);
     bookmarks..clear()..addAll(selected.bookmarks);
     downloaded..clear()..addAll(selected.downloaded);
   }
@@ -99,15 +105,20 @@ class ReadingStore {
     return ready;
   }
 
-  Future<void> removeDownload() async {
-    await channel.invokeMethod<void>('removeDownload', {'edition': edition.id});
-    downloaded.clear();
-    downloadedBytes = 0;
+  Future<void> removeDownload({String? editionId}) async {
+    final id = editionId ?? edition.id;
+    await channel.invokeMethod<void>('removeDownload', {'edition': id});
+    downloadedEditions.remove(id);
+    if (id == edition.id) {
+      downloaded.clear();
+      downloadedBytes = 0;
+    }
   }
 
   Future<void> downloadPage(int page) async {
     await channel.invokeMethod<void>('downloadPage', {'edition': edition.id, 'page': page});
     downloadedBytes = edition.downloadBytes;
+    downloadedEditions.add(edition.id);
     downloaded.add(page);
   }
 }
