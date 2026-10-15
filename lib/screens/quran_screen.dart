@@ -1,3 +1,4 @@
+import 'listening_screen.dart';
 import '../widgets/sajdah_notice.dart';
 import '../l10n/translations.dart';
 import 'dart:io';
@@ -271,7 +272,10 @@ class _QuranScreenState extends State<QuranScreen> with SingleTickerProviderStat
     _landscape = orientation == Orientation.landscape;
     return Scaffold(backgroundColor: Color(0xFFE9E1D1),
       appBar: _fullscreen ? null : AppBar(title: Text(widget.store.edition.surahsOnPage(_page).map((s) => surahName(s, context.language)).join(' · ')),
-        actions: [IconButton(tooltip: context.t('Sayfaya git'), onPressed: _jump, icon: Icon(Icons.numbers)),
+        actions: [IconButton(tooltip: context.t('Dinle'), icon: const Icon(Icons.headphones_outlined),
+          onPressed: busy ? null : () => Navigator.push(context, MaterialPageRoute<void>(builder: (_) =>
+            ListeningScreen(initialSurah: widget.store.edition.surahsOnPage(_page).first.number)))),
+          IconButton(tooltip: context.t('Sayfaya git'), onPressed: _jump, icon: Icon(Icons.numbers)),
           PopupMenuButton<String>(enabled: !busy && !_bookmarkSaving, onSelected: (v) {
             if (v == 'surah') _selectSurah();
             if (v == 'bookmarks') _bookmarks();

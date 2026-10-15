@@ -1,5 +1,6 @@
+import 'services/app_preferences.dart';
+import 'screens/support_screen.dart';
 import 'dart:async';
-import 'widgets/support_card.dart';
 import 'screens/about_screen.dart';
 import 'l10n/translations.dart';
 import 'package:flutter/material.dart';
@@ -21,28 +22,39 @@ void main() => runApp(KuranApp());
 class KuranApp extends StatelessWidget {
   const KuranApp({super.key});
   @override
-  Widget build(BuildContext context) => ValueListenableBuilder<Locale?>(
-    valueListenable: AppLanguage.instance,
-    builder: (context, locale, _) => MaterialApp(
-    locale: locale ?? Locale('tr'),
-    supportedLocales: [Locale('tr'), Locale('en'), Locale('nl')],
-    localizationsDelegates: GlobalMaterialLocalizations.delegates,
-    debugShowCheckedModeBanner: false, title: 'KuranApp',
-    theme: ThemeData(useMaterial3: true,
-      scaffoldBackgroundColor: Color(0xFFF8F4EB),
-      colorScheme: ColorScheme.fromSeed(seedColor: Color(0xFF164D43),
-        primary: Color(0xFF164D43), secondary: Color(0xFFB28A46),
-        surface: Color(0xFFFFFCF5)),
-      appBarTheme: AppBarTheme(backgroundColor: Color(0xFFF8F4EB),
-        foregroundColor: Color(0xFF163D35), centerTitle: false, elevation: 0),
+  Widget build(BuildContext context) => ValueListenableBuilder<UiPreferences>(
+    valueListenable: AppPreferences.instance,
+    builder: (context, preferences, _) => ValueListenableBuilder<Locale?>(
+      valueListenable: AppLanguage.instance,
+      builder: (context, locale, _) => MaterialApp(
+        locale: locale ?? const Locale('tr'),
+        supportedLocales: const [Locale('tr'), Locale('en'), Locale('nl')],
+        localizationsDelegates: GlobalMaterialLocalizations.delegates,
+        debugShowCheckedModeBanner: false, title: 'KuranApp',
+        themeMode: preferences.themeMode,
+        theme: _theme(preferences.seed, Brightness.light),
+        darkTheme: _theme(preferences.seed, Brightness.dark),
+        home: const HomeScreen(),
+      ),
+    ),
+  );
+
+  ThemeData _theme(Color seed, Brightness brightness) {
+    final dark = brightness == Brightness.dark;
+    final scheme = ColorScheme.fromSeed(seedColor: seed, brightness: brightness);
+    return ThemeData(useMaterial3: true, colorScheme: scheme,
+      scaffoldBackgroundColor: dark ? scheme.surface : const Color(0xFFF8F4EB),
+      appBarTheme: AppBarTheme(backgroundColor: dark ? scheme.surface : const Color(0xFFF8F4EB),
+        foregroundColor: scheme.onSurface, centerTitle: false, elevation: 0),
       filledButtonTheme: FilledButtonThemeData(style: FilledButton.styleFrom(
-        padding: EdgeInsets.symmetric(horizontal: 24, vertical: 18),
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 18),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)))),
-      cardTheme: CardThemeData(elevation: 0, color: Color(0xFFFFFCF5),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(22),
-          side: BorderSide(color: Color(0xFFE8DFCC))))),
-    home: HomeScreen(),
-  ));
+      cardTheme: CardThemeData(elevation: 0, color: dark ? scheme.surfaceContainerLow : const Color(0xFFFFFCF5),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16),
+          side: BorderSide(color: scheme.outlineVariant))),
+    );
+  }
+
 }
 
 class HomeScreen extends StatefulWidget {
@@ -147,6 +159,23 @@ class _HomeScreenState extends State<HomeScreen> {
     Navigator.push(context, MaterialPageRoute<void>(builder: (_) => const AboutScreen()));
   }
 
+  Future<void> _settings() async {
+    final store = _store;
+    if (store == null || _downloading || _returningToReading) return;
+    await Navigator.push(context, MaterialPageRoute<void>(builder: (_) => SettingsScreen(store: store)));
+    if (mounted) setState(() {});
+  }
+
+  String _shortcutName(HomeShortcut shortcut) => shortcut.kind == ShortcutKind.surah
+    ? shortcut.number == 36 ? context.t('Yasin') : surahName(_store!.edition.surahIndex[shortcut.number - 1], context.language)
+    : context.t('Cüz {number}', {'number': shortcut.number});
+
+  void _openShortcut(HomeShortcut shortcut) {
+    final page = shortcut.kind == ShortcutKind.surah
+      ? _store!.edition.surahIndex[shortcut.number - 1].startPage : shortcut.firstPage;
+    _read(page);
+  }
+
   Future<void> _read(int page, {String? panel}) async {
     await Navigator.push(context, MaterialPageRoute<void>(builder: (_) => QuranScreen(store: _store!, initialPage: page, initialPanel: panel)));
     if (mounted) setState(() {});
@@ -178,7 +207,7 @@ class _HomeScreenState extends State<HomeScreen> {
       onPopInvokedWithResult: (didPop, result) {
         if (!didPop) _returnToReading(exitIfUnavailable: true);
       },
-      child: Scaffold(
+      child: Scaffold(backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(leading: store != null && !store.ready
         ? IconButton(tooltip: context.t('Ana sayfaya dön'), icon: const Icon(Icons.arrow_back),
             onPressed: _returningToReading ? null : () => _returnToReading())
@@ -187,15 +216,13 @@ class _HomeScreenState extends State<HomeScreen> {
           child: const QuranArtwork(size: 44, decorative: true)))),
         titleSpacing: 0, title: Text('KuranApp', style: TextStyle(fontWeight: FontWeight.w700)),
         actions: [IconButton(tooltip: context.t('Ayarlar'), icon: Icon(Icons.tune_rounded),
-          onPressed: store == null || _downloading || _returningToReading ? null : () async {
-            await Navigator.push(context, MaterialPageRoute<void>(builder: (_) => SettingsScreen(store: store)));
-            if (mounted) setState(() {});
-          }), LanguageSelector()]),
+          onPressed: store == null || _downloading || _returningToReading ? null : _settings), LanguageSelector()]),
       body: Center(child: ConstrainedBox(constraints: BoxConstraints(maxWidth: 680),
         child: ListView(padding: EdgeInsets.fromLTRB(20, 12, 20, 32), children: [
           Container(decoration: BoxDecoration(borderRadius: BorderRadius.circular(28),
             gradient: LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight,
-              colors: [Color(0xFF164D43), Color(0xFF092F2A)])),
+              colors: [AppPreferences.instance.value.seed,
+                HSLColor.fromColor(AppPreferences.instance.value.seed).withLightness(.12).toColor()])),
             clipBehavior: Clip.antiAlias,
             child: Stack(children: [
               Positioned(top: -45, right: -45, child: _Ornament()),
@@ -235,28 +262,16 @@ class _HomeScreenState extends State<HomeScreen> {
             child: Text(_downloadError ? context.t('İndirme tamamlanamadı: {detail}\n\nİndirilen sayfalar korunur; tekrar deneyerek devam edebilirsiniz.', {'detail': context.t(_error!)}) : context.t(_error!), style: TextStyle(color: Theme.of(context).colorScheme.error))),
           if (store == null && _error != null) OutlinedButton(onPressed: _load, child: Text(context.t('Tekrar dene'))),
           if (store != null && store.ready) ...[
-            Row(children: [Expanded(child: Text(context.t('Kütüphanem'),
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700))),
-              Container(padding: EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                decoration: BoxDecoration(color: Color(0xFFEAE4D4), borderRadius: BorderRadius.circular(20)),
-                child: Text(context.t('{count} sure', {'count': store.edition.surahIndex.length}), style: TextStyle(color: Color(0xFF6B634E), fontSize: 12))),
-            ]),
-            SizedBox(height: 12),
-            LayoutBuilder(builder: (context, constraints) {
-              final width = (constraints.maxWidth - 12) / 2;
-              return Wrap(spacing: 12, runSpacing: 12, children: [
-                _QuickAction(width: width, icon: Icons.format_list_numbered_rounded,
-                  title: context.t('Bul ve oku'), subtitle: context.t('Sure · Cüz · Sayfa'), onTap: () => _read(store.lastPage, panel: 'surah')),
-                _QuickAction(width: width, icon: Icons.bookmarks_outlined,
-                  title: context.t('Ayraçlarım'), subtitle: context.t('{count} kayıt', {'count': store.bookmarks.length}), onTap: () => _read(store.lastPage, panel: 'bookmarks')),
-                _QuickAction(width: width, icon: Icons.menu_book_outlined,
-                  title: context.t('Fetih'), subtitle: context.t('Sayfa {page}', {'page': store.edition.surahIndex[47].startPage}), onTap: () => _read(store.edition.surahIndex[47].startPage)),
-                _QuickAction(width: width, icon: Icons.auto_stories_outlined,
-                  title: context.t('Yasin'), subtitle: context.t('Sayfa {page}', {'page': store.edition.yasinPage}), onTap: () => _read(store.edition.yasinPage)),
-              ]);
-            }),
-            SizedBox(height: 20),
-            const SupportCard(gentle: true),
+            _MenuRow(icon: Icons.search_rounded, title: context.t('Arama / sure, cüz, sayfa'),
+              onTap: () => _read(store.lastPage, panel: 'surah')),
+            _MenuRow(icon: Icons.bookmarks_outlined, title: context.t('Ayraçlarım'),
+              onTap: () => _read(store.lastPage, panel: 'bookmarks')),
+            for (final shortcut in AppPreferences.instance.value.shortcuts)
+              _MenuRow(icon: shortcut.kind == ShortcutKind.surah ? Icons.menu_book_outlined : Icons.auto_stories_outlined,
+                title: _shortcutName(shortcut), onTap: () => _openShortcut(shortcut)),
+            _MenuRow(icon: Icons.favorite_outline, title: context.t('Destek'),
+              onTap: () => Navigator.push(context, MaterialPageRoute<void>(builder: (_) => const SupportScreen()))),
+            _MenuRow(icon: Icons.tune_rounded, title: context.t('Ayarlar'), onTap: _settings),
           ] else if (store != null) ...[
             Card(child: Padding(padding: EdgeInsets.all(22), child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch, children: [
@@ -302,27 +317,20 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 }
 
-class _QuickAction extends StatelessWidget {
-  final double width;
+class _MenuRow extends StatelessWidget {
   final IconData icon;
   final String title;
-  final String subtitle;
   final VoidCallback onTap;
-  const _QuickAction({required this.width, required this.icon, required this.title,
-    required this.subtitle, required this.onTap});
+  const _MenuRow({required this.icon, required this.title, required this.onTap});
   @override
-  Widget build(BuildContext context) => SizedBox(width: width, child: Card(margin: EdgeInsets.zero,
-    clipBehavior: Clip.antiAlias, child: InkWell(onTap: onTap, child: Padding(
-      padding: EdgeInsets.all(18), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Container(padding: EdgeInsets.all(10), decoration: BoxDecoration(
-          color: Color(0xFFF0E8D5), borderRadius: BorderRadius.circular(13)),
-          child: Icon(icon, color: Color(0xFF7E6533), size: 24)),
-        SizedBox(height: 14), Text(context.t(title), style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16)),
-        SizedBox(height: 4), Row(children: [
-          Expanded(child: Text(context.t(subtitle), style: TextStyle(color: Color(0xFF827A6C), fontSize: 12))),
-          Icon(Icons.arrow_forward_rounded, size: 16, color: Color(0xFF9B834F)),
-        ]),
-      ])))));
+  Widget build(BuildContext context) => Card(
+    margin: const EdgeInsets.only(bottom: 8),
+    child: ListTile(dense: true, minVerticalPadding: 10,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      leading: Icon(icon, color: Theme.of(context).colorScheme.primary),
+      title: Text(title, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 15)),
+      trailing: const Icon(Icons.chevron_right, size: 20), onTap: onTap),
+  );
 }
 
 class _Ornament extends StatelessWidget {

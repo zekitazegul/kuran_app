@@ -1,3 +1,4 @@
+import 'app_preferences.dart';
 import 'package:flutter/services.dart';
 import '../data/quran_edition.dart';
 
@@ -29,6 +30,7 @@ class ReadingStore {
   static Future<ReadingStore> load() async {
     final data = await channel.invokeMapMethod<String, dynamic>('load');
     if (data == null) throw StateError('Okuma kayıtları yüklenemedi.');
+    AppPreferences.instance.restore(data['uiPreferences'] as Map?);
     final edition = data['edition'] is Map ? QuranEdition.fromMap(data['edition'] as Map) : QuranEdition.computer;
     return ReadingStore(
       edition: edition,

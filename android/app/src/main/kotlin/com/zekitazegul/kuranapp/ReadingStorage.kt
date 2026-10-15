@@ -38,6 +38,23 @@ class ReadingStorage(private val context: Context, requestedEdition: String? = n
         else -> value
     }
 
+    fun saveUiPreferences(values: Map<String, Any?>) {
+        val json = JSONObject(values)
+        require(json.getString("theme") in setOf("system", "light", "dark"))
+        require(json.getString("color") in setOf("green", "blue", "purple", "amber"))
+        val shortcuts = json.getJSONArray("shortcuts")
+        require(shortcuts.length() <= 24)
+        val ids = mutableSetOf<String>()
+        for (i in 0 until shortcuts.length()) {
+            val shortcut = shortcuts.getJSONObject(i)
+            val kind = shortcut.getString("kind")
+            val number = shortcut.getInt("number")
+            require((kind == "surah" && number in 1..114) || (kind == "juz" && number in 1..30))
+            require(ids.add("$kind:$number"))
+        }
+        check(global.edit().putString("uiPreferences", json.toString()).commit())
+    }
+
     fun selectEdition(id: String): Map<String, Any?> {
         findEdition(id)
         val state = ReadingStorage(context, id).load()
@@ -59,6 +76,7 @@ class ReadingStorage(private val context: Context, requestedEdition: String? = n
     }
 
     fun load(): Map<String, Any?> = mapOf(
+        "uiPreferences" to toCodec(JSONObject(global.getString("uiPreferences", "{}")!!)),
         "edition" to toCodec(edition),
         "editions" to toCodec(catalog),
         "directory" to directory.path,

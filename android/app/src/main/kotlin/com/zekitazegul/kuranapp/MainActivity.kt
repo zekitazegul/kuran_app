@@ -1,5 +1,7 @@
 package com.zekitazegul.kuranapp
 
+import android.os.Handler
+import android.os.HandlerThread
 import android.view.WindowManager
 import android.content.Intent
 import android.net.Uri
@@ -9,6 +11,9 @@ import java.util.concurrent.Executors
 import io.flutter.embedding.android.FlutterActivity
 
 class MainActivity : FlutterActivity() {
+    private val audioThread = HandlerThread("quran-audio").apply { start() }
+    private val audioHandler = Handler(audioThread.looper)
+    private var audioStorage: QuranAudioStorage? = null
     private val storageExecutor = Executors.newSingleThreadExecutor()
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
@@ -16,6 +21,24 @@ class MainActivity : FlutterActivity() {
         val readingChannel = MethodChannel(flutterEngine.dartExecutor.binaryMessenger,
             "com.zekitazegul.kuranapp/reading")
         readingChannel.setMethodCallHandler { call, result ->
+            if (call.method in setOf("loadAudio", "downloadAudio", "playAudio", "stopAudio", "removeAudio")) {
+                audioHandler.post {
+                    try {
+                        val audio = audioStorage ?: QuranAudioStorage(applicationContext).also { audioStorage = it }
+                        val value: Any? = when (call.method) {
+                            "loadAudio" -> audio.load()
+                            "downloadAudio" -> audio.download(requireNotNull(call.argument<String>("id"))).let { null }
+                            "playAudio" -> audio.play(requireNotNull(call.argument<String>("id"))).let { null }
+                            "removeAudio" -> audio.remove(requireNotNull(call.argument<String>("id"))).let { null }
+                            else -> audio.stop().let { null }
+                        }
+                        runOnUiThread { result.success(value) }
+                    } catch (error: Exception) {
+                        runOnUiThread { result.error("AUDIO_ERROR", error.message, null) }
+                    }
+                }
+                return@setMethodCallHandler
+            }
             if (call.method == "openSupport") {
                 try {
                     val uri = Uri.parse(requireNotNull(call.argument<String>("url")))
@@ -41,6 +64,7 @@ class MainActivity : FlutterActivity() {
                     val value: Any? = when (call.method) {
                         "selectEdition" -> storage.selectEdition(requireNotNull(call.argument<String>("id")))
                         "load" -> storage.load()
+                        "saveUiPreferences" -> storage.saveUiPreferences(requireNotNull(call.argument<Map<String, Any?>>("preferences"))).let { null }
                         "findDownloadedEdition" -> storage.findDownloadedEdition()
                         "setLanguage" -> storage.setLanguage(requireNotNull(call.argument<String>("language"))).let { null }
                         "savePage" -> storage.savePage(requireNotNull(call.argument<Int>("page"))).let { null }
@@ -64,6 +88,7 @@ class MainActivity : FlutterActivity() {
     }
 
     override fun onDestroy() {
+        audioHandler.post { audioStorage?.stop(); audioThread.quitSafely() }
         storageExecutor.shutdown()
         super.onDestroy()
     }
@@ -75,6 +100,7 @@ class MainActivity : FlutterActivity() {
     }
 
     override fun onPause() {
+        audioHandler.post { audioStorage?.stop() }
         window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
         super.onPause()
     }

@@ -1,6 +1,6 @@
 # Android development and release checks
 
-Version 1.4.0+11 targets Android. No iOS distribution is prepared.
+Version 1.5.0+12 targets Android. No iOS distribution is prepared.
 
 ## Build on the existing Flutter workstation
 
@@ -203,3 +203,39 @@ Diyanet and Ahıska credits are taken from PDF page 616 of their respective
 files. The Hüsrev Altınbaşak / Hayrat Neşriyat association is user supplied
 and explicitly unverified for the particular 605-page scan. Attribution
 is not a verified distribution licence; no publisher endorsement is claimed.
+
+### 1.5.0+12 — home rows, personalization and free listening groundwork
+
+Home now lists Search, Bookmarks, configured surah/juz shortcuts (default Al-Fath,
+Ya-Sin), Support and Settings as compact full-width rows. The library heading is
+removed. Settings → Appearance and shortcuts persists system/light/dark mode,
+four accent colors, and up to 24 unique shortcuts with reorder/delete/reset.
+Preferences are global across editions; Quran PDF colors/crops remain unchanged.
+
+All features are free. No premium state, billing SDK, account flow or subscription
+product exists. Coffee support remains optional and separate from feature access.
+
+Reader → Listen and Settings → Listen offer a surah or a single verse selection.
+The audio catalog `assets/audio.json` intentionally contains no recordings; the UI
+explains unavailable recordings instead of enabling fake download/play buttons.
+The Android audio channel provides private verified downloads, local playback,
+stop and delete. A separate HandlerThread serializes MediaPlayer work. Playback
+stops when leaving the listening screen or backgrounding the app; background
+playback is not part of this release. No new Android permission was introduced.
+
+Before adding a recording, obtain distribution permission and add a track:
+`id` (lowercase letters/digits/underscore/hyphen, max 80), `surah` (1–114),
+`verse` (null for complete surah, otherwise exact verse), `url` (HTTPS), `bytes`
+(exact size, max 500 MB), and `sha256` (64 lowercase hex characters). All redirect
+hops must remain on the declared source host. Files are stored only after size
+and SHA-256 validation. Whole-surah recordings are not substituted for verse
+recordings: single verses require separate files (or a future timing index).
+Use `license` and `reciter` metadata to record provenance when populating the
+catalog. Audio is not packaged in the APK and is downloaded only on user request.
+Device checks with real licensed audio and audio-focus handling are required
+before releasing actual recordings. The empty-catalog UI can be tested now.
+
+Run `flutter analyze` and `flutter test`, then verify on phone and tablet: menu
+order, dark/system theme, each accent, add/reorder/remove a surah and a juz shortcut,
+relaunch persistence, independent edition bookmarks, reader Listen selection and
+missing-audio message. Cloud syntax checks are not a Flutter/Kotlin build.

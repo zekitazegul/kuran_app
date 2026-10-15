@@ -1,3 +1,5 @@
+import 'personalization_screen.dart';
+import 'listening_screen.dart';
 import 'sources_screen.dart';
 import '../widgets/support_card.dart';
 import 'about_screen.dart';
@@ -45,6 +47,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
     body: ListView(padding: EdgeInsets.all(20), children: [
       Center(child: QuranArtwork(size: 110, decorative: true)),
       SizedBox(height: 16),
+      Card(child: ListTile(leading: const Icon(Icons.palette_outlined),
+        title: Text(context.t('Görünüm ve kısayollar')),
+        subtitle: Text(context.t('Tema, renk ve ana ekran kısayolları')),
+        trailing: const Icon(Icons.chevron_right),
+        onTap: _saving ? null : () => Navigator.push(context,
+          MaterialPageRoute<void>(builder: (_) => const PersonalizationScreen())))),
+      Card(child: ListTile(leading: const Icon(Icons.headphones_outlined),
+        title: Text(context.t('Dinle')),
+        subtitle: Text(context.t('Sure ve ayet seçimi · İndirilen sesler')),
+        trailing: const Icon(Icons.chevron_right),
+        onTap: _saving ? null : () => Navigator.push(context,
+          MaterialPageRoute<void>(builder: (_) => const ListeningScreen())))),
+      const SizedBox(height: 24),
       _heading(context.t('OKUMA DENEYİMİ')),
       Card(child: SwitchListTile(
         secondary: Icon(Icons.auto_stories_outlined),
