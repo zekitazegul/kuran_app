@@ -161,11 +161,11 @@ class _HomeScreenState extends State<HomeScreen> {
     _exitConfirmationOpen = true;
     try {
       final exit = await showDialog<bool>(context: context, builder: (dialogContext) => AlertDialog(
-        title: const Text('Exit?'),
+        title: Text(dialogContext.t('Çıkış?')),
         actions: [TextButton(onPressed: () => Navigator.pop(dialogContext, false),
-          child: const Text('Cancel')),
+          child: Text(dialogContext.t('İptal'))),
           FilledButton(onPressed: () => Navigator.pop(dialogContext, true),
-            child: const Text('OK'))],
+            child: Text(dialogContext.t('Tamam')))],
       ));
       if (exit == true && mounted) await SystemNavigator.pop();
     } finally { _exitConfirmationOpen = false; }
