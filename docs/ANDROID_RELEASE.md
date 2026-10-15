@@ -1,6 +1,6 @@
 # Android development and release checks
 
-Version 1.5.1+13 targets Android. No iOS distribution is prepared.
+Version 1.0.0+14 (v1 checkpoint) targets Android. No iOS distribution is prepared.
 
 ## Build on the existing Flutter workstation
 

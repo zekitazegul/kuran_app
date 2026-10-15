@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../services/app_language.dart';
 
 const translations = <String, Map<String, String>>{
+  'Sürüm {version}': {'en': 'Version {version}', 'nl': 'Versie {version}'},
   '{edition} · Cihazdan kaldır': {'en': '{edition} · Remove from device', 'nl': '{edition} · Van apparaat verwijderen'},
   'Çıkış?': {'en': 'Exit?', 'nl': 'Afsluiten?'},
   'Tamam': {'en': 'OK', 'nl': 'OK'},
