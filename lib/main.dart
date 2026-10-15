@@ -71,6 +71,7 @@ class _HomeScreenState extends State<HomeScreen> {
   bool _pauseRequested = false;
   bool _cancelRequested = false;
   bool _returningToReading = false;
+  bool _exitConfirmationOpen = false;
   Completer<void>? _downloadStopped;
 
   @override
@@ -145,7 +146,7 @@ class _HomeScreenState extends State<HomeScreen> {
         if (mounted) setState(() { _error = null; _downloadError = false; _cancelRequested = false; });
       } else if (mounted) {
         if (exitIfUnavailable) {
-          await SystemNavigator.pop();
+          await _confirmExit();
         } else {
           ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(context.t('Henüz tamamen indirilmiş bir hat yok.'))));
         }
@@ -154,6 +155,24 @@ class _HomeScreenState extends State<HomeScreen> {
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(context.t('İndirilen hatta dönülemedi. Tekrar dene.'))));
     } finally { if (mounted) setState(() => _returningToReading = false); }
   }
+
+  Future<void> _confirmExit() async {
+    if (_exitConfirmationOpen || !mounted) return;
+    _exitConfirmationOpen = true;
+    try {
+      final exit = await showDialog<bool>(context: context, builder: (dialogContext) => AlertDialog(
+        title: const Text('Exit?'),
+        actions: [TextButton(onPressed: () => Navigator.pop(dialogContext, false),
+          child: const Text('Cancel')),
+          FilledButton(onPressed: () => Navigator.pop(dialogContext, true),
+            child: const Text('OK'))],
+      ));
+      if (exit == true && mounted) await SystemNavigator.pop();
+    } finally { _exitConfirmationOpen = false; }
+  }
+
+  Widget _guardExit(Widget child) => PopScope(canPop: false,
+    onPopInvokedWithResult: (didPop, result) { if (!didPop) _confirmExit(); }, child: child);
 
   void _about() {
     Navigator.push(context, MaterialPageRoute<void>(builder: (_) => const AboutScreen()));
@@ -188,24 +207,30 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     final store = _store;
     if (store != null && AppLanguage.instance.value == null) {
-      return LanguageScreen(onSelected: () { if (mounted) setState(() {}); });
+      return _guardExit(LanguageScreen(onSelected: () { if (mounted) setState(() {}); }));
     }
     if (store != null && !store.informationSeen) {
-      return InformationScreen(onContinue: () async {
+      return _guardExit(InformationScreen(onContinue: () async {
         await store.acknowledgeInformation();
         if (mounted) setState(() {});
-      });
+      }));
     }
     if (store != null && !store.guideSeen) {
-      return GuideScreen(onContinue: () async {
+      return _guardExit(GuideScreen(onContinue: () async {
         await store.acknowledgeGuide();
         if (mounted) setState(() {});
-      });
+      }));
     }
     return PopScope(
-      canPop: store == null || store.ready,
+      canPop: false,
       onPopInvokedWithResult: (didPop, result) {
-        if (!didPop) _returnToReading(exitIfUnavailable: true);
+        if (!didPop) {
+          if (store == null || store.ready) {
+            _confirmExit();
+          } else {
+            _returnToReading(exitIfUnavailable: true);
+          }
+        }
       },
       child: Scaffold(backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(leading: store != null && !store.ready

@@ -1,6 +1,6 @@
 # Android development and release checks
 
-Version 1.5.0+12 targets Android. No iOS distribution is prepared.
+Version 1.5.1+13 targets Android. No iOS distribution is prepared.
 
 ## Build on the existing Flutter workstation
 
@@ -239,3 +239,20 @@ Run `flutter analyze` and `flutter test`, then verify on phone and tablet: menu
 order, dark/system theme, each accent, add/reorder/remove a surah and a juz shortcut,
 relaunch persistence, independent edition bookmarks, reader Listen selection and
 missing-audio message. Cloud syntax checks are not a Flutter/Kotlin build.
+
+### 1.5.1+13 — frame zoom and exit confirmation
+
+Double-tap the reading surface to fit the outer frame; double-tap again to fit
+its inner edge. Further double-taps alternate outer/inner views. Single-tap in
+the center retains the existing enter/exit behavior. Swipe-down exit, page-turn
+animation, pinch and landscape scrolling remain available. Outer-frame rectangles
+are stored per page in the catalog: vector bounds for the two computer editions,
+scan border detection for Hüsrev, bounded to each physical page. Existing inner
+crops and PDFs are unchanged. A single tap now waits briefly to distinguish it
+from a double-tap; navigation tests account for that recognition interval.
+
+At the root, Android Back displays the explicitly requested `Exit?` dialog with
+`OK` / `Cancel`. OK invokes SystemNavigator.pop; Cancel stays in the app. Back
+from reader/settings continues navigating normally. From an incomplete download,
+an installed edition is restored first; if none exists, exit confirmation is
+shown. First-run language/privacy/guide screens also ask before exiting.

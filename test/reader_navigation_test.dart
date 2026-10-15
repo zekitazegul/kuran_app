@@ -1,6 +1,8 @@
 import 'dart:io';
 import 'dart:ui' as ui;
 import 'package:flutter/foundation.dart';
+import 'package:flutter/gestures.dart';
+import 'package:kuran_app/widgets/reading_page.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kuran_app/screens/quran_screen.dart';
@@ -61,6 +63,7 @@ void main() {
     final bounds = tester.getRect(reader);
     await tester.tapAt(Offset(bounds.left + 8, bounds.center.dy));
     await tester.pump();
+    await tester.pump(kDoubleTapTimeout);
     await tester.pump(const Duration(milliseconds: 100));
     expect(find.byType(PageTurn), findsOneWidget);
     await tester.pumpAndSettle();
@@ -72,4 +75,28 @@ void main() {
     expect(find.text('441 / 604'), findsOneWidget);
     await tester.pumpWidget(const SizedBox());
   });
+  testWidgets('double taps alternate outer and inner frame; single tap exits', (tester) async {
+    await tester.pumpWidget(MaterialApp(home: QuranScreen(store: store, initialPage: 439)));
+    await tester.pumpAndSettle();
+    ReadingPage page() => tester.widget<ReadingPage>(find.byType(ReadingPage));
+    expect(page().crop, isNull);
+    Future<void> doubleTap() async {
+      final center = tester.getCenter(find.byKey(const ValueKey('quran-reading-surface')));
+      await tester.tapAt(center); await tester.pump(const Duration(milliseconds: 60));
+      await tester.tapAt(center); await tester.pumpAndSettle();
+    }
+    await doubleTap();
+    expect(page().crop, store.edition.normalizedOuterCrop(439));
+    expect(find.byType(AppBar), findsNothing);
+    await doubleTap();
+    expect(page().crop, store.edition.normalizedCrop(439));
+    await doubleTap();
+    expect(page().crop, store.edition.normalizedOuterCrop(439));
+    await tester.tapAt(tester.getCenter(find.byKey(const ValueKey('quran-reading-surface'))));
+    await tester.pump(kDoubleTapTimeout); await tester.pumpAndSettle();
+    expect(page().crop, isNull);
+    expect(find.byType(AppBar), findsOneWidget);
+    await tester.pumpWidget(const SizedBox());
+  });
+
 }

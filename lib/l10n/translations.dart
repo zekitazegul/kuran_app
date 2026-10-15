@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import '../services/app_language.dart';
 
 const translations = <String, Map<String, String>>{
+  'Çift dokunarak büyüt': {'en': 'Double-tap to enlarge', 'nl': 'Dubbeltik om te vergroten'},
+  'İlk çift dokunuş çerçevenin dış sınırına, ikinci çift dokunuş iç sınırına kadar büyütür. Sonraki çift dokunuşlar bu iki görünüm arasında geçer. Ortaya tek dokunarak tam ekrandan çıkabilirsin.': {'en': 'The first double-tap fits the outer frame; the second fits the inner frame. Further double-taps alternate these two views. Single-tap the center to exit fullscreen.', 'nl': 'De eerste dubbeltik vergroot tot de buitenrand, de tweede tot de binnenrand van het kader. Daarna wisselt een dubbeltik tussen deze twee weergaven. Tik eenmaal in het midden om het volledige scherm te verlaten.'},
   "Arama / sure, cüz, sayfa": {"en": "Search / surah, juz, page", "nl": "Zoeken / soera, djoez, pagina"},
   "Destek": {"en": "Support", "nl": "Steun"},
   "Uygulamanın tüm özellikleri ücretsizdir. Dilersen bir fikir, teşekkür veya kahve ikramıyla katkıda bulunabilirsin.": {"en": "All app features are free. You can optionally contribute an idea, a thank-you or a coffee.", "nl": "Alle functies zijn gratis. Je kunt vrijwillig bijdragen met een idee, een bedankje of een kopje koffie."},

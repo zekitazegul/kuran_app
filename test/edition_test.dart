@@ -57,9 +57,15 @@ void main() {
       expect(edition.surahIndex.length, 114);
       expect(edition.downloadBytes, entry['bytes']);
       expect(edition.downloadBytes, greaterThan(0));
+      expect(edition.outerCrops.length, edition.pageCount);
       for (var page = edition.firstPage; page <= edition.lastPage; page++) {
         expect(edition.surahsOnPage(page), isNotEmpty, reason: '${edition.id}: $page');
         final crop = edition.normalizedCrop(page);
+        final outer = edition.normalizedOuterCrop(page);
+        expect(outer.left, inInclusiveRange(0.0, crop.left));
+        expect(outer.top, inInclusiveRange(0.0, crop.top));
+        expect(outer.right, inInclusiveRange(crop.right, 1.0));
+        expect(outer.bottom, inInclusiveRange(crop.bottom, 1.0));
         expect(crop.left, greaterThanOrEqualTo(0));
         expect(crop.top, greaterThanOrEqualTo(0));
         expect(crop.right, lessThanOrEqualTo(1));

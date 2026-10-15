@@ -26,6 +26,7 @@ class _QuranScreenState extends State<QuranScreen> with SingleTickerProviderStat
   late int _page;
   int? _target;
   bool _fullscreen = false;
+  bool _showOuterFrame = false;
   bool _preparing = false;
   bool _bookmarkSaving = false;
   final TransformationController _zoom = TransformationController();
@@ -228,9 +229,28 @@ class _QuranScreenState extends State<QuranScreen> with SingleTickerProviderStat
   void _toggleFullscreen() {
     if (_target != null || _preparing) return;
     _resetReadingPosition();
-    setState(() => _fullscreen = !_fullscreen);
+    setState(() {
+      _fullscreen = !_fullscreen;
+      if (_fullscreen) _showOuterFrame = false;
+    });
     SystemChrome.setEnabledSystemUIMode(_fullscreen ? SystemUiMode.immersiveSticky : SystemUiMode.edgeToEdge);
   }
+
+  void _doubleTapFullscreen() {
+    if (_target != null || _preparing) return;
+    _resetReadingPosition();
+    setState(() {
+      _showOuterFrame = !_fullscreen || !_showOuterFrame;
+      _fullscreen = true;
+    });
+    SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
+  }
+
+  Rect _activeCrop(int page) => _showOuterFrame
+    ? widget.store.edition.outerCrop(page) : widget.store.edition.crop(page);
+
+  Rect? _normalizedActiveCrop(int page) => !_fullscreen ? null : _showOuterFrame
+    ? widget.store.edition.normalizedOuterCrop(page) : widget.store.edition.normalizedCrop(page);
 
   @override
   void dispose() {
@@ -243,7 +263,7 @@ class _QuranScreenState extends State<QuranScreen> with SingleTickerProviderStat
 
   Widget _image(int page) => ReadingPage(
     image: FileImage(File(widget.store.pagePath(page))),
-    crop: _fullscreen ? widget.store.edition.normalizedCrop(page) : null,
+    crop: _normalizedActiveCrop(page),
   );
 
   void _tapPage(TapUpDetails details) {
@@ -302,6 +322,7 @@ class _QuranScreenState extends State<QuranScreen> with SingleTickerProviderStat
           key: const ValueKey('quran-reading-surface'),
           behavior: HitTestBehavior.opaque,
           onTapUp: _tapPage,
+          onDoubleTap: _doubleTapFullscreen,
           child: Listener(
             onPointerDown: (event) {
               if (_touchPointer != null) {
@@ -338,7 +359,7 @@ class _QuranScreenState extends State<QuranScreen> with SingleTickerProviderStat
             child: LayoutBuilder(builder: (context, constraints) {
             _readerWidth = constraints.maxWidth;
             _readerHeight = constraints.maxHeight;
-            final crop = widget.store.edition.crop(_page);
+            final crop = _activeCrop(_page);
             final aspect = _fullscreen ? crop.height / crop.width : widget.store.edition.pageSize(_page).height / widget.store.edition.pageSize(_page).width;
             final sheetHeight = _fullscreen || _landscape
                 ? math.max(constraints.maxHeight, constraints.maxWidth * aspect)
@@ -348,7 +369,7 @@ class _QuranScreenState extends State<QuranScreen> with SingleTickerProviderStat
               toRight: _target! > _page, underneath: _image(_target!),
               touchHeight: (_touchHeight * constraints.maxHeight +
                 (_verticalScroll.hasClients ? _verticalScroll.offset : 0)) / sheetHeight, dragTilt: _dragTilt,
-              crop: _fullscreen ? widget.store.edition.normalizedCrop(_page) : null);
+              crop: _normalizedActiveCrop(_page));
             return InteractiveViewer(transformationController: _zoom, minScale: 1, maxScale: 4,
               alignment: Alignment.topCenter,
               panEnabled: _zoomed && _target == null,
