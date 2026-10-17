@@ -9,3 +9,10 @@
 ## nl
 
 17 oktober 2026: Op verzoek van de gebruiker hier gestopt. Versie 1.0.12+27 staat op de telefoon. De ondertekende AAB en APK staan in dist/google-play/1.0.12+27. 86 Flutter-tests en 10 Android-tests geslaagd. Nog geen Play Console-account of appregistratie aangemaakt; niets geüpload of gepubliceerd. Kies het accounttype samen met de gebruiker. De gebruiker heeft distributietoestemming bevestigd. De openbare privacy-URL, actuele screenshots in alle drie talen en Play-verklaringen moeten nog worden voltooid. Hervat vanuit publishing/google-play/session-checkpoint.json.
+
+
+**TR:** Proje taslak olarak tamamlandı; geliştirmeye devam edilebilir.
+
+**EN:** The project is complete as a draft; development can continue.
+
+**NL:** Het project is als concept afgerond; verdere ontwikkeling is mogelijk.

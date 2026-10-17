@@ -32,5 +32,12 @@
     "Publish and verify HTTPS privacy URL",
     "Complete current phone screenshots for tr/en/nl and store declarations",
     "Upload signed AAB to testing track; follow account-specific testing and production-access requirements"
-  ]
+  ],
+  "projectStatus": "draft_complete",
+  "developmentCanContinue": true,
+  "projectStatusLabels": {
+    "tr": "Proje taslak olarak tamamland\u0131; geli\u015ftirmeye devam edilebilir.",
+    "en": "The project is complete as a draft; development can continue.",
+    "nl": "Het project is als concept afgerond; verdere ontwikkeling is mogelijk."
+  }
 }
