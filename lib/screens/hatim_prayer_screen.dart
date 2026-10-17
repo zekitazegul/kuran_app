@@ -1,0 +1,66 @@
+import 'dart:async';
+import 'package:flutter/material.dart';
+import '../services/reading_store.dart';
+import '../l10n/translations.dart';
+
+const hatimPrayer = 'Allah’ım! Okuduğumuz Kur’an’ı kabul eyle. Kur’an’ı kalplerimize nur, hayatımıza rehber eyle. Bize onu anlamayı ve onunla yaşamayı nasip eyle. Bizleri, ailelerimizi ve bütün müminleri bağışla. Hastalarımıza şifa, dertlilerimize ferahlık ver. Dünyada ve ahirette bize iyilik ver. Duamızı kabul eyle. Âmin.';
+
+class HatimPrayerScreen extends StatefulWidget {
+  final ReadingStore? store;
+  const HatimPrayerScreen({super.key, this.store});
+  @override
+  State<HatimPrayerScreen> createState() => _HatimPrayerScreenState();
+}
+class _HatimPrayerScreenState extends State<HatimPrayerScreen> with WidgetsBindingObserver {
+  bool playing = false;
+  String? error;
+  double _dragDistance = 0;
+  bool _restarting = false;
+  Future<void> _restart() async {
+    if (_restarting) return;
+    setState(() => _restarting = true);
+    try {
+      await widget.store!.saveHatim(widget.store!.hatimPages.toList(), read: false,
+        resume: widget.store!.edition.firstPage);
+      if (mounted) Navigator.pop(context, true);
+    } catch (_) {
+      if (mounted) setState(() { error = context.t('Tercih kaydedilemedi.'); _restarting = false; });
+    }
+  }
+  @override
+  void initState() { super.initState(); WidgetsBinding.instance.addObserver(this); speak(); }
+  Future<void> speak() async {
+    setState(() { playing = true; error = null; });
+    try { await ReadingStore.channel.invokeMethod<void>('speakHatimPrayer', {'text': hatimPrayer}); }
+    catch (_) { if (mounted) setState(() => error = 'Seslendirme kullanılamıyor. Cihazınızın Türkçe konuşma sesini kontrol edin.'); }
+    finally { if (mounted) setState(() => playing = false); }
+  }
+  Future<void> stop() async {
+    try { await ReadingStore.channel.invokeMethod<void>('stopHatimPrayer'); } catch (_) {}
+    if (mounted) setState(() => playing = false);
+  }
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) { if (state != AppLifecycleState.resumed) unawaited(stop()); }
+  @override
+  void dispose() { WidgetsBinding.instance.removeObserver(this); unawaited(stop()); super.dispose(); }
+  @override
+  Widget build(BuildContext context) => Scaffold(appBar: AppBar(title: const Text('Hatim duası')),
+    body: GestureDetector(
+      onHorizontalDragStart: (_) => _dragDistance = 0,
+      onHorizontalDragUpdate: (details) => _dragDistance += details.delta.dx,
+      onHorizontalDragEnd: (details) {
+      if (_dragDistance < -24 || (details.primaryVelocity ?? 0) < -80) Navigator.pop(context);
+    }, child: ListView(padding: const EdgeInsets.all(24), children: [
+      TextButton.icon(onPressed: () => Navigator.pop(context), icon: const Icon(Icons.arrow_back),
+        label: Text(context.t('Okumaya dön'))),
+      const Icon(Icons.task_alt, size: 64), const SizedBox(height: 16),
+      Text('Hatminiz tamamlandı', style: Theme.of(context).textTheme.headlineSmall),
+      const SizedBox(height: 24), const Text(hatimPrayer, style: TextStyle(fontSize: 22, height: 1.7)),
+      const SizedBox(height: 16), const Text('Dua cihazın Türkçe sesiyle okunur.'),
+      if (error != null) Text(error!),
+      const SizedBox(height: 16), FilledButton.icon(onPressed: playing ? stop : speak,
+        icon: Icon(playing ? Icons.stop : Icons.volume_up), label: Text(playing ? 'Durdur' : 'Tekrar dinle')),
+      if (widget.store != null) TextButton(onPressed: _restarting ? null : _restart,
+        child: Text(context.t('Yeni hatme başla'))),
+    ])));
+}

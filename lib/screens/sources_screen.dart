@@ -22,6 +22,16 @@ class SourcesScreen extends StatelessWidget {
           const SizedBox(height: 8), Text(context.t(entry.value)),
         ]))),
       const SizedBox(height: 20),
+      const Card(child: Padding(padding: EdgeInsets.all(20), child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text('Mishary Rashid Alafasy · EveryAyah'),
+          SizedBox(height: 8),
+          SelectableText('https://everyayah.com/data/Alafasy_128kbps/'),
+          SizedBox(height: 12),
+          Text('Abu Bakr Ash-Shatri · EveryAyah'),
+          SizedBox(height: 8),
+          SelectableText('https://everyayah.com/data/Abu_Bakr_Ash-Shaatree_128kbps/'),
+        ]))),
       Text(context.t('sourcesNotice')),
       const SizedBox(height: 16),
       Text(context.t('Reklamsız ve ücretsiz'), style: Theme.of(context).textTheme.titleMedium),

@@ -50,3 +50,18 @@ app.*.map.json
 # Android signing credentials
 android/key.properties
 android/app/*.jks
+
+# Local distribution artifacts and ad-hoc device captures
+/*.apk
+/dist/
+/meal-phone-check.png
+/meal-preview.png
+
+# Private signing and publisher credentials
+*.keystore
+*.p12
+*.pem
+.env
+.env.*
+service-account*.json
+play-publisher*.json

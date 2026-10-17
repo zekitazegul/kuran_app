@@ -4,30 +4,52 @@ class AudioTrack {
   final String id;
   final int surah;
   final int? verse;
+  final int? page;
   final int bytes;
-  const AudioTrack({required this.id, required this.surah, required this.bytes, this.verse});
+  const AudioTrack({required this.id, required this.surah, required this.bytes, this.verse, this.page});
   factory AudioTrack.fromMap(Map data) => AudioTrack(id: data['id'] as String,
-    surah: data['surah'] as int, verse: data['verse'] as int?, bytes: (data['bytes'] as num).toInt());
+    surah: data['surah'] as int, verse: data['verse'] as int?, page: data['page'] as int?, bytes: (data['bytes'] as num).toInt());
 }
 
-/// Local, free listening state. Recordings are deliberately absent until
-/// licensed sources and their exact checksums are added to assets/audio.json.
+/// Ayah recordings are cached locally and sequenced by the native player.
 class QuranAudio {
   static const channel = MethodChannel('com.zekitazegul.kuranapp/reading');
   List<AudioTrack> tracks = [];
   Set<String> downloaded = {};
   String? playing;
+  bool stopPending = false;
+  int? currentVerse;
+  String? playbackError;
+  String reciter = 'shatri';
+  Map<String, String> reciters = {'shatri': 'Abu Bakr Ash-Shatri', 'alafasy': 'Mishary Rashid Alafasy',
+    'minshawi': 'Muhammad Siddiq Al-Minshawi', 'abdulbasit': 'Abdul Basit Abdus Samad', 'mustafa_ismail': 'Mustafa Ismail'};
   Future<void> load() async {
     final result = await channel.invokeMapMethod<String, dynamic>('loadAudio');
     if (result == null) throw StateError('Audio state unavailable');
     tracks = (result['tracks'] as List).map((entry) => AudioTrack.fromMap(entry as Map)).toList();
     downloaded = Set<String>.from(result['downloaded'] as List);
     playing = result['playing'] as String?;
+    stopPending = result['stopPending'] == true;
+    currentVerse = result['currentVerse'] as int?;
+    playbackError = result['error'] as String?;
+    reciter = result['reciter'] as String? ?? 'shatri';
+    if (result['reciters'] is List) {
+      reciters = {for (final entry in result['reciters'] as List) entry['id'] as String: entry['name'] as String};
+    }
+  }
+  Future<void> selectReciter(String id) async {
+    if (playing != null) throw StateError('Current verse must finish first');
+    await channel.invokeMethod<void>('selectAudioReciter', {'id': id});
+    await load();
   }
   AudioTrack? find(int surah, int? verse) {
     for (final track in tracks) {
-      if (track.surah == surah && track.verse == verse) return track;
+      if (track.page == null && track.surah == surah && track.verse == verse) return track;
     }
+    return null;
+  }
+  AudioTrack? findPage(int page) {
+    for (final track in tracks) { if (track.page == page) return track; }
     return null;
   }
   Future<void> download(AudioTrack track) async {
@@ -36,15 +58,19 @@ class QuranAudio {
     downloaded.add(track.id);
   }
   Future<void> play(AudioTrack track) async {
+    if (playing != null) throw StateError('Current verse must finish first');
     if (!downloaded.contains(track.id)) throw StateError('Download required');
     await channel.invokeMethod<void>('playAudio', {'id': track.id});
     playing = track.id;
+    stopPending = false;
+    currentVerse = track.verse ?? 1;
   }
   Future<void> stop() async {
     await channel.invokeMethod<void>('stopAudio');
-    playing = null;
+    if (playing != null) stopPending = true;
   }
   Future<void> remove(AudioTrack track) async {
+    if (playing != null) throw StateError('Current verse must finish first');
     await channel.invokeMethod<void>('removeAudio', {'id': track.id});
     downloaded.remove(track.id);
     if (playing == track.id) playing = null;

@@ -1,3 +1,4 @@
+import '../widgets/compact_confirmation_dialog.dart';
 import 'dart:async';
 import 'package:flutter/material.dart';
 import '../data/surahs.dart';
@@ -5,6 +6,7 @@ import '../data/verse_counts.dart';
 import '../l10n/translations.dart';
 import '../services/quran_audio.dart';
 import '../widgets/language_selector.dart';
+import '../widgets/searchable_surah_field.dart';
 
 class ListeningScreen extends StatefulWidget {
   final int initialSurah;
@@ -21,6 +23,38 @@ class _ListeningScreenState extends State<ListeningScreen> {
   bool _loading = false;
   String? _error;
   Timer? _timer;
+  final _selected = <String>{};
+
+  void _select(AudioTrack track) {
+    if (_busy || _audio.playing != null) return;
+    setState(() {
+      if (!_selected.add(track.id)) _selected.remove(track.id);
+    });
+  }
+
+  Future<void> _removeSelected() async {
+    if (_busy || _audio.playing != null || _selected.isEmpty) return;
+    final tracks = _audio.tracks.where((track) => _selected.contains(track.id)).toList();
+    final yes = await showDialog<bool>(context: context, builder: (dialogContext) => CompactConfirmationDialog(
+      title: Text(dialogContext.t('Seçilen sesleri sil')),
+      content: Text(dialogContext.t('{count} ses kaydı silinecek. Kur’an sayfaların ve ayraçların korunacak.', {'count': tracks.length})),
+      actions: [TextButton(onPressed: () => Navigator.pop(dialogContext, false), child: Text(dialogContext.t('Vazgeç'))),
+        FilledButton(onPressed: () => Navigator.pop(dialogContext, true), child: Text(dialogContext.t('Kaldır')))],
+    ));
+    if (yes == true && mounted) {
+      await _run(() async {
+        try {
+          for (final track in tracks) {
+            await _audio.remove(track);
+            _selected.remove(track.id);
+          }
+        } finally {
+          await _audio.load();
+          _selected.retainAll(_audio.downloaded);
+        }
+      });
+    }
+  }
   @override
   void initState() {
     super.initState(); _surah = widget.initialSurah;
@@ -46,7 +80,7 @@ class _ListeningScreenState extends State<ListeningScreen> {
     super.dispose();
   }
   Future<void> _download(AudioTrack track) async {
-    final yes = await showDialog<bool>(context: context, builder: (dialogContext) => AlertDialog(
+    final yes = await showDialog<bool>(context: context, builder: (dialogContext) => CompactConfirmationDialog(
       title: Text(dialogContext.t('Ses dosyasını indir')),
       content: Text(dialogContext.t('Bir kez indir, çevrimdışı dinle. Boyut: {size} MB', {'size': (track.bytes / 1000000).toStringAsFixed(1)})),
       actions: [TextButton(onPressed: () => Navigator.pop(dialogContext, false), child: Text(dialogContext.t('Vazgeç'))),
@@ -55,7 +89,7 @@ class _ListeningScreenState extends State<ListeningScreen> {
     if (yes == true && mounted) await _run(() => _audio.download(track));
   }
   Future<void> _remove(AudioTrack track) async {
-    final yes = await showDialog<bool>(context: context, builder: (dialogContext) => AlertDialog(
+    final yes = await showDialog<bool>(context: context, builder: (dialogContext) => CompactConfirmationDialog(
       title: Text(dialogContext.t('Ses dosyasını cihazımdan sil')),
       content: Text(dialogContext.t('Bu ses kaydı silinecek. Kur’an sayfaların ve ayraçların korunacak.')),
       actions: [TextButton(onPressed: () => Navigator.pop(dialogContext, false), child: Text(dialogContext.t('Vazgeç'))),
@@ -68,24 +102,44 @@ class _ListeningScreenState extends State<ListeningScreen> {
     final verse = _singleVerse ? int.tryParse(_verse.text) : null;
     final valid = !_singleVerse || (verse != null && verse >= 1 && verse <= verseCounts[_surah - 1]);
     final track = valid ? _audio.find(_surah, verse) : null;
+    final isPlaying = _audio.playing != null;
     final downloaded = track != null && _audio.downloaded.contains(track.id);
-    return Scaffold(
-      appBar: AppBar(title: Text(context.t('Dinle')), actions: const [LanguageSelector()]),
+    return PopScope(canPop: _selected.isEmpty, onPopInvokedWithResult: (didPop, _) {
+      if (!didPop && !_busy) setState(_selected.clear);
+    }, child: Scaffold(
+      appBar: AppBar(
+        leading: _selected.isEmpty ? null : IconButton(tooltip: context.t('Seçimi iptal et'),
+          onPressed: _busy ? null : () => setState(_selected.clear), icon: const Icon(Icons.close)),
+        title: Text(_selected.isEmpty ? context.t("Kur'an dinle") : context.t('{count} seçildi', {'count': _selected.length})),
+        actions: _selected.isEmpty ? const [LanguageSelector()] : [
+          IconButton(key: const ValueKey('audio-delete-selected'), tooltip: context.t('Seçilen sesleri sil'),
+            onPressed: _busy || isPlaying ? null : _removeSelected, icon: const Icon(Icons.delete_outline)),
+        ]),
       body: ListView(padding: const EdgeInsets.all(20), children: [
-        DropdownButtonFormField<int>(initialValue: _surah, isExpanded: true,
-          decoration: InputDecoration(labelText: context.t('Sureler')),
-          items: [for (final s in surahs) DropdownMenuItem(value: s.number,
-            child: Text('${s.number}. ${surahName(s, context.language)}', overflow: TextOverflow.ellipsis))],
-          onChanged: _busy ? null : (value) { if (value != null) setState(() { _surah = value; _verse.text = '1'; }); }),
+        SearchableSurahField(key: const ValueKey('listening-surah'), value: _surah,
+          onChanged: _busy || isPlaying ? null : (value) {
+            if (mounted) setState(() { _surah = value; _verse.text = '1'; });
+          }),
+        const SizedBox(height: 20),
+        DropdownButtonFormField<String>(key: ValueKey('reciter-${_audio.reciter}'),
+          initialValue: _audio.reciter, isExpanded: true,
+          decoration: InputDecoration(labelText: context.t('Okuyucu')),
+          items: [for (final entry in _audio.reciters.entries)
+            DropdownMenuItem(value: entry.key, child: Text(entry.value))],
+          onChanged: _busy || isPlaying || _selected.isNotEmpty ? null : (id) { if (id != null) _run(() => _audio.selectReciter(id)); }),
+        const SizedBox(height: 12),
+        if (_audio.reciter == 'mustafa_ismail') Text(context.t('Bu okuyucunun bazı sure ve ayet kayıtları eksik.')),
+        Text(context.t('Durdurma iste\u011fi ayet sonunda uygulan\u0131r.')),
         const SizedBox(height: 16),
-        Wrap(spacing: 8, children: [
-          ChoiceChip(label: Text(context.t('Surenin tamamı')), selected: !_singleVerse,
-            onSelected: _busy ? null : (_) => setState(() => _singleVerse = false)),
-          ChoiceChip(label: Text(context.t('Seçilen ayet')), selected: _singleVerse,
-            onSelected: _busy ? null : (_) => setState(() => _singleVerse = true)),
+        Row(children: [
+          Expanded(child: ChoiceChip(label: Text(context.t('Sure')), selected: !_singleVerse,
+            onSelected: _busy || isPlaying ? null : (_) => setState(() => _singleVerse = false))),
+          const SizedBox(width: 8),
+          Expanded(child: ChoiceChip(label: Text(context.t('Ayet')), selected: _singleVerse,
+            onSelected: _busy || isPlaying ? null : (_) => setState(() => _singleVerse = true))),
         ]),
         if (_singleVerse) Padding(padding: const EdgeInsets.only(top: 16), child: TextField(
-          controller: _verse, keyboardType: TextInputType.number, enabled: !_busy,
+          controller: _verse, keyboardType: TextInputType.number, enabled: !_busy && !isPlaying,
           decoration: InputDecoration(labelText: context.t('Ayet numarası'),
             helperText: '1–${verseCounts[_surah - 1]}', errorText: valid ? null : context.t('Geçerli bir ayet numarası yaz.')),
           onChanged: (_) => setState(() {}))),
@@ -97,26 +151,37 @@ class _ListeningScreenState extends State<ListeningScreen> {
         ],
         if (!_busy && _error == null && track == null && valid) Card(child: Padding(padding: const EdgeInsets.all(20),
           child: Text(context.t('Bu seçim için ses kaydı henüz eklenmedi. Kayıtlar eklendiğinde bir kez indirip ücretsiz ve çevrimdışı dinleyebilirsin.')))),
-        if (track != null) ...[
-          FilledButton.icon(onPressed: _busy ? null : downloaded
-            ? () => _run(() => _audio.play(track)) : () => _download(track),
-            icon: Icon(downloaded ? Icons.play_arrow : Icons.download),
-            label: Text(context.t(downloaded ? 'Dinle' : 'Ses dosyasını indir'))),
-        ],
-        if (_audio.playing != null) OutlinedButton.icon(onPressed: _busy ? null : () => _run(_audio.stop),
-          icon: const Icon(Icons.stop), label: Text(context.t('Durdur'))),
+        if (track != null || isPlaying)
+          FilledButton.icon(
+            onPressed: _busy || _audio.stopPending || _selected.isNotEmpty ? null : isPlaying
+              ? () => _run(_audio.stop)
+              : downloaded ? () => _run(() => _audio.play(track))
+              : () => _download(track!),
+            icon: Icon(isPlaying ? Icons.stop : downloaded ? Icons.play_arrow : Icons.download),
+            label: Text(context.t(isPlaying
+              ? (_audio.stopPending ? 'Ayet sonunda duracak' : 'Durdur')
+              : downloaded ? 'Dinle' : 'Ses dosyas\u0131n\u0131 indir'))),
+        if (isPlaying && _audio.currentVerse != null)
+          Text(context.t('Okunan ayet: {number}', {'number': _audio.currentVerse!})),
+        if (_audio.playbackError != null) Text(context.t('Ses işlemi tamamlanamadı. Tekrar dene.')),
         const SizedBox(height: 24),
         Text(context.t('İndirilen sesler'), style: Theme.of(context).textTheme.titleLarge),
         if (_audio.downloaded.isEmpty) Text(context.t('Henüz indirilmiş ses dosyası yok.')),
-        for (final item in _audio.tracks.where((t) => _audio.downloaded.contains(t.id))) Card(child: ListTile(
+        for (final item in _audio.tracks.where((t) => t.page == null && _audio.downloaded.contains(t.id) &&
+          (t.verse == null || !_audio.downloaded.contains(_audio.find(t.surah, null)?.id)))) Card(child: ListTile(
+          key: ValueKey('downloaded-audio-${item.id}'), selected: _selected.contains(item.id),
+          onLongPress: _busy || isPlaying ? null : () => _select(item),
+          onTap: _selected.isEmpty || _busy || isPlaying ? null : () => _select(item),
           title: Text(surahName(surahs[item.surah - 1], context.language)),
           subtitle: item.verse == null ? Text(context.t('Surenin tamamı')) : Text(context.t('Ayet {number}', {'number': item.verse!})),
-          leading: IconButton(tooltip: context.t('Dinle'), icon: const Icon(Icons.play_arrow),
-            onPressed: _busy ? null : () => _run(() => _audio.play(item))),
-          trailing: IconButton(tooltip: context.t('Ses dosyasını cihazımdan sil'), icon: const Icon(Icons.delete_outline),
-            onPressed: _busy ? null : () => _remove(item)),
+          leading: _selected.isNotEmpty ? Checkbox(value: _selected.contains(item.id),
+            onChanged: _busy || isPlaying ? null : (_) => _select(item))
+            : IconButton(tooltip: context.t('Dinle'), icon: const Icon(Icons.play_arrow),
+            onPressed: _busy || isPlaying ? null : () => _run(() => _audio.play(item))),
+          trailing: _selected.isNotEmpty ? null : IconButton(tooltip: context.t('Ses dosyasını cihazımdan sil'), icon: const Icon(Icons.delete_outline),
+            onPressed: _busy || isPlaying ? null : () => _remove(item)),
         )),
       ]),
-    );
+    ));
   }
 }

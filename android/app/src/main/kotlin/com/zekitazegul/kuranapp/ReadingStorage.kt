@@ -1,6 +1,7 @@
 package com.zekitazegul.kuranapp
 
 import android.content.Context
+import android.util.AtomicFile
 import android.graphics.BitmapFactory
 import android.graphics.Bitmap
 import android.graphics.Color
@@ -26,6 +27,39 @@ class ReadingStorage(private val context: Context, requestedEdition: String? = n
     private val directory = File(context.filesDir, edition.getString("directory")).apply { mkdirs() }
     private val firstPage = edition.getInt("firstPage")
     private val lastPage = edition.getInt("lastPage")
+    private val historyFile = AtomicFile(File(context.filesDir, "reading-history.json"))
+
+    private fun readingHistory(): JSONArray = try {
+        JSONArray(historyFile.openRead().bufferedReader().use { it.readText() })
+    } catch (_: java.io.FileNotFoundException) { JSONArray() }
+
+    fun saveHatim(pages: List<Int>, resume: Int) {
+        require(pages.all { it in firstPage..lastPage } && resume in firstPage..lastPage)
+        check(preferences.edit().putStringSet("hatimPages", pages.map { it.toString() }.toSet())
+            .putInt("hatimResume", resume).commit())
+    }
+
+    fun saveReadingHistory(entries: List<Map<String, Any?>>) {
+        val array = JSONArray(entries)
+        for (i in 0 until array.length()) {
+            val item = array.getJSONObject(i)
+            val source = findEdition(item.getString("edition"))
+            require(item.getInt("firstPage") >= source.getInt("firstPage"))
+            require(item.getInt("lastPage") in item.getInt("firstPage")..source.getInt("lastPage"))
+            require(item.getLong("time") > 0 && item.getString("session").length <= 100)
+            val surahs = item.getJSONArray("surahs")
+            require(surahs.length() in 1..114)
+            for (j in 0 until surahs.length()) require(surahs.getInt(j) in 1..114)
+        }
+        val output = historyFile.startWrite()
+        try {
+            output.write(array.toString().toByteArray(Charsets.UTF_8))
+            historyFile.finishWrite(output)
+        } catch (error: Exception) {
+            historyFile.failWrite(output)
+            throw error
+        }
+    }
 
     private fun findEdition(id: String): JSONObject = (0 until catalog.length())
         .map { catalog.getJSONObject(it) }.firstOrNull { it.getString("id") == id }
@@ -42,6 +76,12 @@ class ReadingStorage(private val context: Context, requestedEdition: String? = n
         val json = JSONObject(values)
         require(json.getString("theme") in setOf("system", "light", "dark"))
         require(json.getString("color") in setOf("green", "blue", "purple", "amber"))
+        if (json.has("bottomShortcuts")) {
+            val bottom = json.getJSONArray("bottomShortcuts")
+            val destinations = (0 until bottom.length()).map { bottom.getString(it) }
+            require(destinations.size in 0..6 && destinations.toSet().size == destinations.size)
+            require(destinations.all { it in setOf("home", "bookmarks", "surahs", "history", "settings", "search", "hatim", "exit") })
+        }
         val shortcuts = json.getJSONArray("shortcuts")
         require(shortcuts.length() <= 24)
         val ids = mutableSetOf<String>()
@@ -51,6 +91,11 @@ class ReadingStorage(private val context: Context, requestedEdition: String? = n
             val number = shortcut.getInt("number")
             require((kind == "surah" && number in 1..114) || (kind == "juz" && number in 1..30))
             require(ids.add("$kind:$number"))
+        }
+        if (json.has("dashboardCards")) {
+            val cards = json.getJSONArray("dashboardCards")
+            val order = (0 until cards.length()).map { cards.getString(it) }
+            require(DashboardCardOrder.isValid(order, ids))
         }
         check(global.edit().putString("uiPreferences", json.toString()).commit())
     }
@@ -79,7 +124,22 @@ class ReadingStorage(private val context: Context, requestedEdition: String? = n
         .filter { entry -> File(context.filesDir, entry.getString("directory")).listFiles()?.any { it.isFile } == true }
         .map { it.getString("id") }
 
+    @Suppress("DEPRECATION")
+    private fun appVersion(): String {
+        val info = context.packageManager.getPackageInfo(context.packageName, 0)
+        return "${info.versionName}+${info.versionCode}"
+    }
+
+    fun acknowledgeUpdate() {
+        check(global.edit().putString("seenUpdateVersion", appVersion()).commit())
+    }
+
     fun load(): Map<String, Any?> = mapOf(
+        "appVersion" to appVersion(),
+        "seenUpdateVersion" to global.getString("seenUpdateVersion", null),
+        "readingHistory" to toCodec(readingHistory()),
+        "hatimPages" to preferences.getStringSet("hatimPages", emptySet())!!.map { it.toInt() },
+        "hatimResume" to preferences.getInt("hatimResume", firstPage),
         "uiPreferences" to toCodec(JSONObject(global.getString("uiPreferences", "{}")!!)),
         "edition" to toCodec(edition),
         "editions" to toCodec(catalog),
@@ -92,6 +152,8 @@ class ReadingStorage(private val context: Context, requestedEdition: String? = n
         "informationSeen" to global.getBoolean("informationSeen", false),
         "guideSeen" to global.getBoolean("guideSeen", false),
         "pageAnimations" to global.getBoolean("pageAnimations", true),
+        "pageEffect" to global.getString("pageEffect", "slide"),
+        "bookmarkDates" to toCodec(JSONObject(preferences.getString("bookmarkDates", "{}")!!)),
         "bookmarks" to preferences.getStringSet("bookmarks", emptySet())!!.mapNotNull { it.toIntOrNull() },
         "downloaded" to (firstPage..lastPage).filter { validImage(pageFile(it)) }
     )
@@ -113,7 +175,17 @@ class ReadingStorage(private val context: Context, requestedEdition: String? = n
 
     fun saveBookmarks(pages: List<Int>) {
         require(pages.all { it in firstPage..lastPage })
-        check(preferences.edit().putStringSet("bookmarks", pages.map { it.toString() }.toSet()).commit())
+        val previous = preferences.getStringSet("bookmarks", emptySet())!!
+        val oldDates = JSONObject(preferences.getString("bookmarkDates", "{}")!!)
+        val dates = JSONObject()
+        val now = System.currentTimeMillis()
+        for (page in pages) {
+            val key = page.toString()
+            if (oldDates.has(key)) dates.put(key, oldDates.getLong(key))
+            else if (key !in previous) dates.put(key, now)
+        }
+        check(preferences.edit().putStringSet("bookmarks", pages.map { it.toString() }.toSet())
+            .putString("bookmarkDates", dates.toString()).commit())
     }
 
     fun acknowledge() {
@@ -127,6 +199,11 @@ class ReadingStorage(private val context: Context, requestedEdition: String? = n
 
     fun acknowledgeGuide() {
         check(global.edit().putBoolean("guideSeen", true).commit())
+    }
+
+    fun setPageEffect(effect: String) {
+        require(effect in setOf("curl", "slide"))
+        check(global.edit().putString("pageEffect", effect).commit())
     }
 
     fun setPageAnimations(enabled: Boolean) {

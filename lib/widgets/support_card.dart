@@ -1,3 +1,4 @@
+import 'compact_confirmation_dialog.dart';
 import 'package:flutter/material.dart';
 import '../l10n/translations.dart';
 import '../services/reading_store.dart';
@@ -11,8 +12,8 @@ class SupportCard extends StatelessWidget {
     return uri != null && uri.scheme == 'https' &&
       ['buymeacoffee.com', 'www.buymeacoffee.com', 'ko-fi.com', 'www.ko-fi.com', 'zekitazegul.github.io'].contains(uri.host);
   }
-  Future<void> _open(BuildContext context, {bool feedback = false}) async {
-          final confirmed = await showDialog<bool>(context: context, builder: (context) => AlertDialog(
+  Future<void> _open(BuildContext context) async {
+          final confirmed = await showDialog<bool>(context: context, builder: (context) => CompactConfirmationDialog(
             title: Text(context.t('Birlikte güzelleştirelim')),
             content: Text(context.t('Destek ve geri bildirim sayfamız tarayıcıda açılacak. Mesaj göndermek ücretsiz, kahve ikramı tamamen isteğe bağlıdır.')),
             actions: [TextButton(onPressed: () => Navigator.pop(context, false), child: Text(context.t('Vazgeç'))),
@@ -23,7 +24,7 @@ class SupportCard extends StatelessWidget {
           final uri = Uri.parse(url);
           final destination = uri.host == 'zekitazegul.github.io'
             ? uri.replace(queryParameters: {...uri.queryParameters, 'lang': context.language},
-                fragment: feedback ? 'feedback' : '').toString()
+                fragment: '').toString()
             : url;
           try { await ReadingStore.channel.invokeMethod<void>('openSupport', {'url': destination}); }
           catch (_) { if (context.mounted) {
@@ -41,19 +42,12 @@ class SupportCard extends StatelessWidget {
           const SizedBox(width: 10), Expanded(child: Text(context.t('Birlikte güzelleştirelim'),
             style: Theme.of(context).textTheme.titleMedium))]),
         const SizedBox(height: 8),
-        Text(context.t('Bir teşekkür, bir fikir ya da bir kahve… Katkının her türü değerli.'),
+        Text(context.t('Uygulamanın tüm özellikleri ücretsizdir. Dilersen bir fikir, teşekkür veya kahve ikramıyla katkıda bulunabilirsin.'),
           style: Theme.of(context).textTheme.bodyMedium),
         const SizedBox(height: 12),
-        Wrap(spacing: 8, runSpacing: 8, children: [
-          OutlinedButton.icon(onPressed: available ? () => _open(context, feedback: true) : null,
-            icon: const Icon(Icons.chat_bubble_outline, size: 18),
-            label: Text(context.t('Fikrini paylaş'))),
-          TextButton.icon(onPressed: available ? () => _open(context) : null,
-            icon: Icon(gentle ? Icons.favorite_outline : Icons.local_cafe_outlined, size: 18),
-            label: Text(context.t(gentle ? 'Beğen' : 'Bir kahve ikram et'))),
-        ]),
-        Text(context.t('Tamamen isteğe bağlı · Geri bildirim ücretsiz'),
-          style: Theme.of(context).textTheme.bodySmall),
+        OutlinedButton.icon(onPressed: available ? () => _open(context) : null,
+          icon: const Icon(Icons.favorite_outline, size: 18),
+          label: Text(context.t('Destek ve geri bildirim'))),
       ])),
   );
 }

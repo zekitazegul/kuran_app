@@ -28,11 +28,13 @@ void main() {
   testWidgets('changing theme keeps settings open and updates the app theme', (tester) async {
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
       .setMockMethodCallHandler(ReadingStore.channel, (call) async {
-        if (call.method == 'load') return {
+        if (call.method == 'load') {
+          return {
           'directory': '/test', 'lastPage': 439, 'bookmarks': <int>[],
           'downloaded': List<int>.generate(605, (i) => i),
           'informationSeen': true, 'guideSeen': true, 'uiPreferences': saved,
-        };
+          };
+        }
         if (call.method == 'saveUiPreferences') {
           saved = (call.arguments as Map)['preferences'] as Map;
           return null;
@@ -43,9 +45,12 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Kütüphanem'), findsNothing);
     await tester.tap(find.byTooltip('Ayarlar')); await tester.pumpAndSettle();
+    await tester.tap(find.text('Görünüm ve okuma')); await tester.pumpAndSettle();
     final appearance = find.widgetWithText(ListTile, 'Görünüm ve kısayollar');
     await tester.ensureVisible(appearance); await tester.pumpAndSettle();
     await tester.tap(appearance); await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(find.text('Koyu'), 180,
+      scrollable: find.byType(Scrollable).first); await tester.pumpAndSettle();
     await tester.tap(find.text('Koyu')); await tester.pumpAndSettle();
     expect(tester.widget<MaterialApp>(find.byType(MaterialApp)).themeMode, ThemeMode.dark);
     expect(saved!['theme'], 'dark');

@@ -1,4 +1,13 @@
-import 'listening_screen.dart';
+import '../widgets/bookmarks_sheet.dart';
+import '../widgets/compact_confirmation_dialog.dart';
+import 'hatim_prayer_screen.dart';
+import 'meal_screen.dart';
+import 'hatim_selection_screen.dart';
+import 'dart:async';
+import 'dart:convert';
+import '../services/quran_audio.dart';
+import '../widgets/page_turn.dart';
+import '../widgets/app_bottom_bar.dart';
 import '../widgets/sajdah_notice.dart';
 import '../l10n/translations.dart';
 import 'dart:io';
@@ -7,22 +16,134 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../data/surahs.dart';
 import '../services/reading_store.dart';
-import '../widgets/page_turn.dart';
+import '../widgets/page_slide.dart';
 import '../widgets/reading_page.dart';
-import 'settings_screen.dart';
 import '../widgets/language_selector.dart';
-import '../widgets/reader_tap_region.dart';
 
 class QuranScreen extends StatefulWidget {
   final ReadingStore store;
   final int initialPage;
   final String? initialPanel;
-  const QuranScreen({super.key, required this.store, required this.initialPage, this.initialPanel});
+  final bool hatim;
+  const QuranScreen({super.key, required this.store, required this.initialPage, this.initialPanel, this.hatim = false});
   @override
   State<QuranScreen> createState() => _QuranScreenState();
 }
 
-class _QuranScreenState extends State<QuranScreen> with SingleTickerProviderStateMixin {
+class _QuranScreenState extends State<QuranScreen> with SingleTickerProviderStateMixin, WidgetsBindingObserver {
+  final _audio = QuranAudio();
+  Timer? _audioTimer;
+  bool _audioBusy = false;
+  Future<void> _listenPage() async {
+    if (_audioBusy) return;
+    final page = _page;
+    setState(() => _audioBusy = true);
+    try {
+      await _audio.load();
+      if (_audio.playing != null) { await _audio.stop(); return; }
+      final track = _audio.findPage(page);
+      if (track == null) throw StateError('Page audio unavailable');
+      if (!_audio.downloaded.contains(track.id)) {
+        if (!mounted) return;
+        final yes = await showDialog<bool>(context: context, builder: (context) => CompactConfirmationDialog(
+          title: Text(context.t('Ses dosyasını indir')),
+          content: Text('${_audio.reciters[_audio.reciter]}\n${context.t('Bir kez indir, çevrimdışı dinle. Boyut: {size} MB', {'size': (track.bytes / 1000000).toStringAsFixed(1)})}'),
+          actions: [TextButton(onPressed: () => Navigator.pop(context, false), child: Text(context.t('Vazgeç'))),
+            FilledButton(onPressed: () => Navigator.pop(context, true), child: Text(context.t('İndirmeyi başlat')))]));
+        if (yes != true) return;
+        await _audio.download(track);
+      }
+      if (mounted && page == _page) await _audio.play(track);
+    } catch (_) { _error('Ses işlemi tamamlanamadı. Tekrar dene.'); }
+    finally { if (mounted) setState(() => _audioBusy = false); }
+  }
+  Future<void> _mealPage() async {
+    try {
+      final data = jsonDecode(await rootBundle.loadString('assets/page_verses.json')) as Map;
+      final refs = (data['pages'] as List)[_page] as List;
+      final first = refs.first as Map;
+      if (!mounted) return;
+      await _audio.stop();
+      if (!mounted) return;
+      await Navigator.push(context, MaterialPageRoute<void>(builder: (_) => MealScreen(
+        initialSurah: first['surah'] as int, initialVerse: first['verse'] as int)));
+    } catch (_) { _error('Meal açılamadı. Tekrar dene.'); }
+  }
+  Timer? _historyTimer;
+  String _historySession = DateTime.now().microsecondsSinceEpoch.toString();
+  int? _recordedPage;
+  bool _foreground = true;
+
+  void _scheduleHistory() {
+    _historyTimer?.cancel();
+    final page = _page;
+    final edition = widget.store.edition.id;
+    _historyTimer = Timer.periodic(const Duration(seconds: 2), (timer) {
+      if (!mounted || !_foreground || !(ModalRoute.of(context)?.isCurrent ?? false) || _page != page ||
+          widget.store.edition.id != edition || _target != null || _preparing) {
+        return;
+      }
+      timer.cancel();
+      if (_recordedPage == page) return;
+      _recordedPage = page;
+      widget.store.recordReading(page, _historySession).catchError((Object _) {
+        _recordedPage = null;
+        _error('Okuma geçmişi kaydedilemedi.');
+      });
+    });
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    _foreground = state == AppLifecycleState.resumed;
+    if (_foreground) {
+      _historySession = DateTime.now().microsecondsSinceEpoch.toString();
+      _recordedPage = null;
+      _scheduleHistory();
+    } else {
+      _historyTimer?.cancel();
+    }
+  }
+  bool _hatimSaving = false;
+  Future<void> _markHatim() async {
+    if (_hatimSaving || _target != null || _preparing) return;
+    setState(() => _hatimSaving = true);
+    try {
+      final page = _page;
+      final read = !widget.store.hatimPages.contains(page);
+      await widget.store.saveHatim([page], read: read, resume: page);
+      if (!mounted) return;
+      if (read && widget.store.hatimComplete) {
+        await _openPrayer();
+      }
+    } catch (_) { _error('Hatim ilerlemesi kaydedilemedi.'); }
+    finally { if (mounted) setState(() => _hatimSaving = false); }
+  }
+  Future<void> _hatimSelection() async {
+    final selectedPage = await Navigator.push<int>(context,
+      MaterialPageRoute<int>(builder: (_) => HatimSelectionScreen(store: widget.store)));
+    if (!mounted) return;
+    setState(() {});
+    if (selectedPage != null) {
+      await _go(selectedPage);
+      return;
+    }
+    if (widget.store.hatimComplete) {
+      await _openPrayer();
+    }
+  }
+  bool _prayerOpen = false;
+  Future<void> _openPrayer() async {
+    if (_prayerOpen || !mounted) return;
+    _prayerOpen = true;
+    try {
+      await _go(widget.store.edition.lastPage);
+      if (!mounted) return;
+      final restart = await Navigator.push<bool>(context,
+        MaterialPageRoute<bool>(builder: (_) => HatimPrayerScreen(store: widget.store)));
+      if (restart == true && mounted) await _go(widget.store.edition.firstPage);
+    } finally { _prayerOpen = false; }
+  }
   late int _page;
   int? _target;
   bool _fullscreen = false;
@@ -32,55 +153,20 @@ class _QuranScreenState extends State<QuranScreen> with SingleTickerProviderStat
   final TransformationController _zoom = TransformationController();
   final ScrollController _verticalScroll = ScrollController();
   bool _zoomed = false;
-  double _bottomPull = 0;
-  double _topPull = 0;
   bool _landscape = false;
   Orientation? _orientation;
 
   void _resetReadingPosition() {
     _zoom.value = Matrix4.identity();
     _zoomed = false;
-    _bottomPull = 0;
-    _topPull = 0;
     if (_verticalScroll.hasClients) _verticalScroll.jumpTo(0);
   }
 
-  bool _scrollNotification(ScrollNotification notification) {
-    if (notification.depth != 0) return false;
-    if (notification is ScrollStartNotification) { _bottomPull = 0; _topPull = 0; }
-    if (notification is OverscrollNotification && notification.dragDetails != null &&
-        notification.overscroll < 0 && notification.metrics.extentBefore <= 0 &&
-        _fullscreen && !_zoomed && !_multiTouch && _target == null && !_preparing) {
-      _topPull -= notification.overscroll;
-      if (_topPull >= 55) {
-        _topPull = 0;
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (mounted && _fullscreen) _toggleFullscreen();
-        });
-      }
-    }
-    if (notification is OverscrollNotification && notification.dragDetails != null &&
-        notification.overscroll > 0 && notification.metrics.extentAfter <= 0 &&
-        _landscape && !_zoomed && !_multiTouch && !_exitFromBottomEdge && _target == null &&
-        !_preparing && _page < widget.store.edition.lastPage) {
-      _bottomPull += notification.overscroll;
-      if (_bottomPull >= 55) {
-        _bottomPull = 0;
-        // Scroll notifications arrive during layout; navigate after this frame.
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (mounted && _target == null && !_preparing) _go(_page + 1, animate: true);
-        });
-      }
-    }
-    return false;
-  }
   Offset? _touchStart;
   int? _touchPointer;
   bool _multiTouch = false;
   bool _exitFromBottomEdge = false;
   bool _dragging = false;
-  double _touchHeight = .85;
-  double _dragTilt = 0;
   double _readerWidth = 1;
   double _readerHeight = 1;
 
@@ -98,10 +184,13 @@ class _QuranScreenState extends State<QuranScreen> with SingleTickerProviderStat
       setState(() { _dragging = true; _target = target; });
     }
     if (!widget.store.pageAnimations || MediaQuery.of(context).disableAnimations) return;
-    final direction = _target! > _page ? 1 : -1;
-    final progress = (delta.dx * direction / (_readerWidth * 2.1)).clamp(0.0, .98).toDouble();
-    setState(() => _dragTilt = delta.dy / (1 - progress));
-    _turn.value = progress;
+    final target = _page + (delta.dx > 0 ? 1 : -1);
+    if (target < widget.store.edition.firstPage || target > widget.store.edition.lastPage) {
+      _turn.value = 0;
+      return;
+    }
+    if (target != _target) setState(() => _target = target);
+    _turn.value = (delta.dx.abs() / (_readerWidth * (widget.store.pageEffect == 'curl' ? 2.1 : 1))).clamp(0.0, 1.0).toDouble();
   }
 
   Future<void> _releaseDrag({required bool commit}) async {
@@ -110,7 +199,7 @@ class _QuranScreenState extends State<QuranScreen> with SingleTickerProviderStat
     try {
       if (commit) {
         final target = _target!;
-        await _turn.forward().orCancel;
+        await _turn.animateTo(1, duration: const Duration(milliseconds: 240), curve: Curves.easeOutCubic).orCancel;
         if (!mounted) return;
         setState(() { _page = target; _target = null; });
         _resetReadingPosition();
@@ -128,15 +217,23 @@ class _QuranScreenState extends State<QuranScreen> with SingleTickerProviderStat
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _page = widget.initialPage.clamp(widget.store.edition.firstPage, widget.store.edition.lastPage).toInt();
-    _turn = AnimationController(vsync: this, duration: Duration(milliseconds: 650));
+    _turn = AnimationController(vsync: this, duration: Duration(milliseconds: 300));
     _remember(_page);
+    _audioTimer = Timer.periodic(const Duration(seconds: 2), (_) async {
+      if (_audioBusy || _audio.playing == null) return;
+      _audioBusy = true;
+      try { await _audio.load(); } catch (_) { /* Refresh on the next tick. */ }
+      finally { _audioBusy = false; if (mounted) setState(() {}); }
+    });
     if (widget.initialPanel != null) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!mounted) return;
         if (widget.initialPanel == 'surah') _selectSurah();
         if (widget.initialPanel == 'bookmarks') _bookmarks();
         if (widget.initialPanel == 'jump') _jump();
+        if (widget.initialPanel == 'prayer') _openPrayer();
       });
     }
   }
@@ -146,10 +243,18 @@ class _QuranScreenState extends State<QuranScreen> with SingleTickerProviderStat
   }
 
   Future<void> _remember(int page) async {
+    if (_audio.playing != null) _audio.stop().catchError((Object _) {});
+    _recordedPage = null;
+    _scheduleHistory();
+    try { if (widget.hatim) await widget.store.saveHatim([], resume: page); } catch (_) { _error('Hatim ilerlemesi kaydedilemedi.'); }
     try { await widget.store.savePage(page); } catch (_) { _error('Son okunan sayfa kaydedilemedi.'); }
   }
 
   Future<void> _go(int page, {bool animate = false}) async {
+    if (widget.hatim && widget.store.hatimComplete && page == widget.store.edition.lastPage + 1) {
+      await _openPrayer();
+      return;
+    }
     if (_target != null || _preparing || page < widget.store.edition.firstPage || page > widget.store.edition.lastPage || page == _page) return;
     _resetReadingPosition();
     if (!animate || !widget.store.pageAnimations || MediaQuery.of(context).disableAnimations) {
@@ -162,7 +267,7 @@ class _QuranScreenState extends State<QuranScreen> with SingleTickerProviderStat
       await precacheImage(FileImage(File(widget.store.pagePath(page))), context,
         onError: (Object error, StackTrace? stack) => _error('Sayfa görüntüsü okunamadı.'));
       if (!mounted) return;
-      setState(() { _target = page; _touchHeight = .85; _dragTilt = -_readerHeight * .08; });
+      setState(() => _target = page);
       await _turn.forward(from: 0).orCancel;
       if (!mounted) return;
       setState(() { _page = page; _target = null; });
@@ -206,14 +311,9 @@ class _QuranScreenState extends State<QuranScreen> with SingleTickerProviderStat
   }
 
   Future<void> _bookmarks() async {
-    final pages = widget.store.bookmarks.toList()..sort();
-    final selected = await showModalBottomSheet<int>(context: context, builder: (context) => SafeArea(
-      child: pages.isEmpty ? Padding(padding: EdgeInsets.all(32), child: Text(context.t('Henüz ayraç yok. Okuduğunuz sayfada ayraç simgesine dokunun.')))
-      : ListView(children: [ListTile(title: Text(context.t('Ayraçlar'))),
-        for (final page in pages) ListTile(title: Text(context.t('Sayfa {page}', {'page': page})),
-          subtitle: Text(widget.store.edition.surahsOnPage(page).map((s) => surahName(s, context.language)).join(', ')),
-          onTap: () => Navigator.pop(context, page))]),
-    ));
+    final selected = await showBookmarksSheet(context, widget.store, onChanged: () {
+      if (mounted) setState(() {});
+    });
     if (selected != null && mounted) await _go(selected);
   }
 
@@ -234,16 +334,24 @@ class _QuranScreenState extends State<QuranScreen> with SingleTickerProviderStat
       _fullscreen = !_fullscreen;
       if (_fullscreen) _showOuterFrame = false;
     });
-    SystemChrome.setEnabledSystemUIMode(_fullscreen ? SystemUiMode.immersiveSticky : SystemUiMode.edgeToEdge);
+    AppNavigation.instance.fullscreenReader.value = _fullscreen ? this : null;
+    SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
   }
 
   void _doubleTapFullscreen() {
     if (_target != null || _preparing) return;
     _resetReadingPosition();
     setState(() {
-      _showOuterFrame = !_fullscreen || !_showOuterFrame;
-      _fullscreen = true;
+      if (!_fullscreen) {
+        _fullscreen = true;
+        _showOuterFrame = true;
+      } else if (_showOuterFrame) {
+        _showOuterFrame = false;
+      } else {
+        _fullscreen = false;
+      }
     });
+    AppNavigation.instance.fullscreenReader.value = _fullscreen ? this : null;
     SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
   }
 
@@ -255,27 +363,43 @@ class _QuranScreenState extends State<QuranScreen> with SingleTickerProviderStat
 
   @override
   void dispose() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (identical(AppNavigation.instance.fullscreenReader.value, this)) {
+        AppNavigation.instance.fullscreenReader.value = null;
+      }
+    });
+    WidgetsBinding.instance.removeObserver(this);
+    _historyTimer?.cancel();
+    _audioTimer?.cancel();
+    _audio.stop().catchError((Object _) {});
     _verticalScroll.dispose();
     _zoom.dispose();
     _turn.dispose();
-    SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+    SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
     super.dispose();
   }
 
-  Widget _image(int page) => ReadingPage(
-    image: FileImage(File(widget.store.pagePath(page))),
-    crop: _normalizedActiveCrop(page),
+  Widget _image(int page) => TweenAnimationBuilder<double>(
+    tween: Tween(end: widget.hatim && widget.store.hatimPages.contains(page) ? 1 : 0),
+    duration: MediaQuery.disableAnimationsOf(context) ? Duration.zero : const Duration(milliseconds: 380),
+    curve: Curves.easeInOutCubic,
+    builder: (context, coverage, child) => Stack(fit: StackFit.expand, children: [
+      child!,
+      Positioned.fill(child: IgnorePointer(child: ClipRect(child: Align(
+        alignment: Alignment.topCenter,
+        child: FractionallySizedBox(key: ValueKey('hatim-page-curtain-$page'),
+          heightFactor: coverage, widthFactor: 1,
+          child: const DecoratedBox(decoration: BoxDecoration(
+            gradient: LinearGradient(begin: Alignment.centerLeft, end: Alignment.centerRight,
+              colors: [Color(0x99FFFDF6), Color(0xB3FFFFFF), Color(0x99FFFDF6),
+                Color(0xADFFFFFF), Color(0x99FFFDF6)],
+              stops: [0, .25, .5, .75, 1]),
+          ))),
+      )))),
+    ]),
+    child: ReadingPage(image: FileImage(File(widget.store.pagePath(page))),
+      crop: _normalizedActiveCrop(page)),
   );
-
-  void _tapPage(TapUpDetails details) {
-    if (_target != null || _preparing) return;
-    // Android physical DPI approximates a 1 cm strip at each edge.
-    final region = readerTapRegion(details.localPosition.dx, _readerWidth, widget.store.edgeTapWidth);
-    if (region == ReaderTapRegion.fullscreen) return;
-    if (_zoom.value.getMaxScaleOnAxis() <= 1.01) {
-      _go(_page + (region == ReaderTapRegion.nextPage ? 1 : -1), animate: true);
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -290,38 +414,36 @@ class _QuranScreenState extends State<QuranScreen> with SingleTickerProviderStat
       });
     }
     _landscape = orientation == Orientation.landscape;
-    return Scaffold(backgroundColor: Color(0xFFE9E1D1),
-      appBar: _fullscreen ? null : AppBar(title: Text(widget.store.edition.surahsOnPage(_page).map((s) => surahName(s, context.language)).join(' · ')),
-        actions: [IconButton(tooltip: context.t('Dinle'), icon: const Icon(Icons.headphones_outlined),
-          onPressed: busy ? null : () => Navigator.push(context, MaterialPageRoute<void>(builder: (_) =>
-            ListeningScreen(initialSurah: widget.store.edition.surahsOnPage(_page).first.number)))),
-          IconButton(tooltip: context.t('Sayfaya git'), onPressed: _jump, icon: Icon(Icons.numbers)),
-          PopupMenuButton<String>(enabled: !busy && !_bookmarkSaving, onSelected: (v) {
-            if (v == 'surah') _selectSurah();
-            if (v == 'bookmarks') _bookmarks();
-            if (v == 'full') _toggleFullscreen();
-            if (v == 'settings') {
-              final previous = widget.store.edition.id;
-              Navigator.push(context, MaterialPageRoute<void>(builder: (_) => SettingsScreen(store: widget.store)))
-                .then((_) {
-                  if (!mounted || !context.mounted) return;
-                  if (!widget.store.ready) { Navigator.pop(context); return; }
-                  if (previous != widget.store.edition.id) {
-                    _resetReadingPosition();
-                    setState(() => _page = widget.store.lastPage);
-                  } else { setState(() {}); }
-                });
-            }
-          }, itemBuilder: (_) => [PopupMenuItem(value: 'surah', child: Text(context.t('Sure / Cüz'))),
-            PopupMenuItem(value: 'bookmarks', child: Text(context.t('Ayraçlar'))),
-            PopupMenuItem(value: 'full', child: Text(context.t('Tam ekran'))),
-            PopupMenuItem(value: 'settings', child: Text(context.t('Ayarlar')))]), LanguageSelector()]),
+    final fadeLandscapeControls = widget.hatim && _landscape;
+    return TweenAnimationBuilder<double>(
+      tween: Tween(end: _fullscreen ? 0 : 1),
+      duration: fadeLandscapeControls && !MediaQuery.disableAnimationsOf(context)
+          ? const Duration(milliseconds: 320) : Duration.zero,
+      curve: Curves.easeInOutCubic,
+      builder: (context, chromeVisibility, _) => Scaffold(backgroundColor: Color(0xFFE9E1D1),
+      appBar: chromeVisibility == 0 ? null : PreferredSize(
+        preferredSize: Size.fromHeight(kToolbarHeight * chromeVisibility),
+        child: ClipRect(child: Align(heightFactor: chromeVisibility,
+          child: Opacity(opacity: chromeVisibility, child: AppBar(title: Text((widget.hatim ? '${context.t("Hatim")} · ' : '') + widget.store.edition.surahsOnPage(_page).map((s) => surahName(s, context.language)).join(' · '), maxLines: 1, overflow: TextOverflow.ellipsis,
+          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600)),
+        actions: const [LanguageSelector()]))))),
       body: Stack(fit: StackFit.expand, children: [
       SafeArea(top: !_fullscreen, bottom: !_fullscreen, child: Column(children: [
+        Align(alignment: Alignment.centerRight, child: Padding(
+          padding: const EdgeInsets.only(right: 8), child: Material(
+        color: Theme.of(context).colorScheme.surface.withValues(alpha: .9),
+        borderRadius: BorderRadius.circular(24), child: Row(mainAxisSize: MainAxisSize.min, children: [
+          IconButton(key: const ValueKey('reader-listen'),
+            tooltip: context.t(_audio.playing == null ? "Kur'an dinle" : _audio.stopPending ? 'Ayet sonunda duracak' : 'Durdur'),
+            onPressed: busy || _audioBusy || _audio.stopPending ? null : _listenPage,
+            icon: _audioBusy ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
+              : Icon(_audio.playing == null ? Icons.headphones_rounded : Icons.stop_rounded)),
+          IconButton(key: const ValueKey('reader-meal'), tooltip: context.t('Meal Oku'),
+            onPressed: busy || _audioBusy ? null : _mealPage, icon: const Icon(Icons.translate_rounded)),
+        ])))),
         Expanded(child: GestureDetector(
           key: const ValueKey('quran-reading-surface'),
           behavior: HitTestBehavior.opaque,
-          onTapUp: _tapPage,
           onDoubleTap: _doubleTapFullscreen,
           child: Listener(
             onPointerDown: (event) {
@@ -334,7 +456,6 @@ class _QuranScreenState extends State<QuranScreen> with SingleTickerProviderStat
               _exitFromBottomEdge = _fullscreen && event.localPosition.dy >= _readerHeight - 56;
               _touchPointer = event.pointer;
               _touchStart = event.position;
-              _touchHeight = (event.localPosition.dy / _readerHeight).clamp(0.0, 1.0).toDouble();
               _multiTouch = false;
             },
             onPointerMove: _dragMove,
@@ -343,16 +464,21 @@ class _QuranScreenState extends State<QuranScreen> with SingleTickerProviderStat
               final delta = event.position - (_touchStart ?? event.position);
               if (_exitFromBottomEdge && _fullscreen && !_multiTouch && !_zoomed &&
                   _target == null && !_dragging && !_preparing &&
-                  delta.dy < -70 && delta.dy.abs() > delta.dx.abs()) {
+                  delta.dy < -(widget.hatim && _landscape ? 32 : 70) && delta.dy.abs() > delta.dx.abs()) {
                 _exitFromBottomEdge = false;
                 _touchPointer = null; _touchStart = null;
                 _toggleFullscreen();
                 return;
               }
               _exitFromBottomEdge = false;
+              if (widget.hatim && widget.store.hatimComplete && _page == widget.store.edition.lastPage &&
+                  !_multiTouch && !_zoomed && delta.dx > 8 && delta.dx > delta.dy.abs()) {
+                _touchPointer = null; _touchStart = null;
+                _go(_page + 1);
+                return;
+              }
               if (_dragging) {
-                _releaseDrag(commit: !_multiTouch && delta.dx.abs() >= 70 &&
-                  _turn.value > 0.01);
+                _releaseDrag(commit: !_multiTouch && _turn.value > 0);
               }
               if (!_multiTouch && (!widget.store.pageAnimations || MediaQuery.of(context).disableAnimations) &&
                   _zoom.value.getMaxScaleOnAxis() <= 1.01 &&
@@ -374,12 +500,12 @@ class _QuranScreenState extends State<QuranScreen> with SingleTickerProviderStat
             final sheetHeight = _fullscreen || _landscape
                 ? math.max(constraints.maxHeight, constraints.maxWidth * aspect)
                 : constraints.maxHeight;
-            final child = _target == null ? _image(_page) : PageTurn(
-              image: FileImage(File(widget.store.pagePath(_page))), animation: _turn,
-              toRight: _target! > _page, underneath: _image(_target!),
-              touchHeight: (_touchHeight * constraints.maxHeight +
-                (_verticalScroll.hasClients ? _verticalScroll.offset : 0)) / sheetHeight, dragTilt: _dragTilt,
-              crop: _normalizedActiveCrop(_page));
+            final child = _target == null ? _image(_page) : widget.store.pageEffect == 'curl'
+              ? PageTurn(image: FileImage(File(widget.store.pagePath(_page))), animation: _turn,
+                  toRight: _target! > _page, underneath: _image(_target!), crop: _normalizedActiveCrop(_page))
+              : PageSlide(
+              animation: _turn, toRight: _target! > _page,
+              current: _image(_page), next: _image(_target!));
             return InteractiveViewer(transformationController: _zoom, minScale: 1, maxScale: 4,
               alignment: Alignment.topCenter,
               panEnabled: _zoomed && _target == null,
@@ -387,21 +513,41 @@ class _QuranScreenState extends State<QuranScreen> with SingleTickerProviderStat
                 final zoomed = _zoom.value.getMaxScaleOnAxis() > 1.01;
                 if (zoomed != _zoomed) setState(() => _zoomed = zoomed);
               },
-              child: NotificationListener<ScrollNotification>(
-                onNotification: _scrollNotification,
-                child: SingleChildScrollView(
+              child: SingleChildScrollView(
                   controller: _verticalScroll,
                   physics: _zoomed || _target != null
                       ? NeverScrollableScrollPhysics()
                       : ClampingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
                   child: SizedBox(width: constraints.maxWidth, height: sheetHeight, child: child),
-                ),
               ));
           })),
         )),
+        if (widget.hatim) TweenAnimationBuilder<double>(
+          tween: Tween(end: _landscape && _fullscreen ? 0 : 1),
+          duration: MediaQuery.disableAnimationsOf(context) ? Duration.zero : const Duration(milliseconds: 320),
+          curve: Curves.easeInOutCubic,
+          builder: (context, visibility, child) => ClipRect(child: Align(
+            heightFactor: visibility, alignment: Alignment.bottomCenter,
+            child: Opacity(opacity: visibility, child: child))),
+          child: IgnorePointer(ignoring: _landscape && _fullscreen,
+            child: ExcludeSemantics(excluding: _landscape && _fullscreen,
+              child: SafeArea(top: false, child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                child: Row(children: [
+                  Text('${widget.store.hatimPages.length}/${widget.store.edition.pageCount}'),
+                  IconButton(tooltip: 'Sayfa / cüz işaretle', onPressed: busy || _hatimSaving ? null : _hatimSelection,
+                    icon: const Icon(Icons.checklist)),
+                  const Spacer(),
+                  Text(context.t('Okundu')),
+                  Checkbox(key: const ValueKey('hatim-read-checkbox'),
+                    value: widget.store.hatimPages.contains(_page),
+                    onChanged: busy || _hatimSaving ? null : (_) => _markHatim()),
+                ])),
+              ))),
+        ),
         if (!_fullscreen) Padding(padding: EdgeInsets.symmetric(horizontal: 8), child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceEvenly, children: [
-            IconButton(tooltip: context.t('Sonraki sayfa'), onPressed: busy || _page == widget.store.edition.lastPage ? null : () => _go(_page + 1), icon: Icon(Icons.chevron_left)),
+            IconButton(tooltip: context.t('Sonraki sayfa'), onPressed: busy || (_page == widget.store.edition.lastPage && !(widget.hatim && widget.store.hatimComplete)) ? null : () => _go(_page + 1), icon: Icon(Icons.chevron_left)),
             TextButton(onPressed: _jump, child: Text('$_page / ${widget.store.edition.lastPage}')),
             IconButton(tooltip: widget.store.bookmarks.contains(_page) ? context.t('Ayracı kaldır') : context.t('Ayraç ekle'),
               onPressed: busy || _bookmarkSaving ? null : _toggleBookmark, icon: Icon(widget.store.bookmarks.contains(_page) ? Icons.bookmark : Icons.bookmark_border)),
@@ -410,8 +556,9 @@ class _QuranScreenState extends State<QuranScreen> with SingleTickerProviderStat
       ])),
       Positioned(top: 12, left: 20, right: 20, child: SafeArea(
         child: SajdahNotice(page: _page, editionId: widget.store.edition.id))),
+
       ]),
-    );
+    ));
   }
 }
 
@@ -426,7 +573,7 @@ class _SurahPicker extends StatefulWidget {
 class _SurahPickerState extends State<_SurahPicker> {
   final _search = TextEditingController();
   String query = '';
-  int mode = 0;
+  int mode = 1;
   @override
   void dispose() { _search.dispose(); super.dispose(); }
 
@@ -440,9 +587,9 @@ class _SurahPickerState extends State<_SurahPicker> {
     final number = int.tryParse(digits);
     final onlyJuz = juzMatch != null;
     final onlyPage = pageMatch != null;
-    final includeSurahs = (mode == 0 || mode == 1) && !onlyJuz && !onlyPage;
-    final includeJuz = (mode == 0 || mode == 2 || onlyJuz) && !onlyPage;
-    final includePages = (mode == 0 || mode == 3 || onlyPage) && !onlyJuz;
+    final includeSurahs = mode == 1 && !onlyJuz && !onlyPage;
+    final includeJuz = (mode == 2 || onlyJuz) && !onlyPage;
+    final includePages = (mode == 3 || onlyPage) && !onlyJuz;
     final filtered = includeSurahs ? widget.items.where((s) => matchesSurah(s, query)).toList() : <Surah>[];
     final juzNumbers = includeJuz ? List.generate(30, (i) => i + 1)
       .where((n) => digits.isEmpty || number == n).toList() : <int>[];
@@ -455,10 +602,14 @@ class _SurahPickerState extends State<_SurahPicker> {
       child: Column(children: [
         Padding(padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
           child: Text(context.t('Bul ve oku'), style: Theme.of(context).textTheme.titleLarge)),
-        Padding(padding: const EdgeInsets.only(top: 12), child: Wrap(spacing: 6, children: [
-          for (final entry in const {0: 'Tümü', 1: 'Sureler', 2: 'Cüzler', 3: 'Sayfa'}.entries)
-            ChoiceChip(label: Text(context.t(entry.value)), selected: mode == entry.key,
-              onSelected: (_) => setState(() { mode = entry.key; })),
+        Padding(padding: const EdgeInsets.fromLTRB(16, 12, 16, 0), child: Row(children: [
+          for (final entry in const {1: 'Sureler', 2: 'Cüzler', 3: 'Sayfa'}.entries) ...[
+            if (entry.key != 1) const SizedBox(width: 6),
+            Expanded(child: ChoiceChip(showCheckmark: false,
+              label: SizedBox(width: double.infinity, child: FittedBox(fit: BoxFit.scaleDown,
+                child: Text(context.t(entry.value)))), selected: mode == entry.key,
+              onSelected: (_) => setState(() { mode = entry.key; }))),
+          ],
         ])),
         Padding(padding: const EdgeInsets.all(16), child: TextField(
           controller: _search,
@@ -481,7 +632,11 @@ class _SurahPickerState extends State<_SurahPicker> {
             final surah = filtered[index];
             return ListTile(leading: const Icon(Icons.menu_book_outlined),
               title: Text('${surah.number}. ${surahName(surah, context.language)}'),
-              trailing: Text(context.t('s. {page}', {'page': surah.startPage})),
+              trailing: Row(mainAxisSize: MainAxisSize.min, children: [
+                Text(context.t('s. {page}', {'page': surah.startPage})),
+                IconButton(tooltip: context.t('Meal Oku'), icon: const Icon(Icons.translate_rounded),
+                  onPressed: () => Navigator.push(context, MaterialPageRoute<void>(builder: (_) => MealScreen(initialSurah: surah.number)))),
+              ]),
               onTap: () => Navigator.pop(context, surah.startPage));
           }
           final juz = juzNumbers[index - filtered.length];

@@ -1,3 +1,4 @@
+import '../widgets/compact_confirmation_dialog.dart';
 import '../data/quran_edition.dart';
 import 'personalization_screen.dart';
 import 'listening_screen.dart';
@@ -8,6 +9,7 @@ import '../widgets/language_selector.dart';
 import '../l10n/translations.dart';
 import 'package:flutter/material.dart';
 import '../services/reading_store.dart';
+import '../services/quran_audio.dart';
 import 'guide_screen.dart';
 import 'information_screen.dart';
 import '../widgets/quran_artwork.dart';
@@ -21,11 +23,19 @@ class SettingsScreen extends StatefulWidget {
 
 class _SettingsScreenState extends State<SettingsScreen> {
   bool _saving = false;
+  final _audio = QuranAudio();
+  bool _audioLoading = true;
+  @override
+  void initState() { super.initState(); _loadReciter(); }
+  Future<void> _loadReciter() async {
+    try { await _audio.load(); } catch (_) { /* Other settings remain available. */ }
+    finally { if (mounted) setState(() => _audioLoading = false); }
+  }
   void _message(String text) => ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(context.t(text))));
 
   Future<void> _removeDownload(QuranEdition edition) async {
     if (_saving) return;
-    final confirmed = await showDialog<bool>(context: context, builder: (dialogContext) => AlertDialog(
+    final confirmed = await showDialog<bool>(context: context, builder: (dialogContext) => CompactConfirmationDialog(
       title: Text(dialogContext.t('Hattı cihazımdan kaldır')),
       content: Text(dialogContext.t('{edition} dosyaları cihazdan silinecek. Ayraçların ve son okuduğun sayfa korunacak. Tekrar okumak için bu hattı yeniden indirmen gerekir.',
         {'edition': dialogContext.t(edition.name)})),
@@ -49,24 +59,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
     body: ListView(padding: EdgeInsets.all(20), children: [
       Center(child: QuranArtwork(size: 110, decorative: true)),
       SizedBox(height: 16),
+      _section('reading', 'Görünüm ve okuma', Icons.auto_stories_outlined, [
       Card(child: ListTile(leading: const Icon(Icons.palette_outlined),
         title: Text(context.t('Görünüm ve kısayollar')),
         subtitle: Text(context.t('Tema, renk ve ana ekran kısayolları')),
         trailing: const Icon(Icons.chevron_right),
         onTap: _saving ? null : () => Navigator.push(context,
           MaterialPageRoute<void>(builder: (_) => const PersonalizationScreen())))),
-      Card(child: ListTile(leading: const Icon(Icons.headphones_outlined),
-        title: Text(context.t('Dinle')),
-        subtitle: Text(context.t('Sure ve ayet seçimi · İndirilen sesler')),
-        trailing: const Icon(Icons.chevron_right),
-        onTap: _saving ? null : () => Navigator.push(context,
-          MaterialPageRoute<void>(builder: (_) => const ListeningScreen())))),
-      const SizedBox(height: 24),
-      _heading(context.t('OKUMA DENEYİMİ')),
       Card(child: SwitchListTile(
         secondary: Icon(Icons.auto_stories_outlined),
         title: Text(context.t('Sayfa çevirme animasyonu')),
-        subtitle: Text(context.t('Kâğıt kıvrımı efektini kullan')),
         value: widget.store.pageAnimations,
         onChanged: _saving ? null : (value) async {
           setState(() => _saving = true);
@@ -75,8 +77,46 @@ class _SettingsScreenState extends State<SettingsScreen> {
           finally { if (mounted) setState(() => _saving = false); }
         },
       )),
-      SizedBox(height: 24),
-      _heading(context.t('KUR’AN HATTI')),
+      Card(child: Padding(padding: const EdgeInsets.all(16), child: DropdownButtonFormField<String>(
+        key: ValueKey('page-effect-${widget.store.pageEffect}'),
+        initialValue: widget.store.pageEffect,
+        isExpanded: true,
+        decoration: InputDecoration(labelText: context.t('Sayfa geçiş efekti')),
+        items: [
+          DropdownMenuItem(value: 'slide', child: Text(context.t('Parmağı takip eden kaydırma'))),
+          DropdownMenuItem(value: 'curl', child: Text(context.t('Kâğıt kıvrımı'))),
+        ],
+        onChanged: _saving || !widget.store.pageAnimations ? null : (effect) async {
+          if (effect == null) return;
+          setState(() => _saving = true);
+          try { await widget.store.setPageEffect(effect); }
+          catch (_) { if (mounted) _message('Tercih kaydedilemedi.'); }
+          finally { if (mounted) setState(() => _saving = false); }
+        },
+      ))),
+      ]),
+      _section('audio', 'Ses ve dinleme', Icons.headphones_outlined, [
+      Card(child: ListTile(leading: const Icon(Icons.headphones_outlined),
+        title: Text(context.t('Dinle')),
+        subtitle: Text(context.t('Sure ve ayet seçimi · İndirilen sesler')),
+        trailing: const Icon(Icons.chevron_right),
+        onTap: _saving ? null : () => Navigator.push(context,
+          MaterialPageRoute<void>(builder: (_) => const ListeningScreen())))),
+      Card(child: Padding(padding: const EdgeInsets.all(16), child: DropdownButtonFormField<String>(
+        key: ValueKey('default-reciter-${_audio.reciter}'), initialValue: _audio.reciter,
+        isExpanded: true, decoration: InputDecoration(labelText: context.t('Varsayılan Kur’an okuyucusu')),
+        items: [for (final entry in _audio.reciters.entries)
+          DropdownMenuItem(value: entry.key, child: Text(entry.value))],
+        onChanged: _saving || _audioLoading ? null : (id) async {
+          if (id == null) return;
+          setState(() => _saving = true);
+          try { await _audio.selectReciter(id); }
+          catch (_) { if (mounted) _message('Tercih kaydedilemedi.'); }
+          finally { if (mounted) setState(() => _saving = false); }
+        },
+      ))),
+      ]),
+      _section('editions', 'Kur’an hattı', Icons.menu_book_outlined, [
       Card(child: Column(children: [
         for (final edition in widget.store.editions) ListTile(
           enabled: !_saving, leading: Icon(Icons.menu_book_outlined),
@@ -103,8 +143,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
           },
         ),
       ])),
-      SizedBox(height: 24),
-      _heading(context.t('YARDIM VE BİLGİ')),
+      ]),
+      _section('help', 'Yardım ve bilgi', Icons.help_outline, [
       Card(child: Column(children: [
         ListTile(leading: const Icon(Icons.info_outline), title: Text(context.t('Uygulama hakkında')),
           trailing: const Icon(Icons.chevron_right), onTap: () => Navigator.push(context,
@@ -121,15 +161,26 @@ class _SettingsScreenState extends State<SettingsScreen> {
           trailing: Icon(Icons.chevron_right), onTap: () => Navigator.push(context,
             MaterialPageRoute<void>(builder: (_) => InformationScreen()))),
       ])),
-      SizedBox(height: 24),
-      _heading(context.t('BİRLİKTE BÜYÜTELİM')),
+      ]),
+      _section('support', 'Destek ve geri bildirim', Icons.favorite_outline, [
       const SupportCard(),
+      ]),
       SizedBox(height: 24),
       Text(context.t('Okumak her zaman ücretsiz.'), textAlign: TextAlign.center,
         style: Theme.of(context).textTheme.bodySmall),
     ]),
   );
 
-  Widget _heading(String text) => Padding(padding: EdgeInsets.only(left: 8, bottom: 8),
-    child: Text(text, style: Theme.of(context).textTheme.labelMedium?.copyWith(letterSpacing: 1.4)));
+  Widget _section(String id, String title, IconData icon, List<Widget> children) => Card(
+    clipBehavior: Clip.antiAlias,
+    child: ExpansionTile(
+      key: PageStorageKey('settings-$id'),
+      leading: Icon(icon),
+      title: Text(context.t(title)),
+      shape: const Border(),
+      collapsedShape: const Border(),
+      childrenPadding: const EdgeInsets.fromLTRB(8, 0, 8, 8),
+      children: children,
+    ),
+  );
 }

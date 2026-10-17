@@ -3,6 +3,7 @@ import '../data/surahs.dart';
 import '../l10n/translations.dart';
 import '../services/app_preferences.dart';
 import '../widgets/language_selector.dart';
+import '../widgets/app_bottom_bar.dart';
 
 class PersonalizationScreen extends StatefulWidget {
   const PersonalizationScreen({super.key});
@@ -46,6 +47,36 @@ class _PersonalizationScreenState extends State<PersonalizationScreen> {
     builder: (context, preferences, _) => Scaffold(
       appBar: AppBar(title: Text(context.t('Görünüm ve kısayollar')), actions: const [LanguageSelector()]),
       body: ListView(padding: const EdgeInsets.all(20), children: [
+        Text(context.t('Alt çubuk kısayolları'), style: Theme.of(context).textTheme.titleLarge),
+        const SizedBox(height: 8),
+        Text(context.t('Kısayolları seçebilir, sıralayabilir ve kaldırabilirsin.')),
+        for (var i = 0; i < preferences.bottomShortcuts.length; i++)
+          ListTile(contentPadding: EdgeInsets.zero,
+            leading: Icon(destinationIcons[AppDestination.values.byName(preferences.bottomShortcuts[i])]),
+            title: Text(context.t(destinationLabels[AppDestination.values.byName(preferences.bottomShortcuts[i])]!)),
+            trailing: Row(mainAxisSize: MainAxisSize.min, children: [
+              IconButton(tooltip: context.t('Yukarı taşı'), icon: const Icon(Icons.arrow_upward),
+                onPressed: _saving || i == 0 ? null : () {
+                  final items = [...preferences.bottomShortcuts];
+                  final item = items.removeAt(i); items.insert(i - 1, item);
+                  _save(preferences.copyWith(bottomShortcuts: items));
+                }),
+              IconButton(tooltip: context.t('Kısayolu kaldır'), icon: const Icon(Icons.delete_outline),
+                onPressed: _saving
+                  ? null : () => _save(preferences.copyWith(bottomShortcuts:
+                    preferences.bottomShortcuts.where((id) => id != preferences.bottomShortcuts[i]).toList()))),
+            ])),
+        if (preferences.bottomShortcuts.length < 6)
+          Wrap(spacing: 8, children: [
+            for (final destination in AppDestination.values.where((d) => !preferences.bottomShortcuts.contains(d.name)))
+              ActionChip(avatar: const Icon(Icons.add, size: 18),
+                label: Text(context.t(destinationLabels[destination]!)),
+                onPressed: _saving ? null : () => _save(preferences.copyWith(
+                  bottomShortcuts: [...preferences.bottomShortcuts, destination.name]))),
+          ]),
+        TextButton(onPressed: _saving ? null : () => _save(preferences.copyWith(bottomShortcuts: UiPreferences.defaultBottomShortcuts)),
+          child: Text(context.t('Alt çubuğu sıfırla'))),
+        const SizedBox(height: 24),
         Text(context.t('Tema'), style: Theme.of(context).textTheme.titleLarge),
         const SizedBox(height: 12),
         Wrap(spacing: 8, children: [
@@ -65,6 +96,18 @@ class _PersonalizationScreenState extends State<PersonalizationScreen> {
         ]),
         const SizedBox(height: 12),
         Text(context.t('Tema ve renk yalnızca arayüzü değiştirir; Kur’an sayfalarının görünümü korunur.')),
+        const SizedBox(height: 28),
+        Text(context.t('Ana ekran kartları'), style: Theme.of(context).textTheme.titleLarge),
+        const SizedBox(height: 8),
+        Text(context.t('Kartları ana ekranda uzun basıp sürükleyerek sırala veya çöp sepetine bırak. Kaldırılan kartları buradan geri ekleyebilirsin.')),
+        for (final id in preferences.availableDashboardCards) SwitchListTile(
+          contentPadding: EdgeInsets.zero,
+          title: Text(dashboardCardLabels.containsKey(id) ? context.t(dashboardCardLabels[id]!)
+            : _name(preferences.shortcuts.firstWhere((shortcut) => shortcut.id == id))),
+          value: preferences.dashboardOrder.contains(id),
+          onChanged: _saving ? null : (visible) => _save(preferences.copyWith(dashboardCards: visible
+            ? [...preferences.dashboardOrder, id] : preferences.dashboardOrder.where((card) => card != id).toList())),
+        ),
         const SizedBox(height: 28),
         Text(context.t('Ana ekran kısayolları'), style: Theme.of(context).textTheme.titleLarge),
         const SizedBox(height: 8),

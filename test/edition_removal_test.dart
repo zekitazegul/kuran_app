@@ -25,6 +25,9 @@ void main() {
     });
     try {
       await tester.pumpWidget(MaterialApp(home: SettingsScreen(store: store)));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Kur\u2019an hatt\u0131'));
+      await tester.pumpAndSettle();
       final trash = find.byKey(const ValueKey('remove-edition-husrev'));
       await tester.scrollUntilVisible(trash, 300);
       await tester.ensureVisible(trash); await tester.pumpAndSettle();
