@@ -81,5 +81,11 @@
     "Capture English and Dutch phone screenshots",
     "Confirm data-safety declarations and target audience in Play Console"
   ],
-  "aabSignatureVerified": true
+  "aabSignatureVerified": true,
+  "apk": {
+    "name": "KuranApp-1.0.6-21.apk",
+    "sha256": "b4b459aab5dd04bbc8a90e267c13f0a282b055a030293079ca7c42f87644322b",
+    "installedOnPhone": true,
+    "installationStatus": "Installed and launched on the connected Android phone."
+  }
 }
