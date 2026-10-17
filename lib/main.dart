@@ -100,7 +100,24 @@ class _HomeScreenState extends State<HomeScreen> {
   void initState() {
     super.initState();
     AppNavigation.instance.open = _navigate;
+    AppNavigation.instance.openCard = _openDashboardCard;
     _load();
+  }
+
+  void _openDashboardCard(String id) {
+    if (_store == null || _downloading || _returningToReading) return;
+    appNavigatorKey.currentState?.popUntil((route) => route.isFirst);
+    if (id == 'meal') {
+      Navigator.push(context, MaterialPageRoute<void>(builder: (_) => const MealScreen()));
+    } else if (id == 'listen') {
+      Navigator.push(context, MaterialPageRoute<void>(builder: (_) => const ListeningScreen()));
+    } else if (id == 'support') {
+      Navigator.push(context, MaterialPageRoute<void>(builder: (_) => const SupportScreen()));
+    } else if (_store!.ready) {
+      for (final shortcut in AppPreferences.instance.value.shortcuts) {
+        if (shortcut.id == id) { _openShortcut(shortcut); break; }
+      }
+    }
   }
 
   Future<void> _navigate(AppDestination destination) async {
@@ -294,6 +311,7 @@ class _HomeScreenState extends State<HomeScreen> {
     _pauseRequested = true;
     _dashboardScroll.dispose();
     AppNavigation.instance.open = null;
+    AppNavigation.instance.openCard = null;
     AppNavigation.instance.value = null;
     super.dispose();
   }
@@ -421,7 +439,7 @@ class _HomeScreenState extends State<HomeScreen> {
             Card(child: Padding(padding: EdgeInsets.all(22), child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch, children: [
                 Text(context.t(store.edition.id == 'husrev' ? 'Hüsrev hattını indir'
-                  : store.edition.id == 'hat2' ? 'Bilgisayar Hattı 2’yi indir' : 'Bilgisayar hattını indir'),
+                  : store.edition.id == 'hat2' ? 'Yakupzâde İzzet Efendi hattını indir' : 'Süleyman Feyzullahoğlu hattını indir'),
                   style: Theme.of(context).textTheme.titleLarge),
                 SizedBox(height: 8), Text(context.t('İndirilecek sayfalar: {size} MB', {'size': (store.edition.downloadBytes / 1000000).toStringAsFixed(1)})),
                 SizedBox(height: 20),

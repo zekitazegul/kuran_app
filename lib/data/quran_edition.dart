@@ -24,7 +24,7 @@ class QuranEdition {
     required this.cropSecond, required this.surahIndex,
     this.downloadBytes = 24129254, this.pageSizes = const [], this.pageCrops = const [], this.outerCrops = const []});
 
-  static const computer = QuranEdition(id: 'computer', name: 'Bilgisayar hattı',
+  static const computer = QuranEdition(id: 'computer', name: 'Süleyman Feyzullahoğlu Hattı',
     description: 'Diyanet · Süleyman Feyzullahoğlu', firstPage: 0, lastPage: 604,
     pdfSize: Size(538.583, 779.528),
     cropOdd: Rect.fromLTRB(78.5, 63.8, 461, 715), cropEven: Rect.fromLTRB(78.5, 63.8, 461, 715),

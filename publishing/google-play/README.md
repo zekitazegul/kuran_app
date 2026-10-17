@@ -3,10 +3,17 @@
 Bu dosyalar bir yayın hazırlığıdır. Play Console hesabı açılmadı ve uygulama
 Google Play'e yüklenmedi. Mağaza metinleri hesap açıldığında kullanılabilir.
 
+## Güncel yerel paket
+
+- `dist/google-play/1.0.12+27/KuranApp-1.0.12-27.aab`: Google Play yükleme paketi.
+- AAB imzası doğrulandı. 86 Flutter testi geçti; güncel Android birim testleri geçti.
+- `whats-new.txt`: Play Console için TR/EN/NL sürüm notları.
+- Play Console hesabı kullanıcıyla birlikte açılacak; uygulama kaydı ve mağaza gönderimi henüz yok.
+
 ## Hazır olanlar
 
 - Uygulama kimliği: `com.zekitazegul.kuranapp`.
-- Sürüm: `1.0.6`, build: `21`.
+- Sürüm: `1.0.12`, build: `27`.
 - Türkçe, İngilizce ve Hollandaca mağaza açıklamaları: `listings.json`.
 - Üç dilde gizlilik metni: `privacy-content.json`; uygulama içi metinle eşleştirildi.
 - Web gizlilik sayfası: `../../docs/privacy.html`.
@@ -23,8 +30,7 @@ Google Play'e yüklenmedi. Mağaza metinleri hesap açıldığında kullanılabi
    ücret: ücretsiz. Uygulama kimliği ilk paket yüklendiğinde sabitlenir.
 4. Herkese açık destek e-postasını, geliştirici iletişim bilgilerini ve hedef
    ülkeleri belirle. Destek e-postası: `ztazegul@yahoo.com`.
-5. Meal, taramalar ve sesler için kullanım/dağıtım izinlerini belgele. Hesap sahibi izin belgelerinin henüz olmadığını bildirdi;
-   [araştırma ve sonraki adımlar](content-rights.md) hazır. Kaynak atfı tek başına dağıtım izni değildir.
+5. Hesap sahibi 17 Ekim 2026 tarihinde içerik sahipleriyle iletişimlerinin Google Play dağıtım izinlerini kapsadığını teyit etti. İzin belgelerini ve koşullarını sakla; [durum kaydı](content-rights.md).
 6. Gizlilik sayfasını herkese açık HTTPS adresinde yayımla, URL'yi doğrula ve Play
    Console'a ekle. GitHub Pages kullanılırsa beklenen adres
    `https://zekitazegul.github.io/kuran_app/privacy.html` olur; adresin çalıştığı

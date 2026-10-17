@@ -1,14 +1,14 @@
 # İçerik izin araştırması — 17 Ekim 2026
 
-**Durum: dağıtım izinleri henüz yok. Google Play gönderimi yapılmadı.**
-Hesap sahibi, izin veya lisans belgesinin henüz bulunmadığını bildirdi. Aşağıdaki
-tespitler bir izin belgesi değildir. Hak sahiplerine henüz mesaj gönderilmedi.
+**Durum (17 Ekim 2026): hesap sahibi, tamamlanan hak sahibi iletişimlerinin Google Play dağıtım izinlerini kapsadığını bu oturumda teyit etti. Google Play gönderimi henüz yapılmadı.**
+
+Bu durum kullanıcının beyanına dayanır; izin belgeleri bu oturumda incelenmedi. Aşağıdaki tablo ve araştırma, önceki kaynak incelemesinin kaydıdır. İzin belgeleri ve varsa atıf, ülke, süre ve barındırma koşulları hesap sahibinde saklanmalıdır.
 
 | İçerik | Birincil kaynakta bulunan bilgi | Sonraki adım |
 |---|---|---|
 | Ali Ünal meali | `assets/meal/ali_unal.pdf`, fiziksel sayfa 3: Define Yayınları, 2006; ISBN 975-6111-37-2. Metin ve resimler için önceden yazılı izin şartı var. | Bu Türkçe baskının güncel hak sahibini ve yetkili temsilcisini teyit edip yazılı dijital dağıtım izni al. PDF'den çıkarılmış metin de aynı kapsamda sorulmalı. |
 | Bilgisayar hattı | `content/kuran-bilgisayar-hatti.pdf`, fiziksel sayfa 616: Diyanet İşleri Başkanlığı, yayın no 949, 5. baskı 2018, ISBN 978-975-19-5752-8. | Dini Yayınlar Genel Müdürlüğünden bu baskının uygulamada, indirme sunucusunda ve Google Play'de dağıtım koşullarını öğren. |
-| Bilgisayar Hattı 2 | Yerel PDF'nin ilk ve son sayfalarındaki metin incelemesinde açık yayıncı/lisans bulunmadı. PDF üretim yazılımının lisansı, kitabın dağıtım izni değildir. | Dosyayı sağlayan kaynaktan özgün yayıncı ve baskı künyesini öğren; gerekirse tarama üzerinden ayrıca incele. |
+| Bilgisayar Hattı 2 | PDF'nin 616. sayfası görsel olarak incelendi: Yayınlayan ve hazırlayan Ahıska Yayınevi. Mushaf hattı: © Yakupzâde İzzet Efendi. Tezhip: Yasemin Kama. Grafik: Uveys Yücel. Künye, eserin bütün haklarının Ahıska Yayınevine ait olduğunu belirtiyor. Sayfanın metin katmanı boş olduğundan önceki metin taramasında bulunamamıştı. | Ahıska Yayınevinden bu dosya için güncel hak sahipliğini ve dijital kullanım/dağıtım iznini yazılı olarak teyit et. Resmî iletişim: info@ahiskayayinevi.com, 0216 479 79 79; https://www.ahiskayayinevi.com/iletisim |
 | Hüsrev hattı | Yerel PDF 605 görüntü sayfasından oluşuyor; metin katmanında hak sahibi künyesi bulunmadı. Hayrat bağlantısı önceki kaynak bilgisine dayanıyor, bu taramanın yetkisi kesinleşmedi. | Hayrat'a bu dosyanın kendi baskıları olup olmadığını sor ve uygun nüsha/izin talep et. |
 | EveryAyah sesleri | Arşiv erişilebilir; incelenen ana sayfa ve eski dizinde uygulamayla dağıtımı açıkça lisanslayan bir metin bulunmadı. Eski dizin resmî destek bağlantısı veriyor. | Her okuyucu/dizin için uygulama indirmesi, çevrimdışı saklama ve yeniden dağıtım iznini sor; gerekiyorsa okuyucu/yapımcı hak sahiplerine yönlendirme iste. |
 
@@ -45,3 +45,22 @@ Google Play'in [fikrî mülkiyet koşulları](https://support.google.com/googlep
 ile kaynak dosyaların künye sayfaları birlikte değerlendirildi. İnternette
 bulunamayan bir lisansın hiç var olmadığı sonucu çıkarılmadı; yetkili yazılı
 izin henüz elde edilmedi.
+
+## Bilgisayar Hatt? 2 ? visual identification, 17 October 2026
+
+Evidence: `content/kuran-hat-2.pdf`, physical page 616 of 616.
+Colophon image: `hat2-colophon.png`. The page states:
+?? Bu eserin b?t?n haklar? Ah?ska Yay?nevine aittir.?
+Publisher and preparer: Ah?ska Yay?nevi.
+Mushaf calligraphy: ? Yakupz?de ?zzet Efendi.
+Illumination: Yasemin Kama. Graphics: Uveys Y?cel.
+
+The source colophon lists info@ahiskayayinevi.com, 0216 479 79 79
+and 0216 479 20 11. Current publisher website confirms 0216 479 79 79:
+https://www.ahiskayayinevi.com/iletisim
+Its digital-publications contact page lists ekitap@ahiskayayinevi.com:
+https://ahiskaekitap.com/contact
+
+The colophon identifies the stated rights holder, but does not grant reuse
+permission or prove that no subsequent rights transfer occurred. Obtain written
+confirmation from the publisher covering this exact file and all intended uses.

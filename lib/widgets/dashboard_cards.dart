@@ -3,11 +3,8 @@ import 'package:flutter/material.dart';
 import '../l10n/translations.dart';
 import '../services/app_preferences.dart';
 import '../data/surahs.dart';
-
-class _DashboardDrag {
-  final String id;
-  const _DashboardDrag(this.id);
-}
+import 'shortcut_drag.dart';
+export 'shortcut_drag.dart' show DashboardDrag;
 
 class DashboardCards extends StatefulWidget {
   final Map<String, Widget> cards;
@@ -47,9 +44,10 @@ class _DashboardCardsState extends State<DashboardCards> {
     } finally { if (mounted) setState(() => _saving = false); }
   }
   void _start() {
+    DashboardDrag.active.value = true;
     final size = MediaQuery.sizeOf(context);
-    _trash = OverlayEntry(builder: (_) => Positioned(bottom: 88, left: 0, right: 0,
-      child: Center(child: DragTarget<_DashboardDrag>(
+    _trash = OverlayEntry(builder: (_) => Positioned(top: MediaQuery.paddingOf(context).top + 16, right: 16,
+      child: Center(child: DragTarget<DashboardDrag>(
         onAcceptWithDetails: (details) => _save(AppPreferences.instance.value.dashboardOrder.where((id) => id != details.data.id).toList()),
         builder: (context, candidates, rejected) => Material(
           key: const ValueKey('dashboard-trash'), elevation: 8, borderRadius: BorderRadius.circular(40),
@@ -67,6 +65,9 @@ class _DashboardCardsState extends State<DashboardCards> {
     });
   }
   void _end() {
+    DashboardDrag.active.value = false;
+    DashboardDrag.overNavigation.value = false;
+    DashboardDrag.position = null;
     _scrollTimer?.cancel(); _scrollTimer = null; _dragPosition = null;
     _trash?.remove(); _trash?.dispose(); _trash = null;
   }
@@ -77,7 +78,7 @@ class _DashboardCardsState extends State<DashboardCards> {
     valueListenable: AppPreferences.instance,
     builder: (context, preferences, _) => LayoutBuilder(builder: (context, constraints) => Column(children: [
       for (final id in preferences.dashboardOrder.where(widget.cards.containsKey))
-        DragTarget<_DashboardDrag>(key: ValueKey('dashboard-card-$id'),
+        DragTarget<DashboardDrag>(key: ValueKey('dashboard-card-$id'),
           onWillAcceptWithDetails: (details) => details.data.id != id,
           onAcceptWithDetails: (details) {
             final order = [...AppPreferences.instance.value.dashboardOrder];
@@ -85,21 +86,25 @@ class _DashboardCardsState extends State<DashboardCards> {
             final to = order.indexOf(id);
             if (from >= 0 && to >= 0) { order.insert(to, order.removeAt(from)); _save(order); }
           },
-          builder: (context, candidates, rejected) => LongPressDraggable<_DashboardDrag>(
-            data: _DashboardDrag(id), maxSimultaneousDrags: _saving ? 0 : 1,
-            onDragStarted: _start, onDragUpdate: (details) => _dragPosition = details.globalPosition,
+          builder: (context, candidates, rejected) => LongPressDraggable<DashboardDrag>(
+            data: DashboardDrag(id), maxSimultaneousDrags: _saving ? 0 : 1,
+            onDragStarted: _start, onDragUpdate: (details) { _dragPosition = details.globalPosition; DashboardDrag.position = details.globalPosition; },
             onDragEnd: (_) => _end(),
-            feedback: SizedBox(width: constraints.maxWidth, child: Material(
-              elevation: 8, borderRadius: BorderRadius.circular(16), child: widget.cards[id])),
+            dragAnchorStrategy: pointerDragAnchorStrategy,
+            feedback: DashboardDragFeedback(id: id, width: constraints.maxWidth, card: widget.cards[id]!),
             childWhenDragging: Opacity(opacity: .25, child: widget.cards[id]),
             child: DecoratedBox(decoration: BoxDecoration(borderRadius: BorderRadius.circular(16),
               border: Border.all(color: candidates.isEmpty ? Colors.transparent : Theme.of(context).colorScheme.primary, width: 2)),
               child: widget.cards[id]),
           ),
         ),
-      Align(alignment: Alignment.centerRight, child: IconButton.filledTonal(
+      Align(alignment: Alignment.centerRight, child: Row(mainAxisSize: MainAxisSize.min, children: [
+        if (preferences.dashboardOrder.where(widget.cards.containsKey).isEmpty)
+          Padding(padding: const EdgeInsets.only(right: 8), child: Text(context.t('K\u0131sayol ekle'))),
+        IconButton.filledTonal(
         key: const ValueKey('dashboard-add'), tooltip: context.t('Kısayol ekle'),
-        onPressed: _saving ? null : _add, icon: const Icon(Icons.add))),
+        onPressed: _saving ? null : _add, icon: const Icon(Icons.add)),
+      ])),
     ])),
   );
 }

@@ -10,33 +10,38 @@ class SourcesScreen extends StatelessWidget {
     appBar: AppBar(title: Text(context.t('Kaynaklar ve telif bilgileri')),
       actions: const [LanguageSelector()]),
     body: ListView(padding: const EdgeInsets.all(24), children: [
-      Text(context.t('sourcesIntroduction')),
-      const SizedBox(height: 20),
+      _section(context, 'Kaynaklar hakkında', Text(context.t('sourcesIntroduction'))),
       for (final entry in const {
-        'Bilgisayar hattı': 'computerRights',
-        'Bilgisayar Hattı 2': 'computer2Rights',
+        'Süleyman Feyzullahoğlu Hattı': 'computerRights',
+        'Yakupzâde İzzet Efendi Hattı': 'computer2Rights',
         'Hüsrev hattı': 'husrevRights',
-      }.entries) Card(child: Padding(padding: const EdgeInsets.all(20),
-        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text(context.t(entry.key), style: Theme.of(context).textTheme.titleMedium),
-          const SizedBox(height: 8), Text(context.t(entry.value)),
-        ]))),
-      const SizedBox(height: 20),
-      const Card(child: Padding(padding: EdgeInsets.all(20), child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text('Mishary Rashid Alafasy · EveryAyah'),
-          SizedBox(height: 8),
-          SelectableText('https://everyayah.com/data/Alafasy_128kbps/'),
-          SizedBox(height: 12),
-          Text('Abu Bakr Ash-Shatri · EveryAyah'),
-          SizedBox(height: 8),
-          SelectableText('https://everyayah.com/data/Abu_Bakr_Ash-Shaatree_128kbps/'),
-        ]))),
-      Text(context.t('sourcesNotice')),
-      const SizedBox(height: 16),
-      Text(context.t('Reklamsız ve ücretsiz'), style: Theme.of(context).textTheme.titleMedium),
-      const SizedBox(height: 8),
-      Text(context.t('noAdsPolicy')),
+      }.entries) _section(context, entry.key, Text(context.t(entry.value))),
+      _section(context, 'Mishary Rashid Alafasy · EveryAyah',
+        _audioSource(context, 'Mishary Rashid Alafasy', 'https://everyayah.com/data/Alafasy_128kbps/')),
+      _section(context, 'Abu Bakr Ash-Shatri · EveryAyah',
+        _audioSource(context, 'Abu Bakr Ash-Shatri', 'https://everyayah.com/data/Abu_Bakr_Ash-Shaatree_128kbps/')),
+      _section(context, 'Telif ve kullanım koşulları', Text(context.t('sourcesNotice'))),
+      _section(context, 'Reklamsız ve ücretsiz', Text(context.t('noAdsPolicy'))),
     ]),
+  );
+
+  Widget _audioSource(BuildContext context, String reciter, String url) => Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      Text(context.t('audioSourceDetails', {'reciter': reciter})),
+      const SizedBox(height: 12),
+      Text(context.t('audioSourceRights')),
+      const SizedBox(height: 12),
+      SelectableText(url, key: PageStorageKey('source-url-$url'),
+        style: TextStyle(color: Theme.of(context).colorScheme.primary)),
+    ],
+  );
+
+  Widget _section(BuildContext context, String title, Widget content) => Card(
+    clipBehavior: Clip.antiAlias,
+    child: ExpansionTile(key: PageStorageKey(title), title: Text(context.t(title)),
+      expandedCrossAxisAlignment: CrossAxisAlignment.start,
+      childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+      children: [SizedBox(width: double.infinity, child: content)]),
   );
 }

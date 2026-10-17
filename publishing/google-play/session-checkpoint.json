@@ -1,0 +1,36 @@
+{
+  "savedDate": "2026-10-17",
+  "timezone": "Europe/Amsterdam",
+  "status": "paused_at_user_request",
+  "version": "1.0.12+27",
+  "phone": "Samsung SM-S926B; installed over Wi-Fi",
+  "validation": {
+    "flutterTestsPassed": 86,
+    "androidUnitTestsPassed": 10,
+    "flutterAnalyze": "no issues",
+    "aabSignature": "verified",
+    "elf16kbAlignment": "verified; no 16KB-device runtime test"
+  },
+  "playConsole": {
+    "accountCreated": false,
+    "applicationCreated": false,
+    "uploaded": false,
+    "published": false,
+    "accountType": "not selected; user wants to create account together",
+    "contentDistributionPermission": "user confirmed on 2026-10-17; documents not inspected",
+    "privacyPolicyLive": false
+  },
+  "artifacts": {
+    "aab": "dist/google-play/1.0.12+27/KuranApp-1.0.12-27.aab",
+    "apk": "dist/google-play/1.0.12+27/KuranApp-1.0.12-27.apk",
+    "manifest": "publishing/google-play/release-manifest.json",
+    "releaseNotes": "publishing/google-play/whats-new.txt"
+  },
+  "resumeSteps": [
+    "Create Play Console account with user; user handles sign-in, payment and identity verification",
+    "Create KuranApp application registration",
+    "Publish and verify HTTPS privacy URL",
+    "Complete current phone screenshots for tr/en/nl and store declarations",
+    "Upload signed AAB to testing track; follow account-specific testing and production-access requirements"
+  ]
+}

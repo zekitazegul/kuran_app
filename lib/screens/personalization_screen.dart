@@ -52,8 +52,8 @@ class _PersonalizationScreenState extends State<PersonalizationScreen> {
         Text(context.t('Kısayolları seçebilir, sıralayabilir ve kaldırabilirsin.')),
         for (var i = 0; i < preferences.bottomShortcuts.length; i++)
           ListTile(contentPadding: EdgeInsets.zero,
-            leading: Icon(destinationIcons[AppDestination.values.byName(preferences.bottomShortcuts[i])]),
-            title: Text(context.t(destinationLabels[AppDestination.values.byName(preferences.bottomShortcuts[i])]!)),
+            leading: Icon(bottomShortcutIcon(preferences.bottomShortcuts[i])),
+            title: Text(bottomShortcutLabel(context, preferences.bottomShortcuts[i])),
             trailing: Row(mainAxisSize: MainAxisSize.min, children: [
               IconButton(tooltip: context.t('Yukarı taşı'), icon: const Icon(Icons.arrow_upward),
                 onPressed: _saving || i == 0 ? null : () {

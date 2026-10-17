@@ -17,7 +17,7 @@ class AboutScreen extends StatelessWidget {
       Text('KuranApp', textAlign: TextAlign.center,
         style: Theme.of(context).textTheme.headlineMedium),
       const SizedBox(height: 8),
-      Text(context.t('Sürüm {version}', {'version': const String.fromEnvironment('FLUTTER_BUILD_NAME', defaultValue: '1.0.6')}), textAlign: TextAlign.center,
+      Text(context.t('Sürüm {version}', {'version': const String.fromEnvironment('FLUTTER_BUILD_NAME', defaultValue: '1.0.12')}), textAlign: TextAlign.center,
         style: Theme.of(context).textTheme.bodySmall),
       const SizedBox(height: 20),
       Text(context.t('aboutDescription')),

@@ -3,7 +3,19 @@ import '../l10n/translations.dart';
 import '../services/app_preferences.dart';
 import '../services/reading_store.dart';
 import 'quran_artwork.dart';
+import 'shortcut_drag.dart';
+export 'shortcut_drag.dart' show bottomShortcutIcon;
+import '../data/surahs.dart';
 
+String bottomShortcutLabel(BuildContext context, String id) {
+  for (final destination in AppDestination.values) {
+    if (destination.name == id) return context.t(destinationLabels[destination]!);
+  }
+  if (dashboardCardLabels.containsKey(id)) return context.t(dashboardCardLabels[id]!);
+  final number = int.parse(id.split(':').last);
+  return id.startsWith('surah:') ? surahName(surahs[number - 1], context.language)
+    : context.t('Cüz {number}', {'number': number});
+}
 enum AppDestination { home, hatim, bookmarks, surahs, history, settings, search, exit }
 
 const destinationLabels = {
@@ -25,6 +37,7 @@ class AppNavigation extends ValueNotifier<ReadingStore?> {
   final fullscreenMeal = ValueNotifier<Object?>(null);
   final selected = ValueNotifier<AppDestination>(AppDestination.home);
   void Function(AppDestination)? open;
+  void Function(String)? openCard;
   void refresh() => notifyListeners();
 }
 
@@ -75,6 +88,9 @@ class AppBottomBar extends StatefulWidget {
 }
 class _AppBottomBarState extends State<AppBottomBar> {
   bool _saving = false;
+  final _dropKey = GlobalKey();
+  String? _arriving;
+  Offset _arrivalOffset = Offset.zero;
   String? _dragged;
   OverlayEntry? _trash;
   Future<void> _save(List<String> items) async {
@@ -118,15 +134,46 @@ class _AppBottomBarState extends State<AppBottomBar> {
       if (store == null || !store.informationSeen || !store.guideSeen) return const SizedBox.shrink();
       return ValueListenableBuilder<UiPreferences>(valueListenable: AppPreferences.instance,
         builder: (context, preferences, _) {
-          if (preferences.bottomShortcuts.isEmpty) return const SizedBox.shrink();
+
           return ValueListenableBuilder<AppDestination>(valueListenable: AppNavigation.instance.selected,
-            builder: (context, selected, _) => Material(color: Theme.of(context).colorScheme.surfaceContainer,
+            builder: (context, selected, _) => ValueListenableBuilder<bool>(valueListenable: DashboardDrag.active,
+            builder: (context, dragging, _) {
+              if (preferences.bottomShortcuts.isEmpty && !dragging) return const SizedBox.shrink();
+              return DragTarget<DashboardDrag>(
+                key: _dropKey,
+                onWillAcceptWithDetails: (_) {
+                  DashboardDrag.overNavigation.value = true;
+                  return !_saving;
+                },
+                onMove: (_) => DashboardDrag.overNavigation.value = true,
+                onLeave: (_) => DashboardDrag.overNavigation.value = false,
+                onAcceptWithDetails: (details) {
+                  final items = [...AppPreferences.instance.value.bottomShortcuts];
+                  if (items.contains(details.data.id)) return;
+                  if (items.length >= 6) {
+                    ScaffoldMessenger.maybeOf(context)?.showSnackBar(SnackBar(content: Text(context.t('Alt \u00e7ubu\u011fa en fazla 6 k\u0131sayol ekleyebilirsin.'))));
+                    return;
+                  }
+                  final box = _dropKey.currentContext!.findRenderObject() as RenderBox;
+                  final x = box.globalToLocal(DashboardDrag.position ?? details.offset).dx;
+                  final fraction = (x / box.size.width).clamp(0.0, 1.0);
+                  final index = ((Directionality.of(context) == TextDirection.rtl ? 1 - fraction : fraction) * items.length).round();
+                  items.insert(index, details.data.id);
+                  final visualIndex = Directionality.of(context) == TextDirection.rtl ? items.length - 1 - index : index;
+                  final destination = box.localToGlobal(Offset(box.size.width * (visualIndex + .5) / items.length, 28));
+                  _arriving = details.data.id;
+                  _arrivalOffset = (DashboardDrag.position ?? details.offset) - const Offset(52, 0) - destination;
+                  _save(items);
+                },
+                builder: (context, candidates, rejected) => Material(
+                  key: const ValueKey('navigation-add-target'),
+                  color: candidates.isEmpty ? Theme.of(context).colorScheme.surfaceContainer : Theme.of(context).colorScheme.primaryContainer,
               child: SafeArea(top: false, child: SizedBox(height: 56, child: Row(children: [
                 for (final id in preferences.bottomShortcuts) Expanded(child: Builder(builder: (context) {
-                  final destination = AppDestination.values.byName(id);
+                  final destination = AppDestination.values.where((d) => d.name == id).firstOrNull;
                   final active = selected == destination;
                   final colors = Theme.of(context).colorScheme;
-                  final enabled = store.ready || destination == AppDestination.home || destination == AppDestination.history || destination == AppDestination.settings || destination == AppDestination.exit;
+                  final enabled = store.ready || id == 'meal' || id == 'listen' || id == 'support' || destination == AppDestination.home || destination == AppDestination.history || destination == AppDestination.settings || destination == AppDestination.exit;
                   Widget icon({bool hovered = false}) => AnimatedContainer(
                     key: ValueKey('navigation-$id'), duration: const Duration(milliseconds: 180),
                     padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
@@ -136,9 +183,18 @@ class _AppBottomBarState extends State<AppBottomBar> {
                       duration: const Duration(milliseconds: 180),
                       child: destination == AppDestination.hatim
                       ? Opacity(opacity: enabled ? 1 : .4, child: const QuranArtwork(size: 28, decorative: true))
-                      : Icon(destinationIcons[destination], color: enabled
+                      : Icon(bottomShortcutIcon(id), color: enabled
                           ? active ? colors.onPrimaryContainer : colors.onSurfaceVariant : Theme.of(context).disabledColor)));
-                  return DragTarget<String>(
+                  return TweenAnimationBuilder<double>(
+                    key: ValueKey('navigation-arrival-$id'),
+                    tween: Tween(begin: _arriving == id ? 0 : 1, end: 1),
+                    duration: MediaQuery.disableAnimationsOf(context) ? Duration.zero : const Duration(milliseconds: 380),
+                    curve: Curves.easeOutCubic,
+                    onEnd: () { if (_arriving == id) _arriving = null; },
+                    builder: (context, progress, child) => Transform.translate(
+                      offset: _arriving == id ? _arrivalOffset * (1 - progress) : Offset.zero,
+                      child: Transform.scale(scale: _arriving == id ? 1 + .18 * (1 - progress) : 1, child: child)),
+                    child: DragTarget<String>(
                     onWillAcceptWithDetails: (details) => details.data != id,
                     onAcceptWithDetails: (details) {
                       final items = [...AppPreferences.instance.value.bottomShortcuts];
@@ -153,15 +209,16 @@ class _AppBottomBarState extends State<AppBottomBar> {
                         borderRadius: BorderRadius.circular(28), child: Padding(padding: const EdgeInsets.all(16),
                           child: destination == AppDestination.hatim
                             ? const QuranArtwork(size: 28, decorative: true)
-                            : Icon(destinationIcons[destination], color: colors.onPrimaryContainer))),
+                            : Icon(bottomShortcutIcon(id), color: colors.onPrimaryContainer))),
                       childWhenDragging: Opacity(opacity: .25, child: Center(child: icon())),
-                      child: Semantics(button: true, selected: active, label: context.t(destinationLabels[destination]!),
-                        child: InkWell(onTap: enabled ? () => AppNavigation.instance.open?.call(destination) : null,
+                      child: Semantics(button: true, selected: active, label: bottomShortcutLabel(context, id),
+                        child: InkWell(onTap: enabled ? () { if (destination != null) { AppNavigation.instance.open?.call(destination); } else { AppNavigation.instance.openCard?.call(id); } } : null,
                           child: SizedBox(height: 56, child: Center(child: icon(hovered: candidates.isNotEmpty))))),
                     ),
-                  );
+                  ));
                 })),
               ])))));
+            }));
         });
     });
 }

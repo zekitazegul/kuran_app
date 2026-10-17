@@ -1,15 +1,15 @@
 {
   "package": "com.zekitazegul.kuranapp",
-  "versionName": "1.0.6",
-  "versionCode": 21,
+  "versionName": "1.0.12",
+  "versionCode": 27,
   "minSdk": 24,
   "targetSdk": 36,
-  "aab": "KuranApp-1.0.6-21.aab",
-  "bytes": 82684385,
-  "sha256": "0bc43938fd8b5c115a788e697ac0988bf1c9c0cf5238f40429a80c1ef2927c3c",
-  "flutterTests": 81,
-  "androidUnitTests": 8,
-  "validationNote": "Full Flutter suite passed; privacy/update UI tests rerun after privacy text changes. Android debug unit tests passed. ELF alignment checked; no 16 KB device runtime test performed.",
+  "aab": "KuranApp-1.0.12-27.aab",
+  "bytes": 82743805,
+  "sha256": "56992822d6c2a5619218fcbe715882e63ea0d45f12c22ba1b4442e7875d7830d",
+  "flutterTests": 86,
+  "androidUnitTests": 10,
+  "validationNote": "Full Flutter suite: 86 passed. Android unit tests passed including BottomShortcutOrder. Release installed and exercised over Wi-Fi on Samsung SM-S926B. ELF alignment verified; no 16 KB device runtime test.",
   "nativeLibraries": [
     {
       "path": "base/lib/arm64-v8a/libapp.so",
@@ -51,19 +51,18 @@
   "googlePlayPublished": false,
   "privacyUrlPublished": false,
   "blockers": [
-    "Play Console account not created",
-    "Content distribution permissions not obtained",
-    "Public privacy URL requires explicit GitHub Pages approval",
-    "Closed testing and production access pending"
+    "Play Console account and application registration to be completed together with the user",
+    "Public HTTPS privacy policy not deployed",
+    "Account-specific testing and production access not completed"
   ],
   "supportEmail": "ztazegul@yahoo.com",
-  "contentRightsConfirmed": false,
+  "contentRightsConfirmed": true,
   "sourceFilesSha256": {
-    "pubspec.yaml": "4153bbb4324752c971b27405487ec819f264e575f596f43703d7b6db616a81e2",
+    "pubspec.yaml": "c1c94b207b4d7bcd796790fa5d77b943d053236053be3bae73e2390c1212f807",
     "pubspec.lock": "089ee1fa83eae579bbfd591278550986e4f0301d9151be73f295f5181eb38ec5",
-    "lib/l10n/translations.dart": "27106b162fbe01cd1894e18e831ac580f4facbd2f7f17612f4e0b6f994db5743",
+    "lib/l10n/translations.dart": "cdefe1d2bd5d2271bad930085261b47f1e23e7d4959629d4df4e4abfe64a84d1",
     "android/app/build.gradle.kts": "cb3f63c9b35e21359af023b0ce31ab5fe1365c292d09e30929b832fa8e2c5455",
-    "lib/widgets/update_dialog.dart": "cc6a6ab7aca36c8a6d4f46130c62c43570b21d632a47cf00525c7562b1ce4d9d"
+    "lib/widgets/update_dialog.dart": "93aae8d176cafb7965d1f3f2e7bbbc57fce1bfbd08ad6d857b7662d2155087c2"
   },
   "storeGraphics": {
     "icon": "graphics/icon-512.png",
@@ -78,14 +77,18 @@
     ]
   },
   "additionalPreparation": [
-    "Capture English and Dutch phone screenshots",
-    "Confirm data-safety declarations and target audience in Play Console"
+    "Complete Play Console declarations with account owner",
+    "Capture current store screenshots in all three locales"
   ],
   "aabSignatureVerified": true,
   "apk": {
-    "name": "KuranApp-1.0.6-21.apk",
-    "sha256": "b4b459aab5dd04bbc8a90e267c13f0a282b055a030293079ca7c42f87644322b",
+    "name": "KuranApp-1.0.12-27.apk",
+    "sha256": "12f10482200b87c45c9775b153e96fc4d3564d1bd193037ed06dda1f9de1fd0e",
     "installedOnPhone": true,
-    "installationStatus": "Installed and launched on the connected Android phone."
+    "installationStatus": "1.0.12+27 installed and launched over Wi-Fi; shortcut drop exercised."
+  },
+  "contentRightsConfirmation": {
+    "basis": "User confirmation in chat on 2026-10-17: content-owner communication includes Google Play distribution permissions.",
+    "documentsInspected": false
   }
 }

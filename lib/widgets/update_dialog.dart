@@ -4,7 +4,7 @@ import 'compact_confirmation_dialog.dart';
 
 /// Update these notes along with the version in pubspec.yaml for each release.
 const latestUpdateNotes = [
-  'Gizlilik açıklamaları ses indirmeleri, yerel kayıtlar, veri silme ve dış bağlantıları kapsayacak şekilde güncellendi.',
+  'bottomShortcutAnimatedDrop',
 ];
 
 Future<void> showUpdateDialog(BuildContext context, String version) =>

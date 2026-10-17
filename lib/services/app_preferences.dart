@@ -39,7 +39,7 @@ class UiPreferences {
   final String color;
   final List<HomeShortcut> shortcuts;
   static const defaultBottomShortcuts = ['exit', 'bookmarks', 'surahs', 'history', 'home'];
-  static const availableBottomShortcuts = ['home', 'bookmarks', 'surahs', 'history', 'settings', 'search', 'hatim', 'exit'];
+  static const availableBottomShortcuts = ['home', 'bookmarks', 'surahs', 'history', 'settings', 'search', 'hatim', 'exit', 'meal', 'listen', 'support'];
   final List<String> bottomShortcuts;
   final List<String>? dashboardCards;
   List<String> get availableDashboardCards => [...dashboardCardLabels.keys, ...shortcuts.map((s) => s.id)];
@@ -50,7 +50,8 @@ class UiPreferences {
   Color get seed => colors[color] ?? colors['green']!;
   UiPreferences copyWith({ThemeMode? themeMode, String? color, List<HomeShortcut>? shortcuts, List<String>? bottomShortcuts, List<String>? dashboardCards}) =>
     UiPreferences(themeMode: themeMode ?? this.themeMode, color: color ?? this.color,
-      shortcuts: List.unmodifiable(shortcuts ?? this.shortcuts), bottomShortcuts: List.unmodifiable(bottomShortcuts ?? this.bottomShortcuts),
+      shortcuts: List.unmodifiable(shortcuts ?? this.shortcuts), bottomShortcuts: List.unmodifiable((bottomShortcuts ?? this.bottomShortcuts).where((id) =>
+        availableBottomShortcuts.contains(id) || (shortcuts ?? this.shortcuts).any((s) => s.id == id))),
       dashboardCards: dashboardCards != null ? List.unmodifiable(dashboardCards) : this.dashboardCards == null && shortcuts == null ? null : List.unmodifiable([
         ...dashboardOrder.where((id) => dashboardCardLabels.containsKey(id) || (shortcuts ?? this.shortcuts).any((s) => s.id == id)),
         if (shortcuts != null) ...shortcuts.where((s) => !this.shortcuts.any((old) => old.id == s.id)).map((s) => s.id),
@@ -69,7 +70,7 @@ class UiPreferences {
       }
     }
     final bottom = data['bottomShortcuts'] is List
-      ? (data['bottomShortcuts'] as List).whereType<String>().where(availableBottomShortcuts.contains).toSet().take(6).toList()
+      ? (data['bottomShortcuts'] as List).whereType<String>().where((id) => availableBottomShortcuts.contains(id) || (data['shortcuts'] is List ? parsed : defaults).any((s) => s.id == id)).toSet().take(6).toList()
       : [...defaultBottomShortcuts];
     if (data['navigationVersion'] != 2 && !bottom.contains('exit') && bottom.length < 6) bottom.add('exit');
     return UiPreferences(themeMode: modes.isEmpty ? ThemeMode.system : modes.first,

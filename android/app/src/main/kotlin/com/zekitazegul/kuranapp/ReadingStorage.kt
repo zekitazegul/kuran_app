@@ -76,12 +76,6 @@ class ReadingStorage(private val context: Context, requestedEdition: String? = n
         val json = JSONObject(values)
         require(json.getString("theme") in setOf("system", "light", "dark"))
         require(json.getString("color") in setOf("green", "blue", "purple", "amber"))
-        if (json.has("bottomShortcuts")) {
-            val bottom = json.getJSONArray("bottomShortcuts")
-            val destinations = (0 until bottom.length()).map { bottom.getString(it) }
-            require(destinations.size in 0..6 && destinations.toSet().size == destinations.size)
-            require(destinations.all { it in setOf("home", "bookmarks", "surahs", "history", "settings", "search", "hatim", "exit") })
-        }
         val shortcuts = json.getJSONArray("shortcuts")
         require(shortcuts.length() <= 24)
         val ids = mutableSetOf<String>()
@@ -91,6 +85,11 @@ class ReadingStorage(private val context: Context, requestedEdition: String? = n
             val number = shortcut.getInt("number")
             require((kind == "surah" && number in 1..114) || (kind == "juz" && number in 1..30))
             require(ids.add("$kind:$number"))
+        }
+        if (json.has("bottomShortcuts")) {
+            val bottom = json.getJSONArray("bottomShortcuts")
+            val destinations = (0 until bottom.length()).map { bottom.getString(it) }
+            require(BottomShortcutOrder.isValid(destinations, ids))
         }
         if (json.has("dashboardCards")) {
             val cards = json.getJSONArray("dashboardCards")

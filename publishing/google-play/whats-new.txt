@@ -1,0 +1,11 @@
+<tr-TR>
+Ana ekran kısayollarını doğrudan alt çubuğa sürükleyebilirsin. Kısayol parmağın solunda ikona dönüşür ve bıraktığın konuma animasyonla yerleşir. Kayıt hatası giderildi; boş ana ekrana kısayol ekleme ipucu eklendi.
+</tr-TR>
+
+<en-US>
+Drag home shortcuts directly onto the bottom bar. The shortcut becomes an icon to the left of your finger and animates into the dropped position. Fixed a saving error and added a shortcut hint on an empty home screen.
+</en-US>
+
+<nl-NL>
+Sleep snelkoppelingen rechtstreeks naar de onderste balk. De snelkoppeling wordt een pictogram links van je vinger en schuift naar de plek waar je deze loslaat. Een opslagfout is opgelost en een hint is toegevoegd aan een leeg startscherm.
+</nl-NL>

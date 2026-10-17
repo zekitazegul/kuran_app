@@ -2,6 +2,30 @@ import 'package:flutter/material.dart';
 import '../services/app_language.dart';
 
 const translations = <String, Map<String, String>>{
+  'audioSourceDetails': {
+    'tr': 'Okuyucu: {reciter}. Arapça Kur’an tilaveti kayıtlarının kaynağı EveryAyah arşividir. Ayet kayıtları kullanıcının isteğiyle indirilir ve cihazda çevrimdışı dinlenir.',
+    'en': 'Reciter: {reciter}. The Arabic Quran recitation recordings come from the EveryAyah archive. Verse recordings are downloaded at the user’s request for offline listening on the device.',
+    'nl': 'Recitator: {reciter}. De Arabische Koranrecitaties komen uit het EveryAyah-archief. Versopnamen worden op verzoek van de gebruiker gedownload om offline op het apparaat te beluisteren.',
+  },
+  'audioSourceRights': {
+    'tr': 'KuranApp bu kayıtlar üzerinde hak sahipliği iddia etmez. Hak sahiplerinin kimliği ve uygulamada kullanım/yeniden dağıtım izni henüz yazılı olarak doğrulanmamıştır. İzin koşullarını öğrenmek için başvuru gönderildi; yanıt bekleniyor. Kaynak bağlantısının erişilebilir olması kullanım izni anlamına gelmez.',
+    'en': 'KuranApp does not claim ownership of these recordings. The rights holders and permission for use or redistribution in the app have not yet been confirmed in writing. An inquiry has been sent and a response is pending. An accessible source link does not constitute permission to use the recordings.',
+    'nl': 'KuranApp claimt geen eigendom van deze opnamen. De rechthebbenden en toestemming voor gebruik of herdistributie in de app zijn nog niet schriftelijk bevestigd. Er is een aanvraag verstuurd; we wachten op antwoord. Een toegankelijke bronlink betekent geen toestemming voor gebruik.',
+  },
+  'Mishary ve Shatri ses kaynaklarına okuyucu ve telif/izin açıklamaları eklendi.': {
+    'en': 'Reciter information and copyright/permission details were added to the Mishary and Shatri audio sources.',
+    'nl': 'Informatie over de recitatoren en auteursrechten/toestemming is toegevoegd aan de audiobronnen van Mishary en Shatri.',
+  },
+  'Kaynaklar hakkında': {'en': 'About the sources', 'nl': 'Over de bronnen'},
+  'Telif ve kullanım koşulları': {'en': 'Copyright and usage terms', 'nl': 'Auteursrecht en gebruiksvoorwaarden'},
+  'Kaynaklar ve telif bilgileri sayfasındaki açıklamalar, dokunarak açılıp kapanan başlıklar altında toplandı.': {
+    'en': 'Information on the sources and copyright page is now grouped under headings that expand and collapse when tapped.',
+    'nl': 'De informatie over bronnen en auteursrecht staat nu onder koppen die je met een tik kunt openen en sluiten.',
+  },
+  'Kur’an hatlarının adları kaynak künyelerine göre Süleyman Feyzullahoğlu Hattı ve Yakupzâde İzzet Efendi Hattı olarak güncellendi. İndirilen sayfalar, ayraçlar ve okuma kayıtları korunur.': {
+    'en': 'The Quran script editions are now named Süleyman Feyzullahoğlu Script and Yakupzâde İzzet Efendi Script, following their source credits. Downloaded pages, bookmarks and reading records are preserved.',
+    'nl': 'De Koranschriftuitgaven heten nu Süleyman Feyzullahoğlu-schrift en Yakupzâde İzzet Efendi-schrift, volgens de bronvermelding. Gedownloade pagina’s, bladwijzers en leesgegevens blijven behouden.',
+  },
   "Gizlilik a\u00e7\u0131klamalar\u0131 ses indirmeleri, yerel kay\u0131tlar, veri silme ve d\u0131\u015f ba\u011flant\u0131lar\u0131 kapsayacak \u015fekilde g\u00fcncellendi.": {"en": "Privacy information now covers audio downloads, local records, data deletion and external links.", "nl": "De privacyinformatie beschrijft nu audiodownloads, lokale gegevens, gegevens verwijderen en externe links."},
   "Ayra\u00e7 listesindeki her kayd\u0131n sa\u011f\u0131ndaki silme simgesiyle ayrac\u0131 kald\u0131rabilirsin.": {"en": "You can remove a bookmark using the delete icon on the right of each entry.", "nl": "Je kunt een bladwijzer verwijderen met het verwijderpictogram rechts van elke vermelding."},
   "Ayra\u00e7 silmeden \u00f6nce onay istenir. Vazge\u00e7ersen ayra\u00e7 ve tarih bilgisi korunur.": {"en": "Deleting a bookmark requires confirmation. Cancelling keeps the bookmark and its date.", "nl": "Je moet het verwijderen van een bladwijzer bevestigen. Bij annuleren blijven de bladwijzer en de datum behouden."},
@@ -43,6 +67,13 @@ const translations = <String, Map<String, String>>{
     'nl': '{count} opnamen worden verwijderd. Je Koranpagina’s en bladwijzers blijven behouden.',
   },
   'Bu okuyucunun baz\u0131 sure ve ayet kay\u0131tlar\u0131 eksik.': {'en': 'Some surah and verse recordings are missing for this reciter.', 'nl': 'Bij deze recitator ontbreken enkele soera- en versopnamen.'},
+  "Alt \u00e7ubu\u011fa eklemek i\u00e7in buraya b\u0131rak": {"en": "Drop here to add to the bottom bar", "nl": "Laat hier los om aan de onderste balk toe te voegen"},
+  "Alt \u00e7ubu\u011fa en fazla 6 k\u0131sayol ekleyebilirsin.": {"en": "You can add up to 6 shortcuts to the bottom bar.", "nl": "Je kunt maximaal 6 snelkoppelingen aan de onderste balk toevoegen."},
+  "Ana ekran k\u0131sayollar\u0131 bas\u0131l\u0131 tutup alt \u00e7ubu\u011fun \u00fcst\u00fcne s\u00fcr\u00fckleyerek eklenebilir.": {"en": "Hold a home shortcut and drag it above the bottom bar to add it.", "nl": "Houd een snelkoppeling op het startscherm ingedrukt en sleep deze boven de onderste balk om deze toe te voegen."},
+  'bottomShortcutAnimatedDrop': {"tr": "Alt \u00e7ubu\u011fa s\u00fcr\u00fcklenen k\u0131sayol parma\u011f\u0131n solunda ikona d\u00f6n\u00fc\u015f\u00fcr ve b\u0131rak\u0131ld\u0131\u011f\u0131 konuma animasyonla yerle\u015fir.", "en": "Shortcuts dragged onto the bottom bar turn into an icon to the left of your finger and animate into their dropped position.", "nl": "Snelkoppelingen die je naar de onderste balk sleept, veranderen in een pictogram links van je vinger en schuiven met een animatie naar de plek waar je ze loslaat."},
+  'bottomShortcutDirectDrop': {"tr": "Ana ekran k\u0131sayollar\u0131n\u0131 do\u011frudan alt \u00e7ubu\u011fa b\u0131rakarak b\u0131rakt\u0131\u011f\u0131n konuma ekleyebilirsin.", "en": "Drop home shortcuts directly onto the bottom bar to add them at that position.", "nl": "Laat snelkoppelingen van het startscherm direct op de onderste balk los om ze op die plek toe te voegen."},
+  'bottomShortcutSaveFix': {"tr": "Ana ekran k\u0131sayollar\u0131 alt \u00e7ubu\u011fa eklenirken olu\u015fan tercih kaydetme hatas\u0131 d\u00fczeltildi.", "en": "Fixed the preference saving error when adding home shortcuts to the bottom bar.", "nl": "De fout bij het opslaan van voorkeuren bij het toevoegen van snelkoppelingen aan de onderste balk is verholpen."},
+  'emptyDashboardAddHint': {"tr": "Ana ekran bo\u015fken ilk k\u0131sayol eklenene kadar art\u0131 d\u00fc\u011fmesinin yan\u0131nda K\u0131sayol ekle yaz\u0131s\u0131 g\u00f6sterilir.", "en": "When the home screen is empty, Add shortcut appears beside the plus button until the first shortcut is added.", "nl": "Als het startscherm leeg is, staat Snelkoppeling toevoegen naast de plusknop totdat de eerste snelkoppeling is toegevoegd."},
   'T\u00fcm k\u0131sayollar eklendi.': {'en': 'All shortcuts have been added.', 'nl': 'Alle snelkoppelingen zijn toegevoegd.'},
   'Yak\u0131nla\u015ft\u0131r': {'en': 'Zoom in', 'nl': 'Inzoomen'},
   'Uzakla\u015ft\u0131r': {'en': 'Zoom out', 'nl': 'Uitzoomen'},
@@ -168,8 +199,8 @@ const translations = <String, Map<String, String>>{
   'Hat ön izleme': {'en': 'Script preview', 'nl': 'Schriftvoorbeeld'},
   '{edition} · Hat ön izleme': {'en': '{edition} · Script preview', 'nl': '{edition} · Schriftvoorbeeld'},
   'Hüsrev hattını indir': {'en': 'Download Hüsrev edition', 'nl': 'Hüsrev-uitgave downloaden'},
-  'Bilgisayar hattını indir': {'en': 'Download Computer Script edition', 'nl': 'Computerschrift downloaden'},
-  'Bilgisayar Hattı 2’yi indir': {'en': 'Download Computer Script 2', 'nl': 'Computerschrift 2 downloaden'},
+  'Süleyman Feyzullahoğlu hattını indir': {'en': 'Download Süleyman Feyzullahoğlu Script', 'nl': 'Süleyman Feyzullahoğlu-schrift downloaden'},
+  'Yakupzâde İzzet Efendi hattını indir': {'en': 'Download Yakupzâde İzzet Efendi Script', 'nl': 'Yakupzâde İzzet Efendi-schrift downloaden'},
   'Seçilen hat cihazına indirilecek. Wi-Fi kullanmanı ve işlem boyunca uygulamayı açık tutmanı öneririz. İndirmeyi duraklatıp daha sonra devam edebilirsin.': {'en': 'The selected edition will be downloaded to your device. We recommend Wi-Fi and keeping the app open during the process. You can pause and resume later.', 'nl': 'De gekozen uitgave wordt naar je apparaat gedownload. We raden wifi aan en adviseren de app tijdens het proces open te houden. Je kunt pauzeren en later verdergaan.'},
   "2 / 2 · Sayfalar cihaza indiriliyor": {"en": "2 / 2 · Downloading pages to your device", "nl": "2 / 2 · Pagina’s downloaden naar je apparaat"},
   "İndirilen: {done}/{total}": {"en": "Downloaded: {done}/{total}", "nl": "Gedownload: {done}/{total}"},
@@ -324,21 +355,21 @@ const translations = <String, Map<String, String>>{
     "en": "Start download",
     "nl": "Download starten"
   },
-  "Bilgisayar hattı": {
-    "en": "Computer Script",
-    "nl": "Computerschrift"
+  "Süleyman Feyzullahoğlu Hattı": {
+    "en": "Süleyman Feyzullahoğlu Script",
+    "nl": "Süleyman Feyzullahoğlu-schrift"
   },
-  "Bilgisayar Hattı 2": {
-    "en": "Computer Script 2",
-    "nl": "Computerschrift 2"
+  "Yakupzâde İzzet Efendi Hattı": {
+    "en": "Yakupzâde İzzet Efendi Script",
+    "nl": "Yakupzâde İzzet Efendi-schrift"
   },
   "Hüsrev hattı": {
     "en": "Hüsrev Script",
     "nl": "Hüsrev-schrift"
   },
-  "Paylaştığınız ikinci mushaf": {
-    "en": "Second Quran edition",
-    "nl": "Tweede Koraneditie"
+  "Ahıska Yayınevi": {
+    "en": "Ahıska Yayınevi",
+    "nl": "Ahıska Yayınevi"
   },
   "Paylaştığınız Hüsrev hatlı mushaf": {
     "en": "Hüsrev Quran edition",
