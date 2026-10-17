@@ -1,0 +1,85 @@
+{
+  "package": "com.zekitazegul.kuranapp",
+  "versionName": "1.0.6",
+  "versionCode": 21,
+  "minSdk": 24,
+  "targetSdk": 36,
+  "aab": "KuranApp-1.0.6-21.aab",
+  "bytes": 82684385,
+  "sha256": "0bc43938fd8b5c115a788e697ac0988bf1c9c0cf5238f40429a80c1ef2927c3c",
+  "flutterTests": 81,
+  "androidUnitTests": 8,
+  "validationNote": "Full Flutter suite passed; privacy/update UI tests rerun after privacy text changes. Android debug unit tests passed. ELF alignment checked; no 16 KB device runtime test performed.",
+  "nativeLibraries": [
+    {
+      "path": "base/lib/arm64-v8a/libapp.so",
+      "load_alignments": [
+        65536,
+        65536,
+        65536
+      ],
+      "supports16kb": true
+    },
+    {
+      "path": "base/lib/arm64-v8a/libflutter.so",
+      "load_alignments": [
+        65536,
+        65536,
+        65536
+      ],
+      "supports16kb": true
+    },
+    {
+      "path": "base/lib/x86_64/libapp.so",
+      "load_alignments": [
+        65536,
+        65536,
+        65536
+      ],
+      "supports16kb": true
+    },
+    {
+      "path": "base/lib/x86_64/libflutter.so",
+      "load_alignments": [
+        65536,
+        65536,
+        65536
+      ],
+      "supports16kb": true
+    }
+  ],
+  "googlePlayPublished": false,
+  "privacyUrlPublished": false,
+  "blockers": [
+    "Play Console account not created",
+    "Content distribution permissions not obtained",
+    "Public privacy URL requires explicit GitHub Pages approval",
+    "Closed testing and production access pending"
+  ],
+  "supportEmail": "ztazegul@yahoo.com",
+  "contentRightsConfirmed": false,
+  "sourceFilesSha256": {
+    "pubspec.yaml": "4153bbb4324752c971b27405487ec819f264e575f596f43703d7b6db616a81e2",
+    "pubspec.lock": "089ee1fa83eae579bbfd591278550986e4f0301d9151be73f295f5181eb38ec5",
+    "lib/l10n/translations.dart": "27106b162fbe01cd1894e18e831ac580f4facbd2f7f17612f4e0b6f994db5743",
+    "android/app/build.gradle.kts": "cb3f63c9b35e21359af023b0ce31ab5fe1365c292d09e30929b832fa8e2c5455",
+    "lib/widgets/update_dialog.dart": "cc6a6ab7aca36c8a6d4f46130c62c43570b21d632a47cf00525c7562b1ce4d9d"
+  },
+  "storeGraphics": {
+    "icon": "graphics/icon-512.png",
+    "features": [
+      "graphics/feature-tr-TR-1024x500.png",
+      "graphics/feature-en-US-1024x500.png",
+      "graphics/feature-nl-NL-1024x500.png"
+    ],
+    "screenshots": [
+      "screenshots/tr-TR/home-tr-TR.png",
+      "screenshots/tr-TR/settings-tr-TR.png"
+    ]
+  },
+  "additionalPreparation": [
+    "Capture English and Dutch phone screenshots",
+    "Confirm data-safety declarations and target audience in Play Console"
+  ],
+  "aabSignatureVerified": true
+}

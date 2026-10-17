@@ -6,7 +6,7 @@ Google Play'e yüklenmedi. Mağaza metinleri hesap açıldığında kullanılabi
 ## Hazır olanlar
 
 - Uygulama kimliği: `com.zekitazegul.kuranapp`.
-- Sürüm: `1.0.6`, build: `20`.
+- Sürüm: `1.0.6`, build: `21`.
 - Türkçe, İngilizce ve Hollandaca mağaza açıklamaları: `listings.json`.
 - Üç dilde gizlilik metni: `privacy-content.json`; uygulama içi metinle eşleştirildi.
 - Web gizlilik sayfası: `../../docs/privacy.html`.
@@ -22,18 +22,17 @@ Google Play'e yüklenmedi. Mağaza metinleri hesap açıldığında kullanılabi
 3. KuranApp uygulamasını oluştur. Varsayılan dil: Türkçe; uygulama türü: uygulama;
    ücret: ücretsiz. Uygulama kimliği ilk paket yüklendiğinde sabitlenir.
 4. Herkese açık destek e-postasını, geliştirici iletişim bilgilerini ve hedef
-   ülkeleri belirle. Destek e-postası henüz sağlanmadı.
-5. Meal, taramalar ve sesler için kullanım/dağıtım izinlerini belgele. İzinlerin
-   varlığı henüz doğrulanmadı. Kaynak atfı tek başına dağıtım izni değildir.
+   ülkeleri belirle. Destek e-postası: `ztazegul@yahoo.com`.
+5. Meal, taramalar ve sesler için kullanım/dağıtım izinlerini belgele. Hesap sahibi izin belgelerinin henüz olmadığını bildirdi;
+   [araştırma ve sonraki adımlar](content-rights.md) hazır. Kaynak atfı tek başına dağıtım izni değildir.
 6. Gizlilik sayfasını herkese açık HTTPS adresinde yayımla, URL'yi doğrula ve Play
    Console'a ekle. GitHub Pages kullanılırsa beklenen adres
    `https://zekitazegul.github.io/kuran_app/privacy.html` olur; adresin çalıştığı
-   doğrulanmadan gönderme. Şimdiki iletişim mekanizması herkese açık GitHub
-   Issues'dır; özel bilgi paylaşılmaması gerektiği belirtilmiştir.
+   doğrulanmadan gönderme. Gizlilik iletişim adresi `ztazegul@yahoo.com`; GitHub Issues alternatifidir.
 7. `listings.json` içeriğini üç dilde mağaza alanlarına gir. 512×512 PNG simge,
    1024×500 özellik görseli ve uygulamanın gerçek görünümünü gösteren en az iki
    telefon ekran görüntüsünü hazırla. Dile özgü görüntüleri ilgili dile yükle.
-   Bunlar henüz mağazaya yüklenmedi.
+   Simge ve üç dilde özellik görselleri `graphics/` klasöründedir; mağazaya henüz yüklenmedi.
 8. Veri güvenliği, reklam, uygulama erişimi, içerik derecelendirme ve hedef kitle
    formlarını gerçek bilgilerle doldur. Giriş hesabı gerekmez; uygulama içi reklam
    SDK'sı yoktur. Yaş derecesini tahmin ederek yazma; anket sonucu belirler.
@@ -82,3 +81,9 @@ Mağaza ön raporunu gerçek cihazlarla test et. 64-bit ELF yükleme segmentleri
 - [Gizlilik ve kullanıcı verileri](https://support.google.com/googleplay/android-developer/answer/10144311?hl=tr)
 - [Fikrî mülkiyet](https://support.google.com/googleplay/android-developer/answer/9888072?hl=tr)
 - [16 KB sayfa boyutları](https://developer.android.com/guide/practices/page-sizes?hl=tr)
+
+## Hazır görseller
+
+`graphics/` klasöründeki 512×512 simge ve üç dilde 1024×500 özellik görselleri mevcut marka görselinden oluşturuldu. `screenshots/tr-TR/` gerçek telefondan alınan iki ekranı içerir. Ekran içeriği kesilmeden, mağazanın en fazla 2:1 oranını karşılamak için yanlara arka plan payı eklendi; çıktı 24-bit PNG 1170×2340 boyutundadır. İngilizce ve Hollandaca uygulama ekranı görüntüleri ayrıca alınmalıdır.
+
+Gizlilik sayfasının GitHub Pages yayını otomatik onay incelemesi tarafından, `docs` klasörünün kamuya web sitesi olarak açılması için açık izin bulunmadığı gerekçesiyle reddedildi. Sayfa yayımlanmadı; hesap sahibinin onayı bekleniyor.
