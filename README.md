@@ -28,7 +28,7 @@ Native Android logic tests:
 
 ```sh
 cd android
-./gradlew testReleaseUnitTest
+./gradlew :app:testDebugUnitTest
 ```
 
 ## Release builds

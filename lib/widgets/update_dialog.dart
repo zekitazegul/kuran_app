@@ -4,8 +4,7 @@ import 'compact_confirmation_dialog.dart';
 
 /// Update these notes along with the version in pubspec.yaml for each release.
 const latestUpdateNotes = [
-  'Ayraç listesindeki her kaydın sağındaki silme simgesiyle ayracı kaldırabilirsin.',
-  'Ayraç silmeden önce onay istenir. Vazgeçersen ayraç ve tarih bilgisi korunur.',
+  'Gizlilik açıklamaları ses indirmeleri, yerel kayıtlar, veri silme ve dış bağlantıları kapsayacak şekilde güncellendi.',
 ];
 
 Future<void> showUpdateDialog(BuildContext context, String version) =>
