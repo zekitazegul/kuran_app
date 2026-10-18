@@ -1,4 +1,6 @@
+import '../widgets/screen_title.dart';
 import '../widgets/paginated_meal_text.dart';
+import '../widgets/personal_page_scope.dart';
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -15,7 +17,7 @@ class MealScreen extends StatefulWidget {
   State<MealScreen> createState() => _MealScreenState();
 }
 
-class _MealScreenState extends State<MealScreen> {
+class _MealScreenState extends State<MealScreen> implements FullscreenReadingSession {
   final _reader = MealReader();
   List<List<String>> _pages = [];
   int _fontSize = 22;
@@ -43,6 +45,12 @@ class _MealScreenState extends State<MealScreen> {
     try { await _positionWrite; } catch (_) {
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(context.t('Tercihler kaydedilemedi.'))));
     }
+  }
+
+  @override
+  void exitFullscreen() {
+    if (mounted && _fullscreen) setState(() => _fullscreen = false);
+    if (identical(AppNavigation.instance.fullscreenMeal.value, this)) AppNavigation.instance.fullscreenMeal.value = null;
   }
 
   void _toggleFullscreen() {
@@ -111,7 +119,7 @@ class _MealScreenState extends State<MealScreen> {
     return PopScope(canPop: !_fullscreen, onPopInvokedWithResult: (didPop, _) {
       if (!didPop && _fullscreen) _toggleFullscreen();
     }, child: Scaffold(
-      appBar: _fullscreen ? null : AppBar(title: Text(context.t('Meal Oku')), actions: [
+      appBar: _fullscreen ? null : AppBar(automaticallyImplyLeading: PersonalPageScope.of(context) == null, title: PersonalPageScope.of(context)?.heading ?? ScreenTitle(context, context.t('Meal Oku')), actions: [
         IconButton(key: const ValueKey('meal-font-smaller'), tooltip: context.t('Yazıyı küçült'), onPressed: _busy || _fontSize <= 16 ? null : () => _resize(-2), icon: const Icon(Icons.text_decrease)),
         IconButton(key: const ValueKey('meal-font-larger'), tooltip: context.t('Yazıyı büyüt'), onPressed: _busy || _fontSize >= 40 ? null : () => _resize(2), icon: const Icon(Icons.text_increase)),
       ]),
@@ -131,20 +139,23 @@ class _MealScreenState extends State<MealScreen> {
             if (_reader.hasSurahProgress) Padding(padding: const EdgeInsets.only(left: 12),
               child: Text('${_reader.pageInSurah}/${_reader.surahPageCount} sf.', key: const ValueKey('meal-surah-progress'), style: Theme.of(context).textTheme.titleMedium)),
           ]))),
-          Expanded(key: const ValueKey('meal-reading-area'), child: GestureDetector(
-            key: const ValueKey('meal-reading-surface'), behavior: HitTestBehavior.opaque,
-            onDoubleTap: _toggleFullscreen,
-            child: PaginatedMealText(
+          Expanded(key: const ValueKey('meal-reading-area'), child: PaginatedMealText(
+              onDoubleTap: _toggleFullscreen,
               key: _pager, pages: _pages, page: _reader.page,
               offset: _textOffset, fontSize: _fontSize, enabled: !_busy,
               onChanged: _savePosition,
-            ),
+              footerBuilder: _fullscreen ? null : (context, screen, screens) => PersonalPageSwipe(
+                onNavigate: (delta) => AppNavigation.instance.switchPage?.call(delta),
+                child: Row(key: const ValueKey('meal-combined-footer'), children: [
+                  IconButton(tooltip: context.t('Önceki'), onPressed: _busy ? null : () => _pager.currentState?.turn(-1), icon: const Icon(Icons.chevron_left)),
+                  Expanded(child: FittedBox(fit: BoxFit.scaleDown, child: Row(children: [
+                    Text('$screen / $screens', key: const ValueKey('meal-screen-progress')),
+                    const SizedBox(width: 16),
+                    Text('${_reader.page} / ${_reader.pageCount}', key: const ValueKey('meal-source-progress')),
+                  ]))),
+                  IconButton(tooltip: context.t('Sonraki'), onPressed: _busy ? null : () => _pager.currentState?.turn(1), icon: const Icon(Icons.chevron_right)),
+                ])),
           )),
-          if (!_fullscreen) Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-            IconButton(tooltip: context.t('Önceki'), onPressed: _busy ? null : () => _pager.currentState?.turn(-1), icon: const Icon(Icons.chevron_left)),
-            Text('${_reader.page} / ${_reader.pageCount}'),
-            IconButton(tooltip: context.t('Sonraki'), onPressed: _busy ? null : () => _pager.currentState?.turn(1), icon: const Icon(Icons.chevron_right)),
-          ]),
         ])),
     ));
   }

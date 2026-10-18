@@ -1,3 +1,5 @@
+import '../widgets/screen_title.dart';
+import '../widgets/personal_page_scope.dart';
 import 'package:flutter/material.dart';
 import '../data/surahs.dart';
 import '../l10n/translations.dart';
@@ -27,7 +29,7 @@ class _ReadingHistoryScreenState extends State<ReadingHistoryScreen> {
   String _two(int value) => value.toString().padLeft(2, '0');
   @override
   Widget build(BuildContext context) => Scaffold(
-    appBar: AppBar(title: Text(context.t('Okuma geçmişi')), actions: [
+    appBar: AppBar(automaticallyImplyLeading: PersonalPageScope.of(context) == null, title: PersonalPageScope.of(context) == null ? ScreenTitle(context, context.t('Okuma geçmişi')) : null, actions: [
       TextButton(onPressed: _clearing || store.history.isEmpty ? null : _clear,
         child: Text(context.t('Geçmişi temizle'))),
     ]),

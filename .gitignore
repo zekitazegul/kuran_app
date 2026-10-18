@@ -54,6 +54,7 @@ android/app/*.jks
 # Local distribution artifacts and ad-hoc device captures
 /*.apk
 /dist/
+/.tool-deps/
 /meal-phone-check.png
 /meal-preview.png
 

@@ -90,7 +90,7 @@ class MainActivity : FlutterActivity() {
                 }
                 return@setMethodCallHandler
             }
-            if (call.method in setOf("loadAudio", "downloadAudio", "playAudio", "stopAudio", "removeAudio", "selectAudioReciter")) {
+            if (call.method in setOf("loadAudio", "downloadAudio", "playAudio", "playAudioSelection", "playAudioRange", "advanceMemorization", "stopAudio", "removeAudio", "selectAudioReciter")) {
                 audioHandler.post {
                     try {
                         val audio = audioStorage ?: QuranAudioStorage(applicationContext).also { audioStorage = it }
@@ -99,6 +99,12 @@ class MainActivity : FlutterActivity() {
                             "selectAudioReciter" -> audio.selectReciter(requireNotNull(call.argument<String>("id"))).let { null }
                             "downloadAudio" -> audio.download(requireNotNull(call.argument<String>("id"))).let { null }
                             "playAudio" -> audio.play(requireNotNull(call.argument<String>("id"))).let { null }
+                            "playAudioSelection" -> audio.playSelection(requireNotNull(call.argument<List<String>>("ids")),
+                                call.argument<Int>("repetitions") ?: 1, call.argument<Boolean>("cumulative") == true).let { null }
+                            "playAudioRange" -> audio.playRange(
+                                requireNotNull(call.argument<Int>("surah")), requireNotNull(call.argument<Int>("first")),
+                                requireNotNull(call.argument<Int>("last")), requireNotNull(call.argument<Int>("repetitions")), call.argument<Boolean>("cumulative") == true).let { null }
+                            "advanceMemorization" -> audio.advanceMemorization().let { null }
                             "removeAudio" -> audio.remove(requireNotNull(call.argument<String>("id"))).let { null }
                             else -> audio.requestStop().let { null }
                         }

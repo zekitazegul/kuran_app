@@ -6,6 +6,7 @@ import 'package:kuran_app/screens/meal_screen.dart';
 import 'package:kuran_app/services/meal_reader.dart';
 import 'package:kuran_app/widgets/app_bottom_bar.dart';
 import 'package:kuran_app/widgets/paginated_meal_text.dart';
+import 'package:kuran_app/widgets/personal_page_scope.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -74,7 +75,8 @@ void main() {
     addTearDown(tester.view.resetDevicePixelRatio);
     Future<void> open() async {
       await tester.runAsync(() async {
-        await tester.pumpWidget(const MaterialApp(home: MealScreen()));
+        await tester.pumpWidget(MaterialApp(home: PersonalPageScope(
+          heading: const Text('Meal Oku'), navigate: (_) {}, child: const MealScreen())));
         for (var i = 0; i < 100 && find.byType(PaginatedMealText).evaluate().isEmpty; i++) {
           await Future<void>.delayed(const Duration(milliseconds: 20));
           await tester.pump();
@@ -83,6 +85,26 @@ void main() {
       await tester.pumpAndSettle();
     }
     await open();
+    for (final size in [const Size(320, 568), const Size(412, 915), const Size(800, 1280), const Size(1280, 800), const Size(640, 360)]) {
+      tester.view.physicalSize = size;
+      await tester.pumpAndSettle();
+      expect(tester.takeException(), isNull, reason: 'Layout must fit $size');
+      final area = tester.getSize(find.byKey(const ValueKey('meal-reading-area')));
+      expect(area.height, greaterThan(0));
+      expect(area.width, lessThanOrEqualTo(size.width));
+      expect(find.text('Meal Oku'), findsOneWidget);
+      final title = tester.getCenter(find.text('Meal Oku'));
+      final fontControl = tester.getCenter(find.byKey(const ValueKey('meal-font-larger')));
+      expect(fontControl.dy, closeTo(title.dy, 1));
+      final localProgress = tester.getCenter(find.byKey(const ValueKey('meal-screen-progress')));
+      final sourceProgress = tester.getCenter(find.byKey(const ValueKey('meal-source-progress')));
+      final next = tester.getCenter(find.byIcon(Icons.chevron_right));
+      expect(localProgress.dy, closeTo(sourceProgress.dy, 1));
+      expect(localProgress.dy, closeTo(next.dy, 1));
+      expect(find.byKey(const ValueKey('meal-combined-footer')), findsOneWidget);
+    }
+    tester.view.physicalSize = const Size(360, 800);
+    await tester.pumpAndSettle();
     final progress = find.byKey(const ValueKey('meal-screen-progress'));
     final surface = find.byKey(const ValueKey('meal-reading-surface'));
     expect(find.byType(ListView), findsNothing);
@@ -111,6 +133,13 @@ void main() {
     await tester.tapAt(center); await tester.pump(const Duration(milliseconds: 60));
     await tester.tapAt(center); await tester.pumpAndSettle();
     expect(AppNavigation.instance.fullscreenMeal.value, isNotNull);
+    AppNavigation.instance.exitFullscreen();
+    await tester.pumpAndSettle();
+    expect(AppNavigation.instance.fullscreenMeal.value, isNull);
+    expect(find.byKey(const ValueKey('meal-font-larger')), findsOneWidget);
+    final restoredCenter = tester.getCenter(surface);
+    await tester.tapAt(restoredCenter); await tester.pump(const Duration(milliseconds: 60));
+    await tester.tapAt(restoredCenter); await tester.pumpAndSettle();
     await tester.drag(surface, const Offset(-600, 0)); await tester.pumpAndSettle();
     expect(tester.takeException(), isNull);
     final fullCenter = tester.getCenter(surface);

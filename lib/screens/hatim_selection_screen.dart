@@ -1,3 +1,5 @@
+import '../widgets/screen_title.dart';
+import '../l10n/translations.dart';
 import 'package:flutter/material.dart';
 import '../services/reading_store.dart';
 
@@ -19,7 +21,7 @@ class _HatimSelectionScreenState extends State<HatimSelectionScreen> {
   Widget build(BuildContext context) {
     final store = widget.store;
     return DefaultTabController(length: 2, child: Scaffold(
-      appBar: AppBar(title: Text('Hatim · ${store.hatimPages.length}/${store.edition.pageCount}'),
+      appBar: AppBar(title: ScreenTitle(context, '${context.t('Hatim')} · ${store.hatimPages.length}/${store.edition.pageCount}'),
         bottom: const TabBar(tabs: [Tab(text: 'Sayfalar'), Tab(text: 'Cüzler')])),
       body: TabBarView(children: [
         ListView.builder(itemCount: store.edition.pageCount, itemBuilder: (_, i) {

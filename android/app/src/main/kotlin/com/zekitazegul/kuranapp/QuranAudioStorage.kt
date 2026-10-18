@@ -17,7 +17,10 @@ class QuranAudioStorage(private val context: Context) {
     private val catalog = definition.getJSONArray("tracks")
     private val reciters = definition.getJSONArray("reciters")
     private val preferences = context.getSharedPreferences("quran-audio-v1", Context.MODE_PRIVATE)
-    private var reciter = preferences.getString("reciter", "shatri")!!
+    private val reciterIds = (0 until reciters.length()).map { reciters.getJSONObject(it).getString("id") }.toSet()
+    private var reciter = AudioReciterSelection.restore(preferences.getString("reciter", null), reciterIds).also {
+        if (preferences.getString("reciter", null) != it) check(preferences.edit().putString("reciter", it).commit())
+    }
     fun selectReciter(id: String) {
         check(playing == null) { "Current verse must finish first" }
         require((0 until reciters.length()).any { reciters.getJSONObject(it).getString("id") == id })
@@ -29,7 +32,8 @@ class QuranAudioStorage(private val context: Context) {
     private var onStopped: (() -> Unit)? = null
     private var playbackError: String? = null
     private var playing: String? = null
-    private val verses by lazy { (0 until catalog.length()).map { catalog.getJSONObject(it) } }
+    private val recordings by lazy { (0 until catalog.length()).map { catalog.getJSONObject(it) } }
+    private val verses by lazy { recordings.filter { !it.isNull("verse") } }
     private val verseGroups by lazy { verses.groupBy { it.getString("reciter") + ":" + it.getInt("surah") } }
     private val expectedCounts by lazy { (0 until pageVerses.length()).flatMap { p ->
         val refs = pageVerses.getJSONArray(p)
@@ -43,7 +47,7 @@ class QuranAudioStorage(private val context: Context) {
         JSONObject().put("id", reader + "_surah_" + surah.toString().padStart(3, '0'))
             .put("reciter", reader).put("surah", surah).put("verse", JSONObject.NULL)
             .put("bytes", entries.sumOf { it.getLong("bytes") })
-    } }
+    } + recordings.filter { it.isNull("verse") } }
     private val tracksById by lazy { (verses + chapters).associateBy { it.getString("id") } }
     private val pageVerses by lazy { JSONObject(context.assets.open("flutter_assets/assets/page_verses.json")
         .bufferedReader().use { it.readText() }).getJSONArray("pages") }
@@ -71,6 +75,7 @@ class QuranAudioStorage(private val context: Context) {
             val refs = pageVerses.getJSONArray(entry.getInt("page"))
             return (0 until refs.length()).map { verseFor(entry.getString("reciter"), refs.getJSONObject(it)) }
         }
+        if (entry.has("url")) return listOf(entry)
         return if (entry.isNull("verse")) checkNotNull(verseGroups[entry.getString("reciter") + ":" + entry.getInt("surah")])
             .sortedBy { it.getInt("verse") } else listOf(entry)
     }
@@ -79,18 +84,19 @@ class QuranAudioStorage(private val context: Context) {
         it.isFile && it.length() == entry.getLong("bytes")
     }
     fun load(): Map<String, Any?> {
-        val selectedVerses = verses.filter { it.getString("reciter") == reciter }
+        val selectedVerses = recordings.filter { it.getString("reciter") == reciter }
         val selectedChapters = (chapters + pages).filter { it.getString("reciter") == reciter }
         val stored = selectedVerses.filter { downloaded(it) }.map { it.getString("id") }.toMutableSet()
         stored.addAll(selectedChapters.filter { entry -> sequence(entry.getString("id")).all { it.getString("id") in stored } }.map { it.getString("id") })
         return mapOf(
             "reciter" to reciter,
             "reciters" to (0 until reciters.length()).map { reciters.getJSONObject(it).let { r -> mapOf("id" to r.getString("id"), "name" to r.getString("name")) } },
-            "tracks" to (selectedChapters + selectedVerses).map { t -> mapOf("id" to t.getString("id"), "surah" to t.getInt("surah"),
+            "tracks" to (selectedChapters + selectedVerses).distinctBy { it.getString("id") }.map { t -> mapOf("id" to t.getString("id"), "surah" to t.getInt("surah"),
                 "verse" to if (t.isNull("verse")) null else t.getInt("verse"),
                 "page" to if (t.has("page")) t.getInt("page") else null, "bytes" to t.getLong("bytes")) },
             "downloaded" to stored.toList(), "playing" to playing, "stopPending" to (queue?.stopPending == true),
-            "currentVerse" to queue?.current?.getInt("verse"), "error" to playbackError
+            "memorizing" to (queue?.cumulative == true),
+            "currentVerse" to queue?.current?.let { if (it.isNull("verse")) null else it.getInt("verse") }, "error" to playbackError
         )
     }
     fun download(id: String) {
@@ -108,14 +114,15 @@ class QuranAudioStorage(private val context: Context) {
         val algorithm = if (entry.has("md5")) "MD5" else "SHA-256"
         val hash = when { entry.has("sha256") -> entry.getString("sha256")
             entry.has("md5") -> entry.getString("md5"); else -> null }
-        require(hash != null || (entry.getString("reciter") == "mustafa_ismail" && source.host == "everyayah.com"))
-        if (hash != null) require(hash.matches(Regex(if (algorithm == "SHA-256") "[a-f0-9]{64}" else "[a-f0-9]{32}")))
+        require(hash != null)
+        require(hash.matches(Regex(if (algorithm == "SHA-256") "[a-f0-9]{64}" else "[a-f0-9]{32}")))
         var current = source
         var connection: HttpsURLConnection? = null
         val temp = File(directory, "$id.part")
         try {
             for (attempt in 0..4) {
-                require(current.protocol == "https" && current.host == source.host && current.port in setOf(-1, 443))
+                require(current.protocol == "https" && current.port in setOf(-1, 443) &&
+                    (current.host == source.host || (source.host == "archive.org" && current.host.endsWith(".archive.org"))))
                 val opened = current.openConnection() as HttpsURLConnection
                 connection = opened
                 opened.connectTimeout = 20_000; opened.readTimeout = 30_000
@@ -140,14 +147,7 @@ class QuranAudioStorage(private val context: Context) {
                 }
             } }
             val actual = digest.digest().joinToString("") { "%02x".format(it.toInt() and 255) }
-            check(total == expected && (hash == null || actual == hash)) { "Ses dosyası doğrulanamadı." }
-            if (hash == null) {
-                val metadata = android.media.MediaMetadataRetriever()
-                try {
-                    metadata.setDataSource(temp.path)
-                    check((metadata.extractMetadata(android.media.MediaMetadataRetriever.METADATA_KEY_DURATION)?.toLongOrNull() ?: 0) > 0)
-                } finally { metadata.release() }
-            }
+            check(total == expected && actual == hash) { "Ses dosyası doğrulanamadı." }
             check(temp.renameTo(target))
         } finally { connection?.disconnect(); temp.delete() }
     }
@@ -156,6 +156,30 @@ class QuranAudioStorage(private val context: Context) {
         val selected = sequence(id)
         check(selected.isNotEmpty() && selected.all { downloaded(it) }) { "Download required" }
         queue = VersePlaybackQueue(selected); playing = id; playbackError = null
+        try { playCurrent() } catch (error: Exception) { finish(); throw error }
+    }
+    fun playRange(surah: Int, first: Int, last: Int, repetitions: Int, cumulative: Boolean = false) {
+        check(playing == null) { "Current verse must finish first" }
+        require(surah in 1..114 && first in 1..286 && last in first..286 && repetitions in 1..999)
+        val selected = (first..last).map { verse ->
+            verseFor(reciter, JSONObject().put("surah", surah).put("verse", verse))
+        }
+        check(selected.all { downloaded(it) }) { "Download required" }
+        queue = VersePlaybackQueue(selected, repetitions, cumulative)
+        playing = "${reciter}_range_${surah}_${first}_${last}"
+        playbackError = null
+        try { playCurrent() } catch (error: Exception) { finish(); throw error }
+    }
+    fun playSelection(ids: List<String>, repetitions: Int = 1, cumulative: Boolean = false) {
+        check(playing == null) { "Current verse must finish first" }
+        require(ids.isNotEmpty() && ids.size <= 6236 && ids.distinct().size == ids.size)
+        val selected = ids.map { id -> track(id).also {
+            require(it.has("verse") && id.startsWith("${reciter}_"))
+        } }
+        check(selected.all { downloaded(it) }) { "Download required" }
+        queue = VersePlaybackQueue(selected, repetitions, cumulative)
+        playing = "${reciter}_selection"
+        playbackError = null
         try { playCurrent() } catch (error: Exception) { finish(); throw error }
     }
     private fun playCurrent() {
@@ -177,7 +201,17 @@ class QuranAudioStorage(private val context: Context) {
             player = next; next.start()
         } catch (error: Exception) { next.release(); throw error }
     }
-    fun requestStop() { queue?.requestStop() }
+    fun advanceMemorization() {
+        val active = queue ?: return
+        if (!active.cumulative || active.stopPending) return
+        player?.setOnCompletionListener(null)
+        player?.release(); player = null
+        if (!active.advanceStage()) finish()
+        else try { playCurrent() } catch (error: Exception) { playbackError = error.message; finish(); throw error }
+    }
+    fun requestStop() {
+        if (queue?.current?.isNull("verse") == true) finish() else queue?.requestStop()
+    }
     fun closeAfterVerse(callback: () -> Unit) {
         if (playing == null) callback() else { onStopped = callback; requestStop() }
     }

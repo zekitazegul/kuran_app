@@ -36,18 +36,18 @@ void main() {
       final third = find.byKey(const ValueKey('downloaded-audio-track3'));
       await tester.longPress(first);
       await tester.pumpAndSettle();
-      expect(find.text('1 seçildi'), findsOneWidget);
+      expect(find.text('1 SEÇİLDİ'), findsOneWidget);
       expect(find.byType(Checkbox), findsNWidgets(3));
       await tester.tap(second);
       await tester.pumpAndSettle();
-      expect(find.text('2 seçildi'), findsOneWidget);
+      expect(find.text('2 SEÇİLDİ'), findsOneWidget);
       await tester.tap(find.byKey(const ValueKey('audio-delete-selected')));
       await tester.pumpAndSettle();
       expect(find.textContaining('2 ses kaydı silinecek'), findsOneWidget);
       await tester.tap(find.text('Vazgeç'));
       await tester.pumpAndSettle();
       expect(removed, isEmpty);
-      expect(find.text('2 seçildi'), findsOneWidget);
+      expect(find.text('2 SEÇİLDİ'), findsOneWidget);
       await tester.tap(find.byKey(const ValueKey('audio-delete-selected')));
       await tester.pumpAndSettle();
       await tester.tap(find.text('Kaldır'));
@@ -57,7 +57,7 @@ void main() {
       if (fail) {
         expect(removed, ['track1']);
         expect(second, findsOneWidget);
-        expect(find.text('1 seçildi'), findsOneWidget);
+        expect(find.text('1 SEÇİLDİ'), findsOneWidget);
         expect(find.textContaining('Ses işlemi tamamlanamadı'), findsOneWidget);
         await tester.tap(find.byTooltip('Seçimi iptal et'));
         await tester.pumpAndSettle();

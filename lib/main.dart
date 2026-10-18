@@ -1,8 +1,7 @@
+import 'screens/bookmarks_screen.dart';
 import 'widgets/update_dialog.dart';
 import 'widgets/compact_confirmation_dialog.dart';
 import 'services/app_preferences.dart';
-import 'screens/meal_screen.dart';
-import 'screens/listening_screen.dart';
 import 'widgets/app_bottom_bar.dart';
 import 'widgets/dashboard_cards.dart';
 import 'widgets/bottom_up_page_transitions.dart';
@@ -101,16 +100,19 @@ class _HomeScreenState extends State<HomeScreen> {
     super.initState();
     AppNavigation.instance.open = _navigate;
     AppNavigation.instance.openCard = _openDashboardCard;
+    AppNavigation.instance.switchPage = null;
+    AppNavigation.instance.fullscreenReader.addListener(_refreshChrome);
+    AppNavigation.instance.fullscreenMeal.addListener(_refreshChrome);
     _load();
   }
 
   void _openDashboardCard(String id) {
     if (_store == null || _downloading || _returningToReading) return;
+    AppNavigation.instance.exitFullscreen();
     appNavigatorKey.currentState?.popUntil((route) => route.isFirst);
     if (id == 'meal') {
-      Navigator.push(context, MaterialPageRoute<void>(builder: (_) => const MealScreen()));
-    } else if (id == 'listen') {
-      Navigator.push(context, MaterialPageRoute<void>(builder: (_) => const ListeningScreen()));
+      if (_store!.ready) _read(_store!.lastPage, panel: 'meal');
+
     } else if (id == 'support') {
       Navigator.push(context, MaterialPageRoute<void>(builder: (_) => const SupportScreen()));
     } else if (_store!.ready) {
@@ -120,11 +122,14 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
+  void _refreshChrome() { if (mounted) setState(() {}); }
+
   Future<void> _navigate(AppDestination destination) async {
     if (destination == AppDestination.exit) {
       final navigator = appNavigatorKey.currentState;
       if (navigator != null && navigator.canPop()) {
         await navigator.maybePop();
+
       } else {
         await _confirmExit();
       }
@@ -137,10 +142,12 @@ class _HomeScreenState extends State<HomeScreen> {
     if (destination != AppDestination.home &&
         AppNavigation.instance.selected.value == destination && navigator.canPop()) {
       ++_navigationId;
-      navigator.popUntil((route) => route.isFirst);
+      AppNavigation.instance.exitFullscreen();
+    navigator.popUntil((route) => route.isFirst);
       AppNavigation.instance.selected.value = AppDestination.home;
       return;
     }
+    AppNavigation.instance.exitFullscreen();
     navigator.popUntil((route) => route.isFirst);
     final navigationId = ++_navigationId;
     AppNavigation.instance.selected.value = destination;
@@ -152,6 +159,11 @@ class _HomeScreenState extends State<HomeScreen> {
       if (mounted) setState(() {});
       return;
     }
+    if (destination == AppDestination.bookmarks) {
+      await navigator.push(MaterialPageRoute<void>(builder: (_) => BookmarksScreen(store: store)));
+      if (mounted) setState(() {});
+      return;
+    }
     if (destination == AppDestination.hatim && store.ready) {
       await navigator.push(MaterialPageRoute<void>(builder: (_) => QuranScreen(store: store,
         initialPage: store.hatimComplete ? store.edition.lastPage : store.hatimResume ?? store.nextHatimPage()!,
@@ -159,8 +171,7 @@ class _HomeScreenState extends State<HomeScreen> {
       return;
     }
     if (store.ready) {
-      await _read(store.lastPage, panel: destination == AppDestination.bookmarks
-        ? 'bookmarks' : destination == AppDestination.search ? 'jump' : 'surah');
+      await _read(store.lastPage, panel: destination == AppDestination.search ? 'jump' : 'surah');
     }
     } finally {
       if (mounted && navigationId == _navigationId) {
@@ -300,6 +311,12 @@ class _HomeScreenState extends State<HomeScreen> {
     _read(page);
   }
 
+  Future<void> _openBookmarks() async {
+    await Navigator.push(context, MaterialPageRoute<void>(builder: (_) => BookmarksScreen(store: _store!)));
+    AppNavigation.instance.refresh();
+    if (mounted) setState(() {});
+  }
+
   Future<void> _read(int page, {String? panel}) async {
     await Navigator.push(context, MaterialPageRoute<void>(builder: (_) => QuranScreen(store: _store!, initialPage: page, initialPanel: panel)));
     AppNavigation.instance.refresh();
@@ -310,8 +327,11 @@ class _HomeScreenState extends State<HomeScreen> {
   void dispose() {
     _pauseRequested = true;
     _dashboardScroll.dispose();
+    AppNavigation.instance.fullscreenReader.removeListener(_refreshChrome);
+    AppNavigation.instance.fullscreenMeal.removeListener(_refreshChrome);
     AppNavigation.instance.open = null;
     AppNavigation.instance.openCard = null;
+    AppNavigation.instance.switchPage = null;
     AppNavigation.instance.value = null;
     super.dispose();
   }
@@ -351,6 +371,27 @@ class _HomeScreenState extends State<HomeScreen> {
         }
       });
     }
+    final cards = <String, Widget>{if (store != null) ...{
+            'meal': _MenuRow(icon: Icons.menu_book_rounded,
+              title: context.t('Meal Oku'),
+              onTap: () => _openDashboardCard('meal')),
+            if (store.ready) ...{
+              'hatim': _MenuRow(icon: Icons.auto_stories_rounded, title: context.t('Hatim'),
+                onTap: () => _navigate(AppDestination.hatim)),
+              'history': _MenuRow(icon: Icons.history_rounded, title: context.t('Okuma geçmişi'),
+              onTap: () => _navigate(AppDestination.history)),
+              'search': _MenuRow(icon: Icons.search_rounded, title: context.t('Sureler'),
+              onTap: () => _read(store.lastPage, panel: 'surah')),
+              'bookmarks': _MenuRow(icon: Icons.bookmarks_rounded, title: context.t('Ayraçlarım'),
+              onTap: _openBookmarks),
+            for (final shortcut in AppPreferences.instance.value.shortcuts)
+              shortcut.id: _MenuRow(icon: shortcut.kind == ShortcutKind.surah ? Icons.menu_book_outlined : Icons.auto_stories_outlined,
+                title: _shortcutName(shortcut), onTap: () => _openShortcut(shortcut)),
+              'support': _MenuRow(icon: Icons.favorite_outline, title: context.t('Destek'),
+              onTap: () => Navigator.push(context, MaterialPageRoute<void>(builder: (_) => const SupportScreen()))),
+              'settings': _MenuRow(icon: Icons.settings_rounded, title: context.t('Ayarlar'), onTap: _settings),
+            },
+          }};
     return PopScope(
       canPop: false,
       onPopInvokedWithResult: (didPop, result) {
@@ -363,16 +404,15 @@ class _HomeScreenState extends State<HomeScreen> {
         }
       },
       child: Scaffold(backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-      appBar: AppBar(leading: store != null && !store.ready
-        ? IconButton(tooltip: context.t('Ana sayfaya dön'), icon: const Icon(Icons.arrow_back),
-            onPressed: _returningToReading ? null : () => _returnToReading())
-        : Padding(padding: EdgeInsets.all(6),
-        child: InkWell(onTap: _about, child: Tooltip(message: context.t('Uygulama hakkında'),
-          child: const QuranArtwork(size: 44, decorative: true)))),
-        titleSpacing: 0, title: Text('KuranApp', style: TextStyle(fontWeight: FontWeight.w700)),
-        actions: [IconButton(tooltip: context.t('Ayarlar'), icon: Icon(Icons.settings_rounded),
-          onPressed: store == null || _downloading || _returningToReading ? null : _settings), LanguageSelector()]),
-      body: Center(child: ConstrainedBox(constraints: BoxConstraints(maxWidth: 680),
+      appBar: AppBar(
+        automaticallyImplyLeading: false,
+        title: const Text('KuranApp', style: TextStyle(fontWeight: FontWeight.w700)),
+        actions: [
+          IconButton(tooltip: context.t('Ayarlar'), icon: const Icon(Icons.settings_rounded),
+            onPressed: store == null || _downloading || _returningToReading ? null : _settings),
+          const LanguageSelector(),
+        ]),
+      body: SafeArea(child: Center(child: ConstrainedBox(constraints: BoxConstraints(maxWidth: 680),
         child: ListView(controller: _dashboardScroll, padding: EdgeInsets.fromLTRB(20, 12, 20, 32), children: [
           Container(decoration: BoxDecoration(borderRadius: BorderRadius.circular(28),
             gradient: LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight,
@@ -411,30 +451,7 @@ class _HomeScreenState extends State<HomeScreen> {
           if (_error != null) Padding(padding: EdgeInsets.only(bottom: 16),
             child: Text(_downloadError ? context.t('İndirme tamamlanamadı: {detail}\n\nİndirilen sayfalar korunur; tekrar deneyerek devam edebilirsiniz.', {'detail': context.t(_error!)}) : context.t(_error!), style: TextStyle(color: Theme.of(context).colorScheme.error))),
           if (store == null && _error != null) OutlinedButton(onPressed: _load, child: Text(context.t('Tekrar dene'))),
-          if (store != null) DashboardCards(scrollController: _dashboardScroll, cards: {
-            'meal': _MenuRow(icon: Icons.translate_rounded,
-              title: context.t('Meal Oku'), subtitle: 'Ali Ünal',
-              onTap: () => Navigator.push(context, MaterialPageRoute<void>(builder: (_) => const MealScreen()))),
-            'listen': _MenuRow(icon: Icons.headphones_rounded,
-              title: context.t("Kur'an dinle"),
-              onTap: () => Navigator.push(context, MaterialPageRoute<void>(builder: (_) => const ListeningScreen()))),
-            if (store.ready) ...{
-              'hatim': _MenuRow(icon: Icons.auto_stories_rounded, title: context.t('Hatim'),
-                onTap: () => _navigate(AppDestination.hatim)),
-              'history': _MenuRow(icon: Icons.history_rounded, title: context.t('Okuma geçmişi'),
-              onTap: () => _navigate(AppDestination.history)),
-              'search': _MenuRow(icon: Icons.auto_stories_rounded, title: context.t('Sure, cüz, sayfa'),
-              onTap: () => _read(store.lastPage, panel: 'surah')),
-              'bookmarks': _MenuRow(icon: Icons.bookmarks_rounded, title: context.t('Ayraçlarım'),
-              onTap: () => _read(store.lastPage, panel: 'bookmarks')),
-            for (final shortcut in AppPreferences.instance.value.shortcuts)
-              shortcut.id: _MenuRow(icon: shortcut.kind == ShortcutKind.surah ? Icons.menu_book_outlined : Icons.auto_stories_outlined,
-                title: _shortcutName(shortcut), onTap: () => _openShortcut(shortcut)),
-              'support': _MenuRow(icon: Icons.favorite_outline, title: context.t('Destek'),
-              onTap: () => Navigator.push(context, MaterialPageRoute<void>(builder: (_) => const SupportScreen()))),
-              'settings': _MenuRow(icon: Icons.settings_rounded, title: context.t('Ayarlar'), onTap: _settings),
-            },
-          }),
+          if (store != null) DashboardCards(scrollController: _dashboardScroll, cards: cards),
           if (store != null && !store.ready) ...[
             Card(child: Padding(padding: EdgeInsets.all(22), child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch, children: [
@@ -475,7 +492,7 @@ class _HomeScreenState extends State<HomeScreen> {
               ]))),
           ],
           SizedBox(height: 24),
-        ]))),
+        ])))),
     ));
   }
 }
@@ -483,9 +500,8 @@ class _HomeScreenState extends State<HomeScreen> {
 class _MenuRow extends StatelessWidget {
   final IconData icon;
   final String title;
-  final String? subtitle;
   final VoidCallback onTap;
-  const _MenuRow({required this.icon, required this.title, required this.onTap, this.subtitle});
+  const _MenuRow({required this.icon, required this.title, required this.onTap});
   @override
   Widget build(BuildContext context) => Card(
     margin: const EdgeInsets.only(bottom: 8),
@@ -493,7 +509,6 @@ class _MenuRow extends StatelessWidget {
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       leading: Icon(icon, color: Theme.of(context).colorScheme.primary),
       title: Text(title, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 16)),
-      subtitle: subtitle == null ? null : Text(subtitle!),
       trailing: const Icon(Icons.chevron_right, size: 20), onTap: onTap),
   );
 }

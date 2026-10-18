@@ -5,8 +5,8 @@ enum ShortcutKind { surah, juz }
 
 const dashboardCardLabels = {
   'hatim': 'Hatim',
-  'meal': 'Meal Oku', 'listen': "Kur'an dinle", 'history': 'Okuma geçmişi',
-  'search': 'Sure, cüz, sayfa', 'bookmarks': 'Ayraçlarım', 'support': 'Destek', 'settings': 'Ayarlar',
+  'meal': 'Meal Oku', 'history': 'Okuma geçmişi',
+  'search': 'Sureler', 'bookmarks': 'Ayraçlarım', 'support': 'Destek', 'settings': 'Ayarlar',
 };
 
 class HomeShortcut {
@@ -39,17 +39,35 @@ class UiPreferences {
   final String color;
   final List<HomeShortcut> shortcuts;
   static const defaultBottomShortcuts = ['exit', 'bookmarks', 'surahs', 'history', 'home'];
-  static const availableBottomShortcuts = ['home', 'bookmarks', 'surahs', 'history', 'settings', 'search', 'hatim', 'exit', 'meal', 'listen', 'support'];
+  static const availableBottomShortcuts = ['home', 'bookmarks', 'surahs', 'history', 'settings', 'search', 'hatim', 'exit', 'meal', 'support'];
   final List<String> bottomShortcuts;
   final List<String>? dashboardCards;
+  final List<String> _personalCards;
+  final List<List<String>>? customPages;
+  List<List<String>> get personalPages {
+    final seen = <String>{};
+    final pages = <List<String>>[];
+    var emptyPage = false;
+    for (final page in customPages ?? [_personalCards]) {
+      if (page.isEmpty) emptyPage = true;
+      for (final id in page) {
+        if (seen.add(id)) pages.add(List<String>.unmodifiable([id]));
+      }
+    }
+    if (emptyPage) pages.add(<String>[]);
+    return pages;
+  }
+  List<String> get personalCards => personalPages.isEmpty ? const [] : personalPages.first;
   List<String> get availableDashboardCards => [...dashboardCardLabels.keys, ...shortcuts.map((s) => s.id)];
   List<String> get dashboardOrder => dashboardCards ?? [
     'hatim', 'search', 'bookmarks', 'support', 'settings'];
   const UiPreferences({this.themeMode = ThemeMode.system, this.color = 'green', this.shortcuts = defaults,
-    this.bottomShortcuts = defaultBottomShortcuts, this.dashboardCards});
+    // Preserve the public legacy parameter while storing pages separately.
+    // ignore: prefer_initializing_formals
+    this.bottomShortcuts = defaultBottomShortcuts, this.dashboardCards, List<String> personalCards = const [], this.customPages}) : _personalCards = personalCards;
   Color get seed => colors[color] ?? colors['green']!;
-  UiPreferences copyWith({ThemeMode? themeMode, String? color, List<HomeShortcut>? shortcuts, List<String>? bottomShortcuts, List<String>? dashboardCards}) =>
-    UiPreferences(themeMode: themeMode ?? this.themeMode, color: color ?? this.color,
+  UiPreferences copyWith({ThemeMode? themeMode, String? color, List<HomeShortcut>? shortcuts, List<String>? bottomShortcuts, List<String>? dashboardCards, List<String>? personalCards, List<List<String>>? personalPages}) =>
+    UiPreferences(customPages: List.unmodifiable((personalPages ?? (personalCards == null ? this.personalPages : [personalCards])).map((page) => List<String>.unmodifiable(page.where((id) => dashboardCardLabels.containsKey(id) || (shortcuts ?? this.shortcuts).any((s) => s.id == id))))), themeMode: themeMode ?? this.themeMode, color: color ?? this.color,
       shortcuts: List.unmodifiable(shortcuts ?? this.shortcuts), bottomShortcuts: List.unmodifiable((bottomShortcuts ?? this.bottomShortcuts).where((id) =>
         availableBottomShortcuts.contains(id) || (shortcuts ?? this.shortcuts).any((s) => s.id == id))),
       dashboardCards: dashboardCards != null ? List.unmodifiable(dashboardCards) : this.dashboardCards == null && shortcuts == null ? null : List.unmodifiable([
@@ -58,7 +76,7 @@ class UiPreferences {
       ]));
   Map<String, Object> toMap() => {'theme': themeMode.name, 'color': color,
     'shortcuts': shortcuts.map((s) => s.toMap()).toList(), 'bottomShortcuts': bottomShortcuts, 'navigationVersion': 2,
-    'dashboardCards': dashboardOrder, 'dashboardVersion': 1};
+    'personalPages': personalPages, 'personalCards': personalCards, 'dashboardCards': dashboardOrder, 'dashboardVersion': 1, 'homeLayoutVersion': 3};
   factory UiPreferences.fromMap(Map<dynamic, dynamic>? data) {
     if (data == null) return const UiPreferences();
     final modes = ThemeMode.values.where((m) => m.name == data['theme']);
@@ -73,13 +91,20 @@ class UiPreferences {
       ? (data['bottomShortcuts'] as List).whereType<String>().where((id) => availableBottomShortcuts.contains(id) || (data['shortcuts'] is List ? parsed : defaults).any((s) => s.id == id)).toSet().take(6).toList()
       : [...defaultBottomShortcuts];
     if (data['navigationVersion'] != 2 && !bottom.contains('exit') && bottom.length < 6) bottom.add('exit');
-    return UiPreferences(themeMode: modes.isEmpty ? ThemeMode.system : modes.first,
+    final validShortcuts = data['shortcuts'] is List ? parsed : defaults;
+    List<String> parsePage(List page) => List.unmodifiable(page.whereType<String>().where((id) => dashboardCardLabels.containsKey(id) || validShortcuts.any((s) => s.id == id)).toSet());
+    final legacyCards = data['homeLayoutVersion'] == 3 ? <String>[] : [
+      if (data['personalPages'] is List) ... (data['personalPages'] as List).whereType<List>().expand(parsePage),
+      if (data['personalCards'] is List) ...parsePage(data['personalCards'] as List),
+    ];
+    return UiPreferences(customPages: data['homeLayoutVersion'] == 3 && data['personalPages'] is List ? List.unmodifiable((data['personalPages'] as List).whereType<List>().map(parsePage)) : const [],
+      personalCards: data['personalCards'] is List ? parsePage(data['personalCards'] as List) : const [], themeMode: modes.isEmpty ? ThemeMode.system : modes.first,
       dashboardCards: data['dashboardCards'] is List ? List.unmodifiable({
         if (data['dashboardVersion'] != 1) 'hatim',
         ...(data['dashboardCards'] as List)
         .whereType<String>().where((id) => dashboardCardLabels.containsKey(id) ||
-          (data['shortcuts'] is List ? parsed : defaults).any((s) => s.id == id))}) : data.isEmpty ? null : [
-            'hatim', 'meal', 'listen', 'history', 'search', 'bookmarks',
+          (data['shortcuts'] is List ? parsed : defaults).any((s) => s.id == id)), ...legacyCards}) : data.isEmpty ? null : [
+            'hatim', 'meal', 'history', 'search', 'bookmarks',
             ...(data['shortcuts'] is List ? parsed : defaults).map((s) => s.id), 'support', 'settings'],
       bottomShortcuts: List.unmodifiable(bottom.take(6)),
       color: colors.containsKey(data['color']) ? data['color'] as String : 'green',

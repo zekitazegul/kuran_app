@@ -88,13 +88,13 @@ void main() {
     final controller = ScrollController();
     await tester.pumpWidget(MaterialApp(home: Scaffold(body: SingleChildScrollView(controller: controller,
       child: DashboardCards(scrollController: controller, cards: const {
-        'search': Text('search card'), 'listen': Text('audio card'),
+        'search': Text('search card'), 'meal': Text('audio card'),
       })))));
     expect(find.text('audio card'), findsNothing);
     await tester.tap(find.byKey(const ValueKey('dashboard-add'))); await tester.pumpAndSettle();
-    await tester.tap(find.text("Kur'an dinle")); await tester.pumpAndSettle();
+    await tester.tap(find.text('Meal Oku')); await tester.pumpAndSettle();
     expect(find.text('audio card'), findsOneWidget);
-    expect(saved?['dashboardCards'], ['search', 'listen']);
+    expect(saved?['dashboardCards'], ['search', 'meal']);
     await tester.pumpWidget(const SizedBox()); controller.dispose();
   });
   testWidgets('dragging Hatim saves order without opening a card', (tester) async {

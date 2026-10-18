@@ -1,3 +1,4 @@
+import '../widgets/screen_title.dart';
 import 'dart:async';
 import 'package:flutter/material.dart';
 import '../services/reading_store.dart';
@@ -44,7 +45,7 @@ class _HatimPrayerScreenState extends State<HatimPrayerScreen> with WidgetsBindi
   @override
   void dispose() { WidgetsBinding.instance.removeObserver(this); unawaited(stop()); super.dispose(); }
   @override
-  Widget build(BuildContext context) => Scaffold(appBar: AppBar(title: const Text('Hatim duası')),
+  Widget build(BuildContext context) => Scaffold(appBar: AppBar(title: ScreenTitle(context, context.t('Hatim duası'))),
     body: GestureDetector(
       onHorizontalDragStart: (_) => _dragDistance = 0,
       onHorizontalDragUpdate: (details) => _dragDistance += details.delta.dx,

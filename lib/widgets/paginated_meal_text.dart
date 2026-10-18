@@ -45,10 +45,12 @@ class PaginatedMealText extends StatefulWidget {
   final int offset;
   final int fontSize;
   final bool enabled;
+  final VoidCallback? onDoubleTap;
   final void Function(int page, int offset) onChanged;
+  final Widget Function(BuildContext context, int screen, int screens)? footerBuilder;
   const PaginatedMealText({super.key, required this.pages, required this.page,
     required this.offset, required this.fontSize, required this.enabled,
-    required this.onChanged});
+    required this.onChanged, this.footerBuilder, this.onDoubleTap});
 
   @override
   State<PaginatedMealText> createState() => PaginatedMealTextState();
@@ -86,7 +88,7 @@ class PaginatedMealTextState extends State<PaginatedMealText> {
   @override
   Widget build(BuildContext context) => LayoutBuilder(builder: (context, constraints) {
     final width = (constraints.maxWidth - 40).clamp(1.0, double.infinity);
-    final height = (constraints.maxHeight - 52).clamp(1.0, double.infinity);
+    final height = (constraints.maxHeight - (widget.footerBuilder == null ? 52 : 60)).clamp(1.0, double.infinity);
     final scaler = MediaQuery.textScalerOf(context);
     final style = DefaultTextStyle.of(context).style.copyWith(fontSize: widget.fontSize.toDouble(), height: 1.6);
     final layout = (widget.page, width, height, style, scaler);
@@ -112,7 +114,9 @@ class PaginatedMealTextState extends State<PaginatedMealText> {
     final before = widget.page > 1 ? 1 : 0;
     final after = widget.page < widget.pages.length ? 1 : 0;
     return Column(children: [
-      Expanded(child: PageView.builder(
+      Expanded(child: GestureDetector(
+        key: const ValueKey('meal-reading-surface'), behavior: HitTestBehavior.opaque,
+        onDoubleTap: widget.onDoubleTap, child: PageView.builder(
         key: ValueKey(_layout), controller: _controller,
         physics: widget.enabled ? null : const NeverScrollableScrollPhysics(),
         itemCount: before + _slices.length + after,
@@ -142,8 +146,10 @@ class PaginatedMealTextState extends State<PaginatedMealText> {
             )),
           );
         },
-      )),
-      Padding(padding: const EdgeInsets.symmetric(vertical: 6),
+      ))),
+      if (widget.footerBuilder != null)
+        SizedBox(height: 48, child: widget.footerBuilder!(context, _index + 1, _slices.length))
+      else Padding(padding: const EdgeInsets.symmetric(vertical: 6),
         child: Text('${_index + 1} / ${_slices.length}', key: const ValueKey('meal-screen-progress'),
           style: Theme.of(context).textTheme.bodySmall)),
     ]);

@@ -1,7 +1,7 @@
+import '../widgets/screen_title.dart';
 import 'sources_screen.dart';
 import 'package:flutter/material.dart';
 import '../l10n/translations.dart';
-import '../widgets/language_selector.dart';
 import '../widgets/quran_artwork.dart';
 import '../widgets/support_card.dart';
 import '../widgets/update_dialog.dart';
@@ -10,8 +10,8 @@ class AboutScreen extends StatelessWidget {
   const AboutScreen({super.key});
   @override
   Widget build(BuildContext context) => Scaffold(
-    appBar: AppBar(title: Text(context.t('Uygulama hakkında')),
-      actions: const [LanguageSelector()]),
+    appBar: AppBar(title: ScreenTitle(context, context.t('Uygulama hakkında')),
+      actions: const <Widget>[]),
     body: ListView(padding: const EdgeInsets.all(24), children: [
       const Center(child: QuranArtwork(size: 180, decorative: true)),
       Text('KuranApp', textAlign: TextAlign.center,

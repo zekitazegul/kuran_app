@@ -1,5 +1,5 @@
+import '../widgets/screen_title.dart';
 import 'sources_screen.dart';
-import '../widgets/language_selector.dart';
 import '../l10n/translations.dart';
 import 'package:flutter/material.dart';
 
@@ -9,7 +9,7 @@ class InformationScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Scaffold(
-    appBar: AppBar(title: Text(context.t('Gizlilik ve uygulama erişimleri')), actions: [LanguageSelector()]),
+    appBar: AppBar(title: ScreenTitle(context, context.t('Gizlilik ve uygulama erişimleri')), actions: const <Widget>[]),
     body: ListView(padding: EdgeInsets.all(24), children: [
       Icon(Icons.privacy_tip_outlined, size: 64),
       SizedBox(height: 24),

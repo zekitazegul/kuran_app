@@ -9,6 +9,10 @@ import 'package:kuran_app/screens/quran_screen.dart';
 import 'package:kuran_app/services/app_language.dart';
 import 'package:kuran_app/services/reading_store.dart';
 import 'package:kuran_app/widgets/page_slide.dart';
+import 'package:kuran_app/widgets/home_pages.dart';
+import 'package:kuran_app/services/app_preferences.dart';
+import 'package:kuran_app/widgets/app_bottom_bar.dart';
+import 'package:kuran_app/screens/listening_screen.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -32,11 +36,101 @@ void main() {
       .setMockMethodCallHandler(ReadingStore.channel, (_) async => null);
   });
   tearDown(() {
+    AppNavigation.instance.switchPage = null;
+    AppNavigation.instance.fullscreenReader.value = null;
     PaintingBinding.instance.imageCache.clear();
     PaintingBinding.instance.imageCache.clearLiveImages();
     image.dispose();
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
       .setMockMethodCallHandler(ReadingStore.channel, null);
+  });
+
+  testWidgets('separately opened Quran reader uses bottom area to switch screens', (tester) async {
+    final switches = <int>[];
+    AppNavigation.instance.switchPage = switches.add;
+    await tester.pumpWidget(MaterialApp(home: QuranScreen(store: store, initialPage: 439)));
+    await tester.pumpAndSettle();
+    await tester.drag(find.byKey(const ValueKey('quran-reading-surface')), const Offset(200, 0));
+    await tester.pumpAndSettle();
+    expect(store.lastPage, 440);
+    expect(switches, isEmpty);
+    await tester.drag(find.text('440 / 604'), const Offset(-200, 0));
+    await tester.pumpAndSettle();
+    expect(switches, [1]);
+    expect(store.lastPage, 440);
+    await tester.drag(find.text('440 / 604'), const Offset(200, 0));
+    await tester.pumpAndSettle();
+    expect(switches, [1, -1]);
+    expect(store.lastPage, 440);
+    await tester.pumpWidget(const SizedBox());
+  });
+
+  testWidgets('leaving a retained fullscreen reader restores listening title and reader controls', (tester) async {
+    AppPreferences.instance.value = const UiPreferences(customPages: [['hatim'], ['search']]);
+    addTearDown(() => AppPreferences.instance.restore(null));
+    final controller = PageController(initialPage: 2);
+    await tester.pumpWidget(MaterialApp(home: Scaffold(body: HomePages(
+      controller: controller, dashboard: const Text('home'), cards: const {},
+      features: {'hatim': (_) => QuranScreen(store: store, initialPage: 439, hatim: true),
+        'search': (_) => const ListeningScreen(embedded: true)},
+    ))));
+    await tester.pumpAndSettle();
+    final surface = find.byKey(const ValueKey('quran-reading-surface'));
+    await tester.tap(surface);
+    await tester.pump(const Duration(milliseconds: 60));
+    await tester.tap(surface);
+    await tester.pumpAndSettle();
+    expect(AppNavigation.instance.fullscreenReader.value, isNotNull);
+    controller.jumpToPage(3);
+    await tester.pumpAndSettle();
+    expect(AppNavigation.instance.fullscreenReader.value, isNull);
+    expect(find.text("SURELER"), findsOneWidget);
+    expect(find.byTooltip('Ana sayfa'), findsOneWidget);
+    controller.jumpToPage(2);
+    await tester.pumpAndSettle();
+    expect(find.text('HATİM'), findsOneWidget);
+    expect(find.text('439 / 604'), findsOneWidget);
+    expect(store.lastPage, 439);
+    await tester.pumpWidget(const SizedBox());
+    controller.dispose();
+  });
+
+  testWidgets('personal hatim has one header with live surah across phone and tablet sizes', (tester) async {
+    AppPreferences.instance.value = const UiPreferences(customPages: [['hatim']]);
+    addTearDown(() => AppPreferences.instance.restore(null));
+    final controller = PageController(initialPage: 2);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    await tester.pumpWidget(MaterialApp(home: Scaffold(body: HomePages(
+      controller: controller, dashboard: const Text('home'), cards: const {},
+      features: {'hatim': (_) => QuranScreen(store: store, initialPage: 439, hatim: true)},
+    ))));
+    for (final size in [const Size(320, 568), const Size(412, 915), const Size(800, 1280), const Size(1280, 800), const Size(640, 360)]) {
+      tester.view.physicalSize = size;
+      await tester.pumpAndSettle();
+      expect(tester.takeException(), isNull, reason: 'Hatim must fit $size');
+      expect(find.text('HATİM'), findsOneWidget);
+      expect(find.byKey(const ValueKey('personal-reader-surah')), findsOneWidget);
+      expect(find.byType(AppBar), findsNothing);
+    }
+    final title = tester.widget<Text>(find.byKey(const ValueKey('personal-reader-surah'))).data;
+    await tester.drag(find.byKey(const ValueKey('quran-reading-surface')), const Offset(200, 0));
+    await tester.pumpAndSettle();
+    expect(controller.page, 2);
+    expect(store.lastPage, 440);
+    expect(tester.widget<Text>(find.byKey(const ValueKey('personal-reader-surah'))).data, isNot(title));
+    for (final area in [find.text('HATİM'), find.text('Okundu')]) {
+      await tester.drag(area, const Offset(-200, 0));
+      await tester.pumpAndSettle();
+      expect(controller.page, 3);
+      expect(store.lastPage, 440);
+      expect(store.hatimPages, isEmpty);
+      controller.jumpToPage(2);
+      await tester.pumpAndSettle();
+    }
+    await tester.pumpWidget(const SizedBox());
+    controller.dispose();
   });
 
   for (final hatim in [false, true]) {
@@ -216,7 +310,7 @@ void main() {
     await tester.pumpWidget(const SizedBox());
   });
 
-  testWidgets('page follows finger one to one and completes even a short drag', (tester) async {
+  testWidgets('page follows finger but returns when released below one centimeter', (tester) async {
     await tester.pumpWidget(MaterialApp(home: QuranScreen(store: store, initialPage: 439)));
     await tester.pumpAndSettle();
     final reader = find.byKey(const ValueKey('quran-reading-surface'));
@@ -233,8 +327,16 @@ void main() {
     expect(tester.widget<Transform>(moving).transform.getTranslation().x, closeTo(-25, .01));
     await gesture.up();
     await tester.pumpAndSettle();
-    expect(find.text('438 / 604'), findsOneWidget);
-    expect(store.lastPage, 438);
+    expect(find.text('439 / 604'), findsOneWidget);
+    expect(store.lastPage, 439);
+    for (final distance in [store.edgeTapWidth - 1, store.edgeTapWidth, -store.edgeTapWidth]) {
+      final drag = await tester.startGesture(tester.getCenter(reader));
+      await drag.moveBy(Offset(distance, 0));
+      await tester.pump();
+      await drag.up();
+      await tester.pumpAndSettle();
+      expect(store.lastPage, distance == store.edgeTapWidth ? 440 : 439);
+    }
     await tester.pumpWidget(const SizedBox());
   });
 

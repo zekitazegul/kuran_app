@@ -1,3 +1,6 @@
+import '../widgets/screen_title.dart';
+import '../widgets/personal_page_scope.dart';
+import '../widgets/app_bottom_bar.dart';
 import '../widgets/compact_confirmation_dialog.dart';
 import 'dart:async';
 import 'package:flutter/material.dart';
@@ -5,12 +8,12 @@ import '../data/surahs.dart';
 import '../data/verse_counts.dart';
 import '../l10n/translations.dart';
 import '../services/quran_audio.dart';
-import '../widgets/language_selector.dart';
 import '../widgets/searchable_surah_field.dart';
 
 class ListeningScreen extends StatefulWidget {
   final int initialSurah;
-  const ListeningScreen({super.key, this.initialSurah = 1});
+  final bool embedded;
+  const ListeningScreen({super.key, this.initialSurah = 1, this.embedded = false});
   @override
   State<ListeningScreen> createState() => _ListeningScreenState();
 }
@@ -104,14 +107,12 @@ class _ListeningScreenState extends State<ListeningScreen> {
     final track = valid ? _audio.find(_surah, verse) : null;
     final isPlaying = _audio.playing != null;
     final downloaded = track != null && _audio.downloaded.contains(track.id);
-    return PopScope(canPop: _selected.isEmpty, onPopInvokedWithResult: (didPop, _) {
-      if (!didPop && !_busy) setState(_selected.clear);
-    }, child: Scaffold(
-      appBar: AppBar(
+    final screen = Scaffold(
+      appBar: widget.embedded && _selected.isEmpty ? null : AppBar(
         leading: _selected.isEmpty ? null : IconButton(tooltip: context.t('Seçimi iptal et'),
           onPressed: _busy ? null : () => setState(_selected.clear), icon: const Icon(Icons.close)),
-        title: Text(_selected.isEmpty ? context.t("Kur'an dinle") : context.t('{count} seçildi', {'count': _selected.length})),
-        actions: _selected.isEmpty ? const [LanguageSelector()] : [
+        title: ScreenTitle(context, _selected.isEmpty ? context.t("Kur'an dinle") : context.t('{count} seçildi', {'count': _selected.length})),
+        actions: _selected.isEmpty ? const <Widget>[] : [
           IconButton(key: const ValueKey('audio-delete-selected'), tooltip: context.t('Seçilen sesleri sil'),
             onPressed: _busy || isPlaying ? null : _removeSelected, icon: const Icon(Icons.delete_outline)),
         ]),
@@ -128,7 +129,6 @@ class _ListeningScreenState extends State<ListeningScreen> {
             DropdownMenuItem(value: entry.key, child: Text(entry.value))],
           onChanged: _busy || isPlaying || _selected.isNotEmpty ? null : (id) { if (id != null) _run(() => _audio.selectReciter(id)); }),
         const SizedBox(height: 12),
-        if (_audio.reciter == 'mustafa_ismail') Text(context.t('Bu okuyucunun bazı sure ve ayet kayıtları eksik.')),
         Text(context.t('Durdurma iste\u011fi ayet sonunda uygulan\u0131r.')),
         const SizedBox(height: 16),
         Row(children: [
@@ -182,6 +182,11 @@ class _ListeningScreenState extends State<ListeningScreen> {
             onPressed: _busy || isPlaying ? null : () => _remove(item)),
         )),
       ]),
-    ));
+    );
+    final swipeable = PersonalPageSwipe(onNavigate: (delta) => AppNavigation.instance.switchPage?.call(delta), child: screen);
+    if (widget.embedded) return swipeable;
+    return PopScope(canPop: _selected.isEmpty, onPopInvokedWithResult: (didPop, _) {
+      if (!didPop && !_busy) setState(_selected.clear);
+    }, child: swipeable);
   }
 }

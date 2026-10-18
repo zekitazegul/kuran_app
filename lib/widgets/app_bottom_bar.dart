@@ -1,3 +1,4 @@
+import 'personal_page_scope.dart';
 import 'package:flutter/material.dart';
 import '../l10n/translations.dart';
 import '../services/app_preferences.dart';
@@ -26,9 +27,13 @@ const destinationLabels = {
 const destinationIcons = {
   AppDestination.exit: Icons.arrow_back_rounded, AppDestination.hatim: Icons.auto_stories_rounded,
   AppDestination.home: Icons.home_rounded, AppDestination.bookmarks: Icons.bookmarks_rounded,
-  AppDestination.surahs: Icons.menu_book_rounded, AppDestination.history: Icons.history_rounded,
+  AppDestination.surahs: Icons.search_rounded, AppDestination.history: Icons.history_rounded,
   AppDestination.settings: Icons.settings_rounded, AppDestination.search: Icons.numbers_rounded,
 };
+
+abstract interface class FullscreenReadingSession {
+  void exitFullscreen();
+}
 
 class AppNavigation extends ValueNotifier<ReadingStore?> {
   AppNavigation._() : super(null);
@@ -38,6 +43,14 @@ class AppNavigation extends ValueNotifier<ReadingStore?> {
   final selected = ValueNotifier<AppDestination>(AppDestination.home);
   void Function(AppDestination)? open;
   void Function(String)? openCard;
+  void Function(int delta)? switchPage;
+  void exitFullscreen() {
+    for (final session in [fullscreenReader.value, fullscreenMeal.value]) {
+      if (session is FullscreenReadingSession) session.exitFullscreen();
+    }
+    fullscreenReader.value = null;
+    fullscreenMeal.value = null;
+  }
   void refresh() => notifyListeners();
 }
 
@@ -54,7 +67,8 @@ class AnimatedAppBottomBar extends StatelessWidget {
         duration: MediaQuery.disableAnimationsOf(context) ? Duration.zero : const Duration(milliseconds: 320),
         curve: Curves.easeInOutCubic,
         child: IgnorePointer(ignoring: hidden,
-          child: ExcludeSemantics(excluding: hidden, child: const AppBottomBar())),
+          child: ExcludeSemantics(excluding: hidden, child: PersonalPageSwipe(
+            onNavigate: (delta) => AppNavigation.instance.switchPage?.call(delta), child: const AppBottomBar()))),
         builder: (context, visibility, child) => ClipRect(
           child: Align(heightFactor: visibility, alignment: Alignment.topCenter,
             child: Opacity(opacity: visibility,

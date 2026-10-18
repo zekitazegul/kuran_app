@@ -1,8 +1,8 @@
+import '../widgets/screen_title.dart';
 import 'package:flutter/material.dart';
 import '../data/surahs.dart';
 import '../l10n/translations.dart';
 import '../services/app_preferences.dart';
-import '../widgets/language_selector.dart';
 import '../widgets/app_bottom_bar.dart';
 
 class PersonalizationScreen extends StatefulWidget {
@@ -45,7 +45,7 @@ class _PersonalizationScreenState extends State<PersonalizationScreen> {
   Widget build(BuildContext context) => ValueListenableBuilder<UiPreferences>(
     valueListenable: AppPreferences.instance,
     builder: (context, preferences, _) => Scaffold(
-      appBar: AppBar(title: Text(context.t('Görünüm ve kısayollar')), actions: const [LanguageSelector()]),
+      appBar: AppBar(title: ScreenTitle(context, context.t('Görünüm ve kısayollar')), actions: const <Widget>[]),
       body: ListView(padding: const EdgeInsets.all(20), children: [
         Text(context.t('Alt çubuk kısayolları'), style: Theme.of(context).textTheme.titleLarge),
         const SizedBox(height: 8),
@@ -68,11 +68,11 @@ class _PersonalizationScreenState extends State<PersonalizationScreen> {
             ])),
         if (preferences.bottomShortcuts.length < 6)
           Wrap(spacing: 8, children: [
-            for (final destination in AppDestination.values.where((d) => !preferences.bottomShortcuts.contains(d.name)))
+            for (final id in [...UiPreferences.availableBottomShortcuts, ...preferences.shortcuts.map((s) => s.id)].where((id) => !preferences.bottomShortcuts.contains(id)))
               ActionChip(avatar: const Icon(Icons.add, size: 18),
-                label: Text(context.t(destinationLabels[destination]!)),
+                label: Text(bottomShortcutLabel(context, id)),
                 onPressed: _saving ? null : () => _save(preferences.copyWith(
-                  bottomShortcuts: [...preferences.bottomShortcuts, destination.name]))),
+                  bottomShortcuts: [...preferences.bottomShortcuts, id]))),
           ]),
         TextButton(onPressed: _saving ? null : () => _save(preferences.copyWith(bottomShortcuts: UiPreferences.defaultBottomShortcuts)),
           child: Text(context.t('Alt çubuğu sıfırla'))),

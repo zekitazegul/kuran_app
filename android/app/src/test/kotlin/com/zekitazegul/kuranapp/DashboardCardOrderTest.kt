@@ -11,7 +11,7 @@ class DashboardCardOrderTest {
     }
     @Test fun allCardsAndTwentyFourShortcutsCanBeSaved() {
         val shortcuts = (1..24).map { "surah:$it" }.toSet()
-        val cards = listOf("hatim", "meal", "listen", "history", "search", "bookmarks", "support", "settings")
+        val cards = listOf("hatim", "meal", "history", "search", "bookmarks", "support", "settings")
         assertTrue(DashboardCardOrder.isValid(cards + shortcuts, shortcuts))
     }
     @Test fun rejectsDuplicatesAndUnknownCards() {

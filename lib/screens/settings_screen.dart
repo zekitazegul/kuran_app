@@ -1,11 +1,11 @@
+import '../widgets/screen_title.dart';
+import '../widgets/personal_page_scope.dart';
 import '../widgets/compact_confirmation_dialog.dart';
 import '../data/quran_edition.dart';
 import 'personalization_screen.dart';
-import 'listening_screen.dart';
 import 'sources_screen.dart';
 import '../widgets/support_card.dart';
 import 'about_screen.dart';
-import '../widgets/language_selector.dart';
 import '../l10n/translations.dart';
 import 'package:flutter/material.dart';
 import '../services/reading_store.dart';
@@ -55,7 +55,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   @override
   Widget build(BuildContext context) => Scaffold(
-    appBar: AppBar(title: Text(context.t('Ayarlar')), actions: [LanguageSelector()]),
+    appBar: PersonalPageScope.of(context) != null ? null : AppBar(automaticallyImplyLeading: PersonalPageScope.of(context) == null, title: PersonalPageScope.of(context) == null ? ScreenTitle(context, context.t('Ayarlar')) : null, actions: const <Widget>[]),
     body: ListView(padding: EdgeInsets.all(20), children: [
       Center(child: QuranArtwork(size: 110, decorative: true)),
       SizedBox(height: 16),
@@ -96,12 +96,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
       ))),
       ]),
       _section('audio', 'Ses ve dinleme', Icons.headphones_outlined, [
-      Card(child: ListTile(leading: const Icon(Icons.headphones_outlined),
-        title: Text(context.t('Dinle')),
-        subtitle: Text(context.t('Sure ve ayet seçimi · İndirilen sesler')),
-        trailing: const Icon(Icons.chevron_right),
-        onTap: _saving ? null : () => Navigator.push(context,
-          MaterialPageRoute<void>(builder: (_) => const ListeningScreen())))),
       Card(child: Padding(padding: const EdgeInsets.all(16), child: DropdownButtonFormField<String>(
         key: ValueKey('default-reciter-${_audio.reciter}'), initialValue: _audio.reciter,
         isExpanded: true, decoration: InputDecoration(labelText: context.t('Varsayılan Kur’an okuyucusu')),

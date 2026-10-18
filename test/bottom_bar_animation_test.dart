@@ -5,6 +5,24 @@ import 'package:kuran_app/widgets/app_bottom_bar.dart';
 import 'package:kuran_app/services/app_preferences.dart';
 
 void main() {
+  testWidgets('bottom swipe resolves navigation registered after the bar is built', (tester) async {
+    AppNavigation.instance.switchPage = null;
+    AppNavigation.instance.value = ReadingStore(directory: '/test', lastPage: 439,
+      informationSeen: true, guideSeen: true, bookmarks: {}, downloaded: {});
+    await tester.pumpWidget(const MaterialApp(home: Scaffold(bottomNavigationBar: AnimatedAppBottomBar())));
+    final switches = <int>[];
+    AppNavigation.instance.switchPage = switches.add;
+    await tester.drag(find.byType(AnimatedAppBottomBar), const Offset(-200, 0));
+    await tester.pumpAndSettle();
+    expect(switches, [1]);
+    await tester.drag(find.byType(AnimatedAppBottomBar), const Offset(200, 0));
+    await tester.pumpAndSettle();
+    expect(switches, [1, -1]);
+    await tester.pumpWidget(const SizedBox());
+    AppNavigation.instance.switchPage = null;
+    AppNavigation.instance.value = null;
+  });
+
   testWidgets('long pressing and dropping on trash removes and persists shortcut', (tester) async {
     final previous = AppPreferences.instance.value;
     AppPreferences.instance.value = const UiPreferences(bottomShortcuts: ['home', 'hatim', 'history']);

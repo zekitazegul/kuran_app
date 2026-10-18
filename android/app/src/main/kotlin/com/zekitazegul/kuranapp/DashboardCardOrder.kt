@@ -1,7 +1,7 @@
 package com.zekitazegul.kuranapp
 
 object DashboardCardOrder {
-    private val builtIn = setOf("hatim", "meal", "listen", "history", "search", "bookmarks", "support", "settings")
+    private val builtIn = setOf("hatim", "meal", "history", "search", "bookmarks", "support", "settings")
 
     fun isValid(order: List<String>, shortcuts: Set<String>): Boolean {
         val allowed = builtIn + shortcuts

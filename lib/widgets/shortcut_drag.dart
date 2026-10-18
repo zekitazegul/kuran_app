@@ -12,9 +12,9 @@ class DashboardDrag {
 IconData bottomShortcutIcon(String id) => switch (id) {
   'exit' => Icons.arrow_back_rounded, 'home' => Icons.home_rounded,
   'hatim' => Icons.auto_stories_rounded, 'bookmarks' => Icons.bookmarks_rounded,
-  'surahs' => Icons.menu_book_rounded, 'history' => Icons.history_rounded,
-  'settings' => Icons.settings_rounded, 'search' => Icons.numbers_rounded,
-  'meal' => Icons.translate_rounded, 'listen' => Icons.headphones_rounded,
+  'surahs' => Icons.search_rounded, 'history' => Icons.history_rounded,
+  'settings' => Icons.settings_rounded, 'search' => Icons.search_rounded,
+  'meal' => Icons.menu_book_rounded, 'listen' => Icons.headphones_rounded,
   'support' => Icons.favorite_outline, _ => Icons.menu_book_outlined,
 };
 

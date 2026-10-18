@@ -8,6 +8,24 @@ import 'package:kuran_app/main.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
+  test('legacy personal page shortcuts migrate to home without duplicates', () {
+    final prefs = UiPreferences.fromMap({'dashboardVersion': 1, 'dashboardCards': ['settings', 'meal'],
+      'personalPages': [['listen'], ['meal'], ['hatim'], ['listen'], []]});
+    expect(prefs.dashboardOrder, ['settings', 'meal', 'hatim']);
+    expect(prefs.personalPages, isEmpty);
+    expect(UiPreferences.fromMap(prefs.toMap()).dashboardOrder, prefs.dashboardOrder);
+  });
+  test('existing repeated screens keep only their first occurrence', () {
+    const prefs = UiPreferences(customPages: [
+      ['hatim'], ['bookmarks'], ['meal'], ['hatim'],
+      ['bookmarks'], [], ['listen'], [],
+    ]);
+    final expected = [
+      ['hatim'], ['bookmarks'], ['meal'], ['listen'], <String>[],
+    ];
+    expect(prefs.personalPages, expected);
+    expect(UiPreferences.fromMap(prefs.toMap()).personalPages, [['hatim'],['bookmarks'],['meal'],<String>[]]);
+  });
   Map<dynamic, dynamic>? saved;
   setUp(() {
     saved = null;
@@ -54,7 +72,7 @@ void main() {
     await tester.tap(find.text('Koyu')); await tester.pumpAndSettle();
     expect(tester.widget<MaterialApp>(find.byType(MaterialApp)).themeMode, ThemeMode.dark);
     expect(saved!['theme'], 'dark');
-    expect(find.text('Görünüm ve kısayollar'), findsOneWidget);
+    expect(find.text('GÖRÜNÜM VE KISAYOLLAR'), findsOneWidget);
     await tester.pumpWidget(const SizedBox());
   });
 

@@ -18,11 +18,13 @@ class QuranAudio {
   Set<String> downloaded = {};
   String? playing;
   bool stopPending = false;
+  bool memorizing = false;
   int? currentVerse;
   String? playbackError;
   String reciter = 'shatri';
   Map<String, String> reciters = {'shatri': 'Abu Bakr Ash-Shatri', 'alafasy': 'Mishary Rashid Alafasy',
-    'minshawi': 'Muhammad Siddiq Al-Minshawi', 'abdulbasit': 'Abdul Basit Abdus Samad', 'mustafa_ismail': 'Mustafa Ismail'};
+    'minshawi': 'Muhammad Siddiq Al-Minshawi', 'abdulbasit': 'Abdul Basit Abdus Samad',
+    'maher': 'Mahir al Muaiqly'};
   Future<void> load() async {
     final result = await channel.invokeMapMethod<String, dynamic>('loadAudio');
     if (result == null) throw StateError('Audio state unavailable');
@@ -30,6 +32,7 @@ class QuranAudio {
     downloaded = Set<String>.from(result['downloaded'] as List);
     playing = result['playing'] as String?;
     stopPending = result['stopPending'] == true;
+    memorizing = result['memorizing'] == true;
     currentVerse = result['currentVerse'] as int?;
     playbackError = result['error'] as String?;
     reciter = result['reciter'] as String? ?? 'shatri';
@@ -68,6 +71,24 @@ class QuranAudio {
   Future<void> stop() async {
     await channel.invokeMethod<void>('stopAudio');
     if (playing != null) stopPending = true;
+  }
+  Future<void> playRange(int surah, int first, int last, {int repetitions = 3, bool cumulative = false}) async {
+    await channel.invokeMethod<void>('playAudioRange', {
+      'surah': surah, 'first': first, 'last': last, 'repetitions': repetitions, 'cumulative': cumulative,
+    });
+    await load();
+  }
+  Future<void> playSelection(List<AudioTrack> tracks, {int repetitions = 1, bool cumulative = false}) async {
+    if (playing != null) throw StateError('Current verse must finish first');
+    if (tracks.isEmpty || tracks.any((track) => !downloaded.contains(track.id))) {
+      throw StateError('Download required');
+    }
+    await channel.invokeMethod<void>('playAudioSelection', {'ids': tracks.map((track) => track.id).toList(), 'repetitions': repetitions, 'cumulative': cumulative});
+    await load();
+  }
+  Future<void> advanceMemorization() async {
+    await channel.invokeMethod<void>('advanceMemorization');
+    await load();
   }
   Future<void> remove(AudioTrack track) async {
     if (playing != null) throw StateError('Current verse must finish first');

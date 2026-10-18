@@ -1,14 +1,14 @@
+import '../widgets/screen_title.dart';
 import 'package:flutter/material.dart';
 import '../l10n/translations.dart';
-import '../widgets/language_selector.dart';
 
 class SourcesScreen extends StatelessWidget {
   const SourcesScreen({super.key});
 
   @override
   Widget build(BuildContext context) => Scaffold(
-    appBar: AppBar(title: Text(context.t('Kaynaklar ve telif bilgileri')),
-      actions: const [LanguageSelector()]),
+    appBar: AppBar(title: ScreenTitle(context, context.t('Kaynaklar ve telif bilgileri')),
+      actions: const <Widget>[]),
     body: ListView(padding: const EdgeInsets.all(24), children: [
       _section(context, 'Kaynaklar hakkında', Text(context.t('sourcesIntroduction'))),
       for (final entry in const {
@@ -20,6 +20,8 @@ class SourcesScreen extends StatelessWidget {
         _audioSource(context, 'Mishary Rashid Alafasy', 'https://everyayah.com/data/Alafasy_128kbps/')),
       _section(context, 'Abu Bakr Ash-Shatri · EveryAyah',
         _audioSource(context, 'Abu Bakr Ash-Shatri', 'https://everyayah.com/data/Abu_Bakr_Ash-Shaatree_128kbps/')),
+      _section(context, 'Mahir al Muaiqly · EveryAyah',
+        _audioSource(context, 'Mahir al Muaiqly', 'https://everyayah.com/data/Maher_AlMuaiqly_64kbps/')),
       _section(context, 'Telif ve kullanım koşulları', Text(context.t('sourcesNotice'))),
       _section(context, 'Reklamsız ve ücretsiz', Text(context.t('noAdsPolicy'))),
     ]),

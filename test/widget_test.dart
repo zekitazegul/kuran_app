@@ -95,7 +95,7 @@ void main() {
   testWidgets('first launch explains access before offering a download', (tester) async {
     await tester.pumpWidget(const KuranApp());
     await tester.pumpAndSettle();
-    expect(find.text('Gizlilik ve uygulama erişimleri'), findsOneWidget);
+    expect(find.text('GİZLİLİK VE UYGULAMA ERİŞİMLERİ'), findsOneWidget);
     expect(find.text('İndirmeyi başlat'), findsNothing);
     await tester.scrollUntilVisible(find.text('Anladım, devam et'), 400);
     final informationButton = find.widgetWithText(FilledButton, 'Anladım, devam et');
@@ -104,7 +104,7 @@ void main() {
     await tester.tap(informationButton);
     await tester.pumpAndSettle();
     expect(acknowledged, isTrue);
-    expect(find.text('Kullanım kılavuzu'), findsOneWidget);
+    expect(find.text('KULLANIM KILAVUZU'), findsOneWidget);
     await tester.scrollUntilVisible(find.text('Okumaya başlayalım'), 400);
     final continueButton = find.widgetWithText(FilledButton, 'Okumaya başlayalım');
     await tester.ensureVisible(continueButton);
@@ -151,7 +151,7 @@ void main() {
     expect(find.text('Okumaya hoş geldin'), findsOneWidget);
   });
 
-  testWidgets('first launch chooses Dutch and can switch to English', (tester) async {
+  testWidgets('first launch chooses Dutch and screen titles follow saved language changes', (tester) async {
     AppLanguage.instance.value = null;
     await tester.pumpWidget(const KuranApp());
     await tester.pumpAndSettle();
@@ -159,13 +159,11 @@ void main() {
     await tester.tap(find.text('Nederlands'));
     await tester.pumpAndSettle();
     expect(language, 'nl');
-    expect(find.text('Privacy en app-toegang'), findsOneWidget);
-    await tester.tap(find.byTooltip('Taal kiezen'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('English'));
+    expect(find.text('PRIVACY EN APP-TOEGANG'), findsOneWidget);
+    await AppLanguage.instance.change('en');
     await tester.pumpAndSettle();
     expect(language, 'en');
-    expect(find.text('Privacy and app access'), findsOneWidget);
+    expect(find.text('PRIVACY AND APP ACCESS'), findsOneWidget);
     expect((await ReadingStore.load()).language, 'en');
   });
 

@@ -1,4 +1,4 @@
-import '../widgets/language_selector.dart';
+import '../widgets/screen_title.dart';
 import '../l10n/translations.dart';
 import 'package:flutter/material.dart';
 import '../widgets/quran_artwork.dart';
@@ -9,7 +9,7 @@ class GuideScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Scaffold(
-    appBar: AppBar(title: Text(context.t('Kullanım kılavuzu')), actions: [LanguageSelector()]),
+    appBar: AppBar(title: ScreenTitle(context, context.t('Kullanım kılavuzu')), actions: const <Widget>[]),
     body: ListView(padding: EdgeInsets.all(24), children: [
       Center(child: QuranArtwork(size: 140, decorative: true)),
       SizedBox(height: 16),

@@ -26,7 +26,9 @@ class BookmarksSheet extends StatefulWidget {
   final ReadingStore store;
   final ScrollController controller;
   final VoidCallback? onChanged;
-  const BookmarksSheet({super.key, required this.store, required this.controller, this.onChanged});
+  final bool showHeader;
+  final ValueChanged<int>? onSelected;
+  const BookmarksSheet({super.key, required this.store, required this.controller, this.onChanged, this.showHeader = true, this.onSelected});
 
   @override
   State<BookmarksSheet> createState() => _BookmarksSheetState();
@@ -70,7 +72,7 @@ class _BookmarksSheetState extends State<BookmarksSheet> {
       key: const ValueKey('bookmarks-sheet'),
       controller: widget.controller,
       children: [
-        ListTile(title: Text(context.t('Ayraçlar')),
+        if (widget.showHeader) ListTile(title: Text(context.t('Ayraçlar')),
           trailing: IconButton(tooltip: context.t('Kapat'), icon: const Icon(Icons.close),
             onPressed: () => Navigator.pop(context))),
         if (pages.isEmpty) Padding(padding: const EdgeInsets.all(24),
@@ -87,7 +89,9 @@ class _BookmarksSheetState extends State<BookmarksSheet> {
             trailing: IconButton(key: ValueKey('delete-bookmark-$page'),
               tooltip: context.t('Ayracı sil'), icon: const Icon(Icons.delete_outline),
               onPressed: _removing ? null : () => _remove(page)),
-            onTap: _removing ? null : () => Navigator.pop(context, page));
+            onTap: _removing ? null : () {
+              if (widget.onSelected != null) { widget.onSelected!(page); } else { Navigator.pop(context, page); }
+            });
         }),
       ],
     ));

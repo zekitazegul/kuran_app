@@ -1,3 +1,7 @@
+import '../widgets/verse_selection_overlay.dart';
+import '../widgets/reader_action_bar.dart';
+import '../widgets/screen_title.dart';
+import '../widgets/personal_page_scope.dart';
 import '../widgets/bookmarks_sheet.dart';
 import '../widgets/compact_confirmation_dialog.dart';
 import 'hatim_prayer_screen.dart';
@@ -18,7 +22,9 @@ import '../data/surahs.dart';
 import '../services/reading_store.dart';
 import '../widgets/page_slide.dart';
 import '../widgets/reading_page.dart';
-import '../widgets/language_selector.dart';
+import '../services/verse_regions.dart';
+import '../widgets/verse_actions.dart';
+import '../data/sajdah_verses.dart';
 
 class QuranScreen extends StatefulWidget {
   final ReadingStore store;
@@ -30,10 +36,71 @@ class QuranScreen extends StatefulWidget {
   State<QuranScreen> createState() => _QuranScreenState();
 }
 
-class _QuranScreenState extends State<QuranScreen> with SingleTickerProviderStateMixin, WidgetsBindingObserver {
+class _QuranScreenState extends State<QuranScreen> with SingleTickerProviderStateMixin, WidgetsBindingObserver implements FullscreenReadingSession {
   final _audio = QuranAudio();
   Timer? _audioTimer;
   bool _audioBusy = false;
+  VerseRegions? _verseRegions;
+
+  Future<void> _verseAction(List<VerseRegion> verses, Offset anchor) async {
+    final verse = verses.first;
+    if (_target != null || _preparing || _audioBusy) return;
+    final page = _page;
+    final action = await showVerseActions(context, verse, anchor, selection: verses);
+    if (!mounted || _page != page) return;
+    try {
+      if (action == 'verseMeal') await showVerseMeal(context, verse, selection: verses);
+      if (action == 'verseAudio') await _playVerses(verse.surah, verse.verse, verse.verse, 1, selection: verses);
+      if (action == 'verseMemorize') {
+        if (!mounted) return;
+        final range = await showMemorizeRange(context, verse, selection: verses);
+        if (range != null && mounted) {
+          await _playVerses(verse.surah, range.$1, range.$2, range.$3, cumulative: true,
+            selection: verses.first.surah != verses.last.surah ? verses : null);
+        }
+      }
+    } catch (_) { _error('Ses işlemi tamamlanamadı. Tekrar dene.'); }
+  }
+
+  Future<void> _playVerses(int surah, int first, int last, int repeats, {bool cumulative = false, List<VerseRegion>? selection}) async {
+    if (_audioBusy) return;
+    final page = _page;
+    setState(() => _audioBusy = true);
+    try {
+      await _audio.load();
+      if (_audio.playing != null) {
+        _error('verseStopFirst');
+        return;
+      }
+      final tracks = <AudioTrack>[];
+      for (final verse in selection ?? [for (var v = first; v <= last; v++) VerseRegion(surah, v, [])]) {
+        final track = _audio.find(verse.surah, verse.verse);
+        if (track == null) { _error('verseAudioUnavailable'); return; }
+        tracks.add(track);
+      }
+      final missing = tracks.where((t) => !_audio.downloaded.contains(t.id)).toList();
+      if (missing.isNotEmpty) {
+        if (!mounted) return;
+        final yes = await showDialog<bool>(context: context, builder: (context) => CompactConfirmationDialog(
+          title: Text(context.t('Ses dosyasını indir')),
+          content: Text(context.t('verseDownloadHint', {'count': missing.length,
+            'size': (missing.fold<int>(0, (sum, t) => sum + t.bytes) / 1000000).toStringAsFixed(1)})),
+          actions: [TextButton(onPressed: () => Navigator.pop(context, false), child: Text(context.t('İptal'))),
+            FilledButton(onPressed: () => Navigator.pop(context, true), child: Text(context.t('İndirmeyi başlat')))],
+        ));
+        if (yes != true) return;
+        for (final track in missing) {
+          if (!mounted || _page != page) return;
+          await _audio.download(track);
+        }
+      }
+      if (!mounted || _page != page) return;
+      if (selection != null && tracks.length > 1) { await _audio.playSelection(tracks, repetitions: repeats, cumulative: cumulative); }
+      else if (!cumulative && repeats == 1 && first == last) { await _audio.play(tracks.single); }
+      else { await _audio.playRange(surah, first, last, repetitions: repeats, cumulative: cumulative); }
+    } finally { if (mounted) setState(() => _audioBusy = false); }
+  }
+
   Future<void> _listenPage() async {
     if (_audioBusy) return;
     final page = _page;
@@ -42,7 +109,7 @@ class _QuranScreenState extends State<QuranScreen> with SingleTickerProviderStat
       await _audio.load();
       if (_audio.playing != null) { await _audio.stop(); return; }
       final track = _audio.findPage(page);
-      if (track == null) throw StateError('Page audio unavailable');
+      if (track == null) { _error('verseAudioUnavailable'); return; }
       if (!_audio.downloaded.contains(track.id)) {
         if (!mounted) return;
         final yes = await showDialog<bool>(context: context, builder: (context) => CompactConfirmationDialog(
@@ -221,6 +288,9 @@ class _QuranScreenState extends State<QuranScreen> with SingleTickerProviderStat
     _page = widget.initialPage.clamp(widget.store.edition.firstPage, widget.store.edition.lastPage).toInt();
     _turn = AnimationController(vsync: this, duration: Duration(milliseconds: 300));
     _remember(_page);
+    VerseRegions.load().then((regions) {
+      if (mounted) setState(() => _verseRegions = regions);
+    }).catchError((Object _) { _error('verseRegionsUnavailable'); });
     _audioTimer = Timer.periodic(const Duration(seconds: 2), (_) async {
       if (_audioBusy || _audio.playing == null) return;
       _audioBusy = true;
@@ -230,6 +300,7 @@ class _QuranScreenState extends State<QuranScreen> with SingleTickerProviderStat
     if (widget.initialPanel != null) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!mounted) return;
+        if (widget.initialPanel == 'meal') _mealPage();
         if (widget.initialPanel == 'surah') _selectSurah();
         if (widget.initialPanel == 'bookmarks') _bookmarks();
         if (widget.initialPanel == 'jump') _jump();
@@ -327,6 +398,12 @@ class _QuranScreenState extends State<QuranScreen> with SingleTickerProviderStat
     finally { if (mounted) setState(() => _bookmarkSaving = false); }
   }
 
+  @override
+  void exitFullscreen() {
+    if (mounted && _fullscreen) setState(() { _fullscreen = false; _showOuterFrame = false; });
+    if (identical(AppNavigation.instance.fullscreenReader.value, this)) AppNavigation.instance.fullscreenReader.value = null;
+  }
+
   void _toggleFullscreen() {
     if (_target != null || _preparing) return;
     _resetReadingPosition();
@@ -397,13 +474,33 @@ class _QuranScreenState extends State<QuranScreen> with SingleTickerProviderStat
           ))),
       )))),
     ]),
-    child: ReadingPage(image: FileImage(File(widget.store.pagePath(page))),
-      crop: _normalizedActiveCrop(page)),
+    child: LayoutBuilder(builder: (context, constraints) {
+      final regions = _verseRegions?.page(widget.store.edition.id, page) ?? <VerseRegion>[];
+      final sajdah = sajdahVerses[page];
+      return ClipRect(child: Stack(fit: StackFit.expand, children: [
+        ReadingPage(image: FileImage(File(widget.store.pagePath(page))), crop: _normalizedActiveCrop(page)),
+        VerseSelectionOverlay(page: page, verses: regions, imageSize: widget.store.edition.pageSize(page),
+          crop: _normalizedActiveCrop(page), sajdah: sajdah, onChanged: (selection) {
+            if (selection.isNotEmpty) {
+              _touchPointer = null; _touchStart = null; _exitFromBottomEdge = false;
+            }
+          },
+          onSelected: _verseAction),
+      ]));
+    }),
   );
 
   @override
   Widget build(BuildContext context) {
     final busy = _target != null || _preparing;
+    final personalPage = PersonalPageScope.of(context);
+    final surahTitle = widget.store.edition.surahsOnPage(_page).map((s) => surahName(s, context.language)).join(' · ');
+    final titleNotifier = personalPage?.readerTitle;
+    if (titleNotifier != null && titleNotifier.value != surahTitle) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted && identical(PersonalPageScope.of(context)?.readerTitle, titleNotifier)) titleNotifier.value = surahTitle;
+      });
+    }
     final orientation = MediaQuery.orientationOf(context);
     if (_orientation != orientation) {
       _orientation = orientation;
@@ -421,26 +518,25 @@ class _QuranScreenState extends State<QuranScreen> with SingleTickerProviderStat
           ? const Duration(milliseconds: 320) : Duration.zero,
       curve: Curves.easeInOutCubic,
       builder: (context, chromeVisibility, _) => Scaffold(backgroundColor: Color(0xFFE9E1D1),
-      appBar: chromeVisibility == 0 ? null : PreferredSize(
+      appBar: chromeVisibility == 0 || personalPage != null ? null : PreferredSize(
         preferredSize: Size.fromHeight(kToolbarHeight * chromeVisibility),
         child: ClipRect(child: Align(heightFactor: chromeVisibility,
-          child: Opacity(opacity: chromeVisibility, child: AppBar(title: Text((widget.hatim ? '${context.t("Hatim")} · ' : '') + widget.store.edition.surahsOnPage(_page).map((s) => surahName(s, context.language)).join(' · '), maxLines: 1, overflow: TextOverflow.ellipsis,
+          child: Opacity(opacity: chromeVisibility, child: PersonalPageSwipe(onNavigate: (delta) => AppNavigation.instance.switchPage?.call(delta), child: AppBar(title: ScreenTitle(context, (widget.hatim && PersonalPageScope.of(context) == null ? '${context.t("Hatim")} · ' : '') + widget.store.edition.surahsOnPage(_page).map((s) => surahName(s, context.language)).join(' · '), maxLines: 1, overflow: TextOverflow.ellipsis,
           style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600)),
-        actions: const [LanguageSelector()]))))),
+        actions: const <Widget>[])))))),
+      bottomNavigationBar: _audio.memorizing ? SafeArea(child: Padding(
+        padding: const EdgeInsets.all(8), child: FilledButton.icon(
+          onPressed: _audioBusy || _audio.stopPending ? null : () async {
+            setState(() => _audioBusy = true);
+            try { await _audio.advanceMemorization(); }
+            catch (_) { _error('Ses işlemi tamamlanamadı. Tekrar dene.'); }
+            finally { if (mounted) setState(() => _audioBusy = false); }
+          }, icon: const Icon(Icons.skip_next), label: Text(context.t('verseAdvance'))))) : null,
       body: Stack(fit: StackFit.expand, children: [
       SafeArea(top: !_fullscreen, bottom: !_fullscreen, child: Column(children: [
-        Align(alignment: Alignment.centerRight, child: Padding(
-          padding: const EdgeInsets.only(right: 8), child: Material(
-        color: Theme.of(context).colorScheme.surface.withValues(alpha: .9),
-        borderRadius: BorderRadius.circular(24), child: Row(mainAxisSize: MainAxisSize.min, children: [
-          IconButton(key: const ValueKey('reader-listen'),
-            tooltip: context.t(_audio.playing == null ? "Kur'an dinle" : _audio.stopPending ? 'Ayet sonunda duracak' : 'Durdur'),
-            onPressed: busy || _audioBusy || _audio.stopPending ? null : _listenPage,
-            icon: _audioBusy ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
-              : Icon(_audio.playing == null ? Icons.headphones_rounded : Icons.stop_rounded)),
-          IconButton(key: const ValueKey('reader-meal'), tooltip: context.t('Meal Oku'),
-            onPressed: busy || _audioBusy ? null : _mealPage, icon: const Icon(Icons.translate_rounded)),
-        ])))),
+        ReaderActionBar(loading: _audioBusy, playing: _audio.playing != null, stopping: _audio.stopPending,
+          onListen: busy || _audioBusy || _audio.stopPending ? null : _listenPage,
+          onMeal: busy || _audioBusy ? null : _mealPage),
         Expanded(child: GestureDetector(
           key: const ValueKey('quran-reading-surface'),
           behavior: HitTestBehavior.opaque,
@@ -472,17 +568,17 @@ class _QuranScreenState extends State<QuranScreen> with SingleTickerProviderStat
               }
               _exitFromBottomEdge = false;
               if (widget.hatim && widget.store.hatimComplete && _page == widget.store.edition.lastPage &&
-                  !_multiTouch && !_zoomed && delta.dx > 8 && delta.dx > delta.dy.abs()) {
+                  !_multiTouch && !_zoomed && delta.dx >= widget.store.edgeTapWidth && delta.dx > delta.dy.abs()) {
                 _touchPointer = null; _touchStart = null;
                 _go(_page + 1);
                 return;
               }
               if (_dragging) {
-                _releaseDrag(commit: !_multiTouch && _turn.value > 0);
+                _releaseDrag(commit: !_multiTouch && delta.dx.abs() >= widget.store.edgeTapWidth && delta.dx.abs() > delta.dy.abs() && _turn.value > 0);
               }
               if (!_multiTouch && (!widget.store.pageAnimations || MediaQuery.of(context).disableAnimations) &&
                   _zoom.value.getMaxScaleOnAxis() <= 1.01 &&
-                  delta.dx.abs() >= 70 && delta.dx.abs() > delta.dy.abs()) {
+                  delta.dx.abs() >= widget.store.edgeTapWidth && delta.dx.abs() > delta.dy.abs()) {
                 _go(_page + (delta.dx > 0 ? 1 : -1));
               }
               _touchPointer = null;
@@ -531,28 +627,33 @@ class _QuranScreenState extends State<QuranScreen> with SingleTickerProviderStat
             child: Opacity(opacity: visibility, child: child))),
           child: IgnorePointer(ignoring: _landscape && _fullscreen,
             child: ExcludeSemantics(excluding: _landscape && _fullscreen,
-              child: SafeArea(top: false, child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                child: Row(children: [
-                  Text('${widget.store.hatimPages.length}/${widget.store.edition.pageCount}'),
-                  IconButton(tooltip: 'Sayfa / cüz işaretle', onPressed: busy || _hatimSaving ? null : _hatimSelection,
-                    icon: const Icon(Icons.checklist)),
+              child: PersonalPageSwipe(onNavigate: (delta) => AppNavigation.instance.switchPage?.call(delta), child: SafeArea(top: false, child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 8),
+                child: SizedBox(height: 48, child: Row(children: [
+                  Tooltip(message: context.t('hatimProgressActions'), child: TextButton.icon(
+                    style: TextButton.styleFrom(minimumSize: const Size(48, 48),
+                      padding: const EdgeInsets.symmetric(horizontal: 8)),
+                    onPressed: busy || _hatimSaving ? null : _hatimSelection,
+                    icon: const Icon(Icons.checklist, size: 18),
+                    label: Text('${widget.store.hatimPages.length}/${widget.store.edition.pageCount}',
+                      style: const TextStyle(fontSize: 12)))),
                   const Spacer(),
-                  Text(context.t('Okundu')),
+                  Text(context.t('Okundu'), style: const TextStyle(fontSize: 12)),
                   Checkbox(key: const ValueKey('hatim-read-checkbox'),
+                    materialTapTargetSize: MaterialTapTargetSize.padded,
                     value: widget.store.hatimPages.contains(_page),
                     onChanged: busy || _hatimSaving ? null : (_) => _markHatim()),
-                ])),
-              ))),
+                ]))),
+              )))),
         ),
-        if (!_fullscreen) Padding(padding: EdgeInsets.symmetric(horizontal: 8), child: Row(
+        if (!_fullscreen) PersonalPageSwipe(onNavigate: AppNavigation.instance.switchPage, child: Padding(padding: EdgeInsets.symmetric(horizontal: 8), child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceEvenly, children: [
             IconButton(tooltip: context.t('Sonraki sayfa'), onPressed: busy || (_page == widget.store.edition.lastPage && !(widget.hatim && widget.store.hatimComplete)) ? null : () => _go(_page + 1), icon: Icon(Icons.chevron_left)),
             TextButton(onPressed: _jump, child: Text('$_page / ${widget.store.edition.lastPage}')),
             IconButton(tooltip: widget.store.bookmarks.contains(_page) ? context.t('Ayracı kaldır') : context.t('Ayraç ekle'),
               onPressed: busy || _bookmarkSaving ? null : _toggleBookmark, icon: Icon(widget.store.bookmarks.contains(_page) ? Icons.bookmark : Icons.bookmark_border)),
             IconButton(tooltip: context.t('Önceki sayfa'), onPressed: busy || _page == widget.store.edition.firstPage ? null : () => _go(_page - 1), icon: Icon(Icons.chevron_right)),
-          ])),
+          ]))),
       ])),
       Positioned(top: 12, left: 20, right: 20, child: SafeArea(
         child: SajdahNotice(page: _page, editionId: widget.store.edition.id))),

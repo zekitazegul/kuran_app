@@ -8,19 +8,24 @@ export 'shortcut_drag.dart' show DashboardDrag;
 
 class DashboardCards extends StatefulWidget {
   final Map<String, Widget> cards;
+  final bool personal;
+  final int personalPage;
   final ScrollController scrollController;
-  const DashboardCards({super.key, required this.cards, required this.scrollController});
+  const DashboardCards({super.key, required this.cards, required this.scrollController, this.personal = false, this.personalPage = 0});
   @override
   State<DashboardCards> createState() => _DashboardCardsState();
 }
 class _DashboardCardsState extends State<DashboardCards> {
+  List<String> _order(UiPreferences prefs) => widget.personal
+    ? widget.personalPage < prefs.personalPages.length ? prefs.personalPages[widget.personalPage] : const []
+    : prefs.dashboardOrder;
   bool _saving = false;
   OverlayEntry? _trash;
   Timer? _scrollTimer;
   Offset? _dragPosition;
   Future<void> _add() async {
     final prefs = AppPreferences.instance.value;
-    final hidden = prefs.availableDashboardCards.where((id) => !prefs.dashboardOrder.contains(id)).toList();
+    final hidden = prefs.availableDashboardCards.where((id) => widget.cards.containsKey(id) && !_order(prefs).contains(id)).toList();
     final id = await showModalBottomSheet<String>(context: context, isScrollControlled: true,
       builder: (context) => SafeArea(child: ConstrainedBox(
         constraints: BoxConstraints(maxHeight: MediaQuery.sizeOf(context).height * .7),
@@ -33,12 +38,27 @@ class _DashboardCardsState extends State<DashboardCards> {
             onTap: () => Navigator.pop(context, id)),
           if (hidden.isEmpty) ListTile(title: Text(context.t('Tüm kısayollar eklendi.'))),
         ]))));
-    if (id != null && mounted) await _save([...AppPreferences.instance.value.dashboardOrder, id]);
+    if (id != null && mounted) await _save([..._order(AppPreferences.instance.value), id]);
   }
   Future<void> _save(List<String> order) async {
     if (_saving) return;
     setState(() => _saving = true);
-    try { await AppPreferences.instance.save(AppPreferences.instance.value.copyWith(dashboardCards: order)); }
+    try {
+      final prefs = AppPreferences.instance.value;
+      final pages = [...prefs.personalPages];
+      if (widget.personal) {
+        final duplicate = order.toSet().length != order.length || order.any((id) =>
+          pages.asMap().entries.any((entry) => entry.key != widget.personalPage && entry.value.contains(id)));
+        if (duplicate) {
+          if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(context.t('screenAlreadyAdded'))));
+          return;
+        }
+        while (pages.length <= widget.personalPage) { pages.add([]); }
+        pages[widget.personalPage] = order;
+      }
+      await AppPreferences.instance.save(prefs.copyWith(dashboardCards: widget.personal ? null : order,
+        personalPages: widget.personal ? pages : null));
+    }
     catch (_) {
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(context.t('Tercih kaydedilemedi.'))));
     } finally { if (mounted) setState(() => _saving = false); }
@@ -48,7 +68,7 @@ class _DashboardCardsState extends State<DashboardCards> {
     final size = MediaQuery.sizeOf(context);
     _trash = OverlayEntry(builder: (_) => Positioned(top: MediaQuery.paddingOf(context).top + 16, right: 16,
       child: Center(child: DragTarget<DashboardDrag>(
-        onAcceptWithDetails: (details) => _save(AppPreferences.instance.value.dashboardOrder.where((id) => id != details.data.id).toList()),
+        onAcceptWithDetails: (details) => _save(_order(AppPreferences.instance.value).where((id) => id != details.data.id).toList()),
         builder: (context, candidates, rejected) => Material(
           key: const ValueKey('dashboard-trash'), elevation: 8, borderRadius: BorderRadius.circular(40),
           color: candidates.isEmpty ? Theme.of(context).colorScheme.errorContainer : Theme.of(context).colorScheme.error,
@@ -77,11 +97,11 @@ class _DashboardCardsState extends State<DashboardCards> {
   Widget build(BuildContext context) => ValueListenableBuilder<UiPreferences>(
     valueListenable: AppPreferences.instance,
     builder: (context, preferences, _) => LayoutBuilder(builder: (context, constraints) => Column(children: [
-      for (final id in preferences.dashboardOrder.where(widget.cards.containsKey))
+      for (final id in _order(preferences).where(widget.cards.containsKey))
         DragTarget<DashboardDrag>(key: ValueKey('dashboard-card-$id'),
           onWillAcceptWithDetails: (details) => details.data.id != id,
           onAcceptWithDetails: (details) {
-            final order = [...AppPreferences.instance.value.dashboardOrder];
+            final order = [..._order(AppPreferences.instance.value)];
             final from = order.indexOf(details.data.id);
             final to = order.indexOf(id);
             if (from >= 0 && to >= 0) { order.insert(to, order.removeAt(from)); _save(order); }
@@ -99,7 +119,7 @@ class _DashboardCardsState extends State<DashboardCards> {
           ),
         ),
       Align(alignment: Alignment.centerRight, child: Row(mainAxisSize: MainAxisSize.min, children: [
-        if (preferences.dashboardOrder.where(widget.cards.containsKey).isEmpty)
+        if (_order(preferences).where(widget.cards.containsKey).isEmpty)
           Padding(padding: const EdgeInsets.only(right: 8), child: Text(context.t('K\u0131sayol ekle'))),
         IconButton.filledTonal(
         key: const ValueKey('dashboard-add'), tooltip: context.t('Kısayol ekle'),

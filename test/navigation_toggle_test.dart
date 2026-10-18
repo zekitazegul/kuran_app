@@ -9,6 +9,8 @@ import 'package:kuran_app/screens/settings_screen.dart';
 import 'package:kuran_app/services/reading_store.dart';
 import 'package:kuran_app/services/app_language.dart';
 import 'package:kuran_app/widgets/app_bottom_bar.dart';
+import 'package:kuran_app/widgets/language_selector.dart';
+import 'package:kuran_app/services/app_preferences.dart';
 
 void main() {
   testWidgets('navigation destinations toggle closed; home stays open', (tester) async {
@@ -32,6 +34,7 @@ void main() {
     }
     await tester.pumpWidget(const KuranApp());
     await tester.pumpAndSettle();
+    expect(find.byType(LanguageSelector), findsOneWidget);
     for (final destination in [AppDestination.hatim, AppDestination.surahs, AppDestination.bookmarks, AppDestination.search, AppDestination.history, AppDestination.settings]) {
       if (destination == AppDestination.hatim) {
         await tester.scrollUntilVisible(find.byKey(const ValueKey('dashboard-card-hatim')), 200,
@@ -48,10 +51,11 @@ void main() {
       }
       await tester.pumpAndSettle();
       expect(appNavigatorKey.currentState!.canPop(), isTrue, reason: destination.name);
+      expect(find.byType(LanguageSelector), findsNothing, reason: destination.name);
       expect(AppNavigation.instance.selected.value, destination);
       if (destination == AppDestination.hatim) {
         final title = tester.widget<AppBar>(find.byType(AppBar)).title! as Text;
-        expect(title.data, startsWith('Hatim · '));
+        expect(title.data, startsWith('HATİM · '));
         expect(find.byType(QuranScreen), findsOneWidget);
       }
       AppNavigation.instance.open!(destination);
@@ -71,7 +75,21 @@ void main() {
       expect(appNavigatorKey.currentState!.canPop(), isFalse);
       expect(find.byType(HomeScreen), findsOneWidget);
     }
+    expect(find.byType(PageView), findsNothing);
+    expect(AppNavigation.instance.switchPage, isNull);
+    for (final size in [const Size(360,640), const Size(800,360), const Size(800,1280), const Size(1280,800)]) {
+      tester.view.physicalSize = size; tester.view.devicePixelRatio = 1;
+      await tester.pumpAndSettle();
+      await tester.drag(find.byType(HomeScreen), const Offset(-200,0));
+      await tester.pumpAndSettle();
+      expect(find.byType(PageView), findsNothing);
+      expect(appNavigatorKey.currentState!.canPop(), isFalse);
+      expect(tester.takeException(), isNull);
+    }
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
     await tester.pumpWidget(const SizedBox());
+    AppPreferences.instance.restore(null);
     await tester.pump();
     PaintingBinding.instance.imageCache.clear();
     PaintingBinding.instance.imageCache.clearLiveImages();

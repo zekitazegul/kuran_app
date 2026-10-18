@@ -11,16 +11,13 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
   tearDown(() => TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
     .setMockMethodCallHandler(QuranAudio.channel, null));
-  test('four complete reciters and an explicitly partial Mustafa catalog', () {
+  test('only complete verse reciters are offered', () {
     final catalog = jsonDecode(File('assets/audio.json').readAsStringSync()) as Map;
     final tracks = catalog['tracks'] as List;
-    expect(tracks.length, verseCounts.reduce((a, b) => a + b) * 4 + 2017);
-    expect((catalog['reciters'] as List).length, 5);
-    expect((catalog['reciters'] as List).singleWhere((r) => r['id'] == 'mustafa_ismail')['partial'], true);
-    final partial = tracks.where((t) => t['reciter'] == 'mustafa_ismail').toList();
-    expect(partial.length, 2017);
-    expect(partial.any((t) => t['surah'] == 3), false);
-    for (final reader in ['shatri', 'alafasy', 'minshawi', 'abdulbasit']) {
+    expect(tracks.length, verseCounts.reduce((a, b) => a + b) * 5);
+    expect((catalog['reciters'] as List).map((r) => r['id']).toSet(), {'shatri','alafasy','minshawi','abdulbasit','maher'});
+    expect((catalog['reciters'] as List).any((r) => r['partial'] == true), false);
+    for (final reader in ['shatri', 'alafasy', 'minshawi', 'abdulbasit', 'maher']) {
       final selected = tracks.where((t) => t['reciter'] == reader).toList();
       for (var surah = 1; surah <= 114; surah++) {
         final verses = selected.where((t) => t['surah'] == surah).map((t) => t['verse']).toSet();
@@ -73,7 +70,7 @@ void main() {
     await tester.pumpWidget(const MaterialApp(home: ListeningScreen()));
     await tester.pumpAndSettle();
     expect(find.text('Meal Oku'), findsNothing);
-    expect(find.text("Kur'an dinle"), findsOneWidget);
+    expect(find.text("KUR'AN DİNLE"), findsOneWidget);
     expect(tester.getTopLeft(find.byKey(const ValueKey('listening-surah'))).dy,
       lessThan(tester.getTopLeft(find.byType(DropdownButtonFormField<String>)).dy));
     expect(find.textContaining('ndirilen sesler'), findsOneWidget);
