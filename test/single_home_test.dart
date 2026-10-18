@@ -56,6 +56,49 @@ void main() {
       expect(appNavigatorKey.currentState!.canPop(),isFalse);
     }
     expect(tester.takeException(),isNull);
+    AppPreferences.instance.value = AppPreferences.instance.value.copyWith(
+      bottomShortcuts: ['meal', 'history', 'home']);
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    Future<void> openMealShortcut() async {
+      await tester.tap(find.byKey(const ValueKey('navigation-meal')));
+      // Both reader and meal routes load assets asynchronously between frames.
+      for (var frame = 0; frame < 6; frame++) {
+        await tester.pump(const Duration(milliseconds: 500));
+        await tester.runAsync(() async => Future<void>.delayed(const Duration(milliseconds: 100)));
+      }
+      await tester.pumpAndSettle();
+    }
+    for (final size in [const Size(360,640), const Size(800,360), const Size(800,1280), const Size(1280,800)]) {
+      tester.view.physicalSize = size;
+      tester.view.devicePixelRatio = 1;
+      await tester.pumpAndSettle();
+      for (var repeat = 0; repeat < 2; repeat++) {
+        await openMealShortcut();
+        expect(find.byType(MealScreen), findsOneWidget);
+        expect(AppNavigation.instance.selected.value, AppDestination.meal);
+        final mealButton = find.byKey(const ValueKey('navigation-meal'));
+        expect((tester.widget<AnimatedContainer>(mealButton).decoration as BoxDecoration).color,
+          Theme.of(tester.element(mealButton)).colorScheme.primaryContainer);
+        await tester.tap(find.byKey(const ValueKey('navigation-meal')));
+        await tester.pumpAndSettle();
+        expect(find.byType(MealScreen), findsNothing);
+        expect(find.byType(QuranScreen), findsNothing);
+        expect(appNavigatorKey.currentState!.canPop(), isFalse);
+        expect(AppNavigation.instance.selected.value, AppDestination.home);
+        expect((tester.widget<AnimatedContainer>(find.byKey(const ValueKey('navigation-meal'))).decoration as BoxDecoration).color,
+          Colors.transparent);
+      }
+      await openMealShortcut();
+      await tester.tap(find.byKey(const ValueKey('navigation-history')));
+      await tester.pumpAndSettle();
+      expect(AppNavigation.instance.selected.value, AppDestination.history);
+      await tester.tap(find.byKey(const ValueKey('navigation-history')));
+      await tester.pumpAndSettle();
+      expect(appNavigatorKey.currentState!.canPop(), isFalse);
+      expect(AppNavigation.instance.selected.value, AppDestination.home);
+      expect(tester.takeException(), isNull);
+    }
     await tester.pumpWidget(const SizedBox());
   });
 

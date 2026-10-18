@@ -38,9 +38,13 @@ class _ReadingPageState extends State<ReadingPage> {
   }
   void _resolve() {
     if (_listener != null) _stream?.removeListener(_listener!);
+    _image?.dispose();
+    _image = null;
+    _failed = false;
     _stream = widget.image.resolve(createLocalImageConfiguration(context));
     _listener = ImageStreamListener((info, _) {
       final image = info.image.clone();
+      info.dispose();
       if (!mounted) { image.dispose(); return; }
       setState(() { _image?.dispose(); _image = image; _failed = false; });
     }, onError: (Object error, StackTrace? stack) {

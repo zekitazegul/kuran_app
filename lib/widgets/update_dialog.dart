@@ -4,7 +4,7 @@ import 'compact_confirmation_dialog.dart';
 
 /// Update these notes along with the version in pubspec.yaml for each release.
 const latestUpdateNotes = [
-  'selectedMemorizationUpdate',
+  'mealShortcutToggleUpdate',
 ];
 
 Future<void> showUpdateDialog(BuildContext context, String version) =>

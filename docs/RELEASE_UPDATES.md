@@ -1,5 +1,17 @@
 # Release update notes
 
+## 1.0.37+52 - 18 October 2026
+
+- TR: Alt çubuktaki Meal Oku kısayolu diğer kısayollar gibi açılıp kapanır: ikinci dokunuş açık meal ve okuyucuyu kapatıp ana sayfaya döner. Açık kısayol vurgulanır.
+- EN: The bottom Translation shortcut now toggles like the other shortcuts: a second tap closes the translation and reader and returns to Home. The active shortcut is highlighted.
+- NL: De vertaalsnelkoppeling onderaan opent en sluit nu zoals de andere snelkoppelingen: een tweede tik sluit de vertaling en lezer en keert terug naar het startscherm. De actieve snelkoppeling wordt gemarkeerd.
+
+## 1.0.36+51 - 18 October 2026
+
+- TR: Okuma sayfalarında görsel referansları serbest bırakılır; sayfa değişiminde eski görsel ve hata durumu temizlenir. Ayet konum verileri arka planda çözümlenir. Kullanılmayan ikon bağımlılığı kaldırıldı; taslak meal verisi kurulum paketinden çıkarıldı.
+- EN: Reading pages release image references and clear stale images and errors when changing pages. Verse position data is decoded in the background. Removed an unused icon dependency and excluded draft translation data from the installation package.
+- NL: Leespagina’s geven afbeeldingsreferenties vrij en wissen oude afbeeldingen en fouten bij het wisselen van pagina. Verspositiegegevens worden op de achtergrond verwerkt. Een ongebruikte pictogramafhankelijkheid is verwijderd en conceptvertaalgegevens worden niet meer in het installatiepakket opgenomen.
+
 ## 1.0.35+50 - 18 October 2026
 
 - TR: Çoklu ayet seçiminde Ezber seçeneği geri eklendi. Ezber aralığı seçilen ayetlerle doldurulur. Varsayılan 3 tekrar değiştirilebilir; katımlı tekrar ve İlerle korunur. Aynı sayfadaki sure sınırlarını geçen seçimler de ezberlenebilir.

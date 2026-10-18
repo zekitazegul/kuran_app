@@ -17,14 +17,16 @@ String bottomShortcutLabel(BuildContext context, String id) {
   return id.startsWith('surah:') ? surahName(surahs[number - 1], context.language)
     : context.t('Cüz {number}', {'number': number});
 }
-enum AppDestination { home, hatim, bookmarks, surahs, history, settings, search, exit }
+enum AppDestination { home, hatim, bookmarks, surahs, history, settings, search, exit, meal }
 
 const destinationLabels = {
+  AppDestination.meal: 'Meal Oku',
   AppDestination.exit: 'Geri / Çıkış', AppDestination.hatim: 'Hatim', AppDestination.home: 'Ana sayfa', AppDestination.bookmarks: 'Ayraçlar',
   AppDestination.surahs: 'Sureler', AppDestination.history: 'Okuma geçmişi',
   AppDestination.settings: 'Ayarlar', AppDestination.search: 'Sayfaya git',
 };
 const destinationIcons = {
+  AppDestination.meal: Icons.menu_book_rounded,
   AppDestination.exit: Icons.arrow_back_rounded, AppDestination.hatim: Icons.auto_stories_rounded,
   AppDestination.home: Icons.home_rounded, AppDestination.bookmarks: Icons.bookmarks_rounded,
   AppDestination.surahs: Icons.search_rounded, AppDestination.history: Icons.history_rounded,

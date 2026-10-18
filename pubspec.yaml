@@ -2,7 +2,7 @@ name: kuran_app
 description: "A new Flutter project."
 publish_to: 'none'
 
-version: 1.0.35+50
+version: 1.0.37+52
 
 environment:
   sdk: ^3.13.2
@@ -10,7 +10,6 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  cupertino_icons: ^1.0.8
   flutter_localizations:
     sdk: flutter
 
@@ -28,6 +27,9 @@ flutter:
     - assets/page_verses.json
     - assets/verse_regions.json
     - assets/meal_sources.json
-    - assets/meal/
+    - assets/meal/ali_unal.pdf
+    - assets/meal/index.json
+    - assets/meal/translation.json
+    - assets/meal/turkish-pages.json
     - assets/branding/quran.png
     - assets/previews/

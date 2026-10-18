@@ -107,13 +107,14 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _openDashboardCard(String id) {
+    if (id == 'meal') {
+      _navigate(AppDestination.meal);
+      return;
+    }
     if (_store == null || _downloading || _returningToReading) return;
     AppNavigation.instance.exitFullscreen();
     appNavigatorKey.currentState?.popUntil((route) => route.isFirst);
-    if (id == 'meal') {
-      if (_store!.ready) _read(_store!.lastPage, panel: 'meal');
-
-    } else if (id == 'support') {
+    if (id == 'support') {
       Navigator.push(context, MaterialPageRoute<void>(builder: (_) => const SupportScreen()));
     } else if (_store!.ready) {
       for (final shortcut in AppPreferences.instance.value.shortcuts) {
@@ -143,7 +144,7 @@ class _HomeScreenState extends State<HomeScreen> {
         AppNavigation.instance.selected.value == destination && navigator.canPop()) {
       ++_navigationId;
       AppNavigation.instance.exitFullscreen();
-    navigator.popUntil((route) => route.isFirst);
+      navigator.popUntil((route) => route.isFirst);
       AppNavigation.instance.selected.value = AppDestination.home;
       return;
     }
@@ -171,7 +172,11 @@ class _HomeScreenState extends State<HomeScreen> {
       return;
     }
     if (store.ready) {
-      await _read(store.lastPage, panel: destination == AppDestination.search ? 'jump' : 'surah');
+      await _read(store.lastPage, panel: switch (destination) {
+        AppDestination.meal => 'meal',
+        AppDestination.search => 'jump',
+        _ => 'surah',
+      });
     }
     } finally {
       if (mounted && navigationId == _navigationId) {

@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -17,7 +18,8 @@ class VerseRegions {
   static Future<VerseRegions> load() {
     if (_cached != null) return Future.value(_cached!);
     return _loading ??= rootBundle.loadString('assets/verse_regions.json', cache: false)
-      .then((text) => _cached = VerseRegions._(jsonDecode(text) as Map<String, dynamic>))
+      .then((text) => compute(_decodeRegions, text))
+      .then((data) => _cached = VerseRegions._(data))
       .whenComplete(() => _loading = null);
   }
   List<VerseRegion> page(String edition, int page) =>
@@ -28,6 +30,9 @@ class VerseRegions {
           (b[2] as num).toDouble(), (b[3] as num).toDouble())).toList(),
       )).toList();
 }
+
+Map<String, dynamic> _decodeRegions(String text) =>
+    jsonDecode(text) as Map<String, dynamic>;
 
 /// Same contain transform as ReadingPage, including full-screen cropping.
 Rect verseDisplayRect(Rect normalized, Size size, Size imageSize, Rect? crop) {

@@ -57,6 +57,11 @@ android/app/*.jks
 /.tool-deps/
 /meal-phone-check.png
 /meal-preview.png
+/*-check.png
+/hat2-first.png
+/hat2-colophon.png
+/phone*.xml
+/kuran-e2e.xml
 
 # Private signing and publisher credentials
 *.keystore
