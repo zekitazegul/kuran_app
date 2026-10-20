@@ -1,5 +1,33 @@
 ﻿# Meal extraction audit — 16 October 2026
 
+## Updated audit - 20 October 2026, build 53
+
+All 1,490 pages were regenerated; 516 pages changed. Translation and note
+font layers now establish separate vertical reading bands before column
+ordering. Both verse columns are read before either note column. Paragraph
+continuation cannot cross the boundary between those bands.
+
+Verified source examples: PDF page 452 (Tevbe 6, `isteğiyle` followed by the
+complete verse, then note 1), page 453 (verse 8, `müşriklerin`, and note 2,
+`âdeta`), page 451 (`O’nun`) and page 454 (`mü’min`). Words split after an
+apostrophe or parenthesis are now rejoined. The same repair changed 116
+of the 6,236 verse translations in translation.json, preserving the complete
+letter sequence of every verse. All verse identifiers remain complete and
+ordered. A decorative initial on page 20 stays attached to its paragraph.
+
+The independent audit now checks whether output ranges for translation and
+notes overlap when the PDF places notes below the translation. This catches
+cross-block note insertion that the original inventory/block checks missed.
+Quoted verse text in notes is matched to its later occurrence. All current
+audit checks pass; no internal `- lowercase` word splits remain in page text.
+Flutter regressions cover the Tevbe examples and the existing cases below.
+
+The checks validate extraction, not the author's translation or the semantic
+accuracy of the source PDF. Source page boundaries remain intact; a word
+split across two PDF pages is still continued on the next source page.
+
+## Original audit - 16 October 2026
+
 All 1,490 PDF pages were compared against turkish-pages.json by
 `python tools/audit_meal.py`. Machine-readable result: meal-audit.json.
 

@@ -3,12 +3,13 @@ import '../l10n/translations.dart';
 import 'compact_confirmation_dialog.dart';
 
 /// Update these notes along with the version in pubspec.yaml for each release.
-const latestUpdateNotes = [
-  'mealShortcutToggleUpdate',
-];
+// Show only new user-facing features, in short sentences. Replace this list
+// for each release; keep technical details and previous changes in docs.
+const latestUpdateNotes = <String>[];
 
-Future<void> showUpdateDialog(BuildContext context, String version) =>
-    showDialog<void>(
+Future<void> showUpdateDialog(BuildContext context, String version) {
+  if (latestUpdateNotes.isEmpty) return Future<void>.value();
+  return showDialog<void>(
       context: context,
       barrierDismissible: false,
       builder: (context) => PopScope(
@@ -32,3 +33,4 @@ Future<void> showUpdateDialog(BuildContext context, String version) =>
         ),
       ),
     );
+}

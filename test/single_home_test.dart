@@ -51,6 +51,7 @@ void main() {
       await tester.runAsync(() async => Future<void>.delayed(const Duration(milliseconds:500)));
       await tester.pump(); await tester.pump(const Duration(milliseconds:500));
       expect(find.byType(MealScreen),findsOneWidget);
+      expect(tester.widget<MealScreen>(find.byType(MealScreen)).initialSurah, isNull);
       expect(tester.widget<QuranScreen>(find.byType(QuranScreen,skipOffstage:false)).initialPanel,'meal');
       AppNavigation.instance.open!(AppDestination.home); await tester.pumpAndSettle();
       expect(appNavigatorKey.currentState!.canPop(),isFalse);

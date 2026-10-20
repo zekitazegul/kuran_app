@@ -11,7 +11,7 @@ void main() {
     'en': ['What’s new · 1.0.2', 'Close'],
     'nl': ['Nieuw · 1.0.2', 'Sluiten'],
   }.entries) {
-    testWidgets('update uses saved ${entry.key} and only appears once per version', (tester) async {
+    testWidgets('maintenance update uses saved ${entry.key} and acknowledges without a popup', (tester) async {
       String? seen;
       var version = '1.0.2+16';
       AppLanguage.instance.value = const Locale('tr');
@@ -36,10 +36,8 @@ void main() {
       });
       await tester.pumpWidget(KuranApp(key: UniqueKey()));
       await tester.pumpAndSettle();
-      expect(find.text(entry.value.first), findsOneWidget);
-      expect(seen, isNull);
-      await tester.tap(find.text(entry.value.last));
-      await tester.pumpAndSettle();
+      expect(find.text(entry.value.first), findsNothing);
+      expect(AppLanguage.instance.value?.languageCode, entry.key);
       expect(seen, version);
       await tester.pumpWidget(const SizedBox());
       await tester.pumpAndSettle();
@@ -51,9 +49,7 @@ void main() {
       version = '1.0.3+17';
       await tester.pumpWidget(KuranApp(key: UniqueKey()));
       await tester.pumpAndSettle();
-      expect(find.byType(CompactConfirmationDialog), findsOneWidget);
-      await tester.tap(find.text(entry.value.last));
-      await tester.pumpAndSettle();
+      expect(find.byType(CompactConfirmationDialog), findsNothing);
       expect(seen, version);
       await tester.pumpWidget(const SizedBox());
       await tester.pumpAndSettle();

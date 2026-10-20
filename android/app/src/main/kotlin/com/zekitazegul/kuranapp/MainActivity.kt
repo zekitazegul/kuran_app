@@ -11,6 +11,12 @@ import java.util.concurrent.Executors
 import io.flutter.embedding.android.FlutterActivity
 
 class MainActivity : FlutterActivity() {
+    private lateinit var updater: AppUpdater
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+        if (::updater.isInitialized) updater.onActivityResult(requestCode)
+    }
+
     private var prayerSpeech: android.speech.tts.TextToSpeech? = null
     private var prayerResult: MethodChannel.Result? = null
     private fun stopPrayer() {
@@ -28,6 +34,8 @@ class MainActivity : FlutterActivity() {
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
+        updater = AppUpdater(this, MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "com.zekitazegul.kuranapp/update"))
+        ApkSharing(this, MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "com.zekitazegul.kuranapp/share"))
         mealPdf = MealPdf(applicationContext, flutterEngine.dartExecutor.binaryMessenger)
         flutterEngine.platformViewsController.registry.registerViewFactory(
             "com.zekitazegul.kuranapp/meal", MealWebViewFactory(flutterEngine.dartExecutor.binaryMessenger))

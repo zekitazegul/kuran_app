@@ -15,6 +15,7 @@ for page in document:
     boundaries = [0]
     wide_ranges = []
     note_markers = []
+    text_layers = []
     for block in page.get_text('dict', clip=pymupdf.INFINITE_RECT())['blocks']:
         # Mixed pages have full-width introductions/verses above two-column
         # notes. Limit full-width layout to that block's vertical interval.
@@ -45,6 +46,10 @@ for page in document:
             if line['bbox'][1] < 10:
                 continue
             spans = line['spans']
+            sizes = [s['size'] for s in spans if any('LATIN' in unicodedata.name(c, '') for c in s['text'])]
+            if sizes and max(sizes) < 12.9:
+                text_layers.append((line['bbox'][1], line['bbox'][3],
+                                    'verse' if max(sizes) >= 9.5 else 'note'))
             fragments = []
             for span in spans:
                 value = unicodedata.normalize('NFKC', arabic.sub('', span['text']))
@@ -75,15 +80,29 @@ for page in document:
         if len(text) != 1 or not text.isupper() or box[3] - box[1] < 20:
             continue
         candidates = [r for r in lines if r is not initial and not r[2]
-                      and box[1] - 2 <= r[0][1] <= box[1] + 8
+                      and box[1] - 2 <= r[0][1] <= box[1] + 12
                       and -1 <= r[0][0] - box[2] <= 8]
         if candidates:
             target = min(candidates, key=lambda r: abs(r[0][1] - box[1]))
             lines[lines.index(target)] = (target[0], text + target[1], target[2], target[3])
             lines.remove(initial)
+    # Read both verse columns before either note column. PDF blocks and a
+    # character-inventory audit alone cannot detect notes inserted mid-verse.
+    # Find horizontal bands whose overlapping lines belong to the same layer.
+    regions = []
+    for top, bottom, layer in sorted(text_layers):
+        if regions and top <= regions[-1][1]:
+            regions[-1][1] = max(regions[-1][1], bottom)
+            regions[-1][2].add(layer)
+        else:
+            regions.append([top, bottom, {layer}])
+    for previous, following in zip(regions, regions[1:]):
+        if previous[2].isdisjoint(following[2]):
+            boundaries.append((previous[1] + following[0]) / 2)
     boundaries = sorted(set(boundaries)) + [float('inf')]
     paragraphs = []
     for low, high in zip(boundaries, boundaries[1:]):
+        band_start = len(paragraphs)
         band = [r for r in lines if low <= r[0][1] < high]
         wide = any(start <= low < end for start, end in wide_ranges)
         groups = [band] if wide else [[r for r in band if (r[0][0] + r[0][2]) / 2 < middle], [r for r in band if (r[0][0] + r[0][2]) / 2 >= middle]]
@@ -101,7 +120,7 @@ for page in document:
             def finish():
                 if current:
                     body = '\n'.join(current)
-                    body = re.sub(r'(\w)-\n([a-zçğıöşü])', r'\1\2', body)
+                    body = re.sub(r'(\S)-\n([a-zçğıöşüâîû])', r'\1\2', body)
                     body = re.sub(r'\s+', ' ', body).strip()
                     paragraphs.append(body)
             for box, text, heading, number in ordered:
@@ -120,8 +139,11 @@ for page in document:
             if paragraph_start > 0 and len(paragraphs) > paragraph_start:
                 previous, following = paragraphs[paragraph_start - 1:paragraph_start + 1]
                 if following[0].islower() and not re.search(r'[.!?:;][”\"’)]?$', previous):
-                    separator = '' if previous.endswith('-') else ' '
-                    paragraphs[paragraph_start - 1:paragraph_start + 1] = [previous.removesuffix('-') + separator + following]
+                    # Only join within a layout band: a note must never be
+                    # mistaken for the continuation of a verse above it.
+                    if paragraph_start > band_start:
+                        separator = '' if previous.endswith('-') else ' '
+                        paragraphs[paragraph_start - 1:paragraph_start + 1] = [previous.removesuffix('-') + separator + following]
     pages.append(paragraphs)
 assert len(pages) == 1490
 assert not any(arabic.search(t) for p in pages for t in p)

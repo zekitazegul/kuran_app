@@ -1,4 +1,5 @@
 import '../widgets/screen_title.dart';
+import '../widgets/app_distribution.dart';
 import '../widgets/personal_page_scope.dart';
 import '../widgets/compact_confirmation_dialog.dart';
 import '../data/quran_edition.dart';
@@ -59,6 +60,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     body: ListView(padding: EdgeInsets.all(20), children: [
       Center(child: QuranArtwork(size: 110, decorative: true)),
       SizedBox(height: 16),
+      const AppDistribution(),
       _section('reading', 'Görünüm ve okuma', Icons.auto_stories_outlined, [
       Card(child: ListTile(leading: const Icon(Icons.palette_outlined),
         title: Text(context.t('Görünüm ve kısayollar')),

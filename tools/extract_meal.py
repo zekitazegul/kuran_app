@@ -59,7 +59,7 @@ problems = []
 def finish():
     if verse and text:
         body = '\n'.join(text)
-        body = re.sub(r'(\w)-\n([a-z\u00e7\u011f\u0131\u00f6\u015f\u00fc])', r'\1\2', body)
+        body = re.sub(r'(\S)-\n([a-zçğıöşüâîû])', r'\1\2', body)
         body = re.sub(r'\s+', ' ', body).strip()
         body = re.sub(r'\s+([,;:.!?])', r'\1', body)
         records.append({'surah': surah, 'verse': verse, 'text': body})

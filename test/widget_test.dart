@@ -132,12 +132,16 @@ void main() {
     await tester.pumpWidget(MaterialApp(home: SettingsScreen(store: store)));
     await tester.pumpAndSettle();
     expect(store.pageAnimations, isTrue);
+    await tester.ensureVisible(find.text('G\u00f6r\u00fcn\u00fcm ve okuma'));
     await tester.tap(find.text('G\u00f6r\u00fcn\u00fcm ve okuma')); await tester.pumpAndSettle();
+    await tester.ensureVisible(find.byType(SwitchListTile));
+    await tester.pumpAndSettle();
     await tester.tap(find.byType(SwitchListTile));
     await tester.pumpAndSettle();
     expect(store.pageAnimations, isFalse);
     final restored = await ReadingStore.load();
     expect(restored.pageAnimations, isFalse);
+    await tester.ensureVisible(find.text('G\u00f6r\u00fcn\u00fcm ve okuma'));
     await tester.tap(find.text('G\u00f6r\u00fcn\u00fcm ve okuma')); await tester.pumpAndSettle();
     await tester.scrollUntilVisible(find.text('Yard\u0131m ve bilgi'), 200);
     await tester.tap(find.text('Yard\u0131m ve bilgi')); await tester.pumpAndSettle();

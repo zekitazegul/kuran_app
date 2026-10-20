@@ -26,17 +26,20 @@ class _MealScreenState extends State<MealScreen> implements FullscreenReadingSes
   bool _fullscreen = false;
   final _pager = GlobalKey<PaginatedMealTextState>();
   int _textOffset = 0;
+  int _positionRevision = 0;
   Future<void>? _positionWrite;
 
   Future<void> _savePosition(int page, int offset) async {
     _textOffset = offset;
-    if (page != _reader.page) {
-      await _select(page, offset: offset);
-      return;
+    final sourceChanged = page != _reader.page;
+    if (sourceChanged && mounted) {
+      setState(() { _reader.page = page; _reader.selectedSurah = null; });
     }
+    final zoom = _reader.zoom;
     final fontSize = _fontSize;
     final surah = _reader.surah;
     _positionWrite = (_positionWrite ?? Future<void>.value()).catchError((Object _) {}).then((_) async {
+      if (sourceChanged) await MealReader.channel.invokeMethod<void>('save', {'page': page, 'zoom': zoom});
       await MealReader.channel.invokeMethod<void>('saveText', {
         'surah': surah, 'verse': 1, 'fontSize': fontSize,
         'textPage': page, 'textOffset': offset,
@@ -95,11 +98,12 @@ class _MealScreenState extends State<MealScreen> implements FullscreenReadingSes
   Future<void> _select(int page, {int? surah, int offset = 0}) async {
     setState(() { _busy = true; });
     try {
+      await (_positionWrite ?? Future<void>.value()).catchError((Object _) {});
       await _reader.save(page: page, surah: surah);
       if (!mounted) return;
       _textOffset = offset;
       await _savePosition(page, offset);
-      if (mounted) setState(() { _busy = false; _failed = false; });
+      if (mounted) setState(() { _positionRevision++; _busy = false; _failed = false; });
     } catch (_) {
       if (mounted) setState(() { _busy = false; _failed = true; });
     }
@@ -143,6 +147,7 @@ class _MealScreenState extends State<MealScreen> implements FullscreenReadingSes
               onDoubleTap: _toggleFullscreen,
               key: _pager, pages: _pages, page: _reader.page,
               offset: _textOffset, fontSize: _fontSize, enabled: !_busy,
+              positionRevision: _positionRevision,
               onChanged: _savePosition,
               footerBuilder: _fullscreen ? null : (context, screen, screens) => PersonalPageSwipe(
                 onNavigate: (delta) => AppNavigation.instance.switchPage?.call(delta),

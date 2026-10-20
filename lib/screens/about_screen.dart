@@ -38,7 +38,7 @@ class AboutScreen extends StatelessWidget {
           const SizedBox(height: 20), Text(context.t('freeVersionPolicy')),
         ]))),
       const SizedBox(height: 16),
-      Card(child: Padding(padding: const EdgeInsets.all(20), child: Column(
+      if (latestUpdateNotes.isNotEmpty) Card(child: Padding(padding: const EdgeInsets.all(20), child: Column(
         crossAxisAlignment: CrossAxisAlignment.start, children: [
           Text(context.t('Son yenilikler'), style: Theme.of(context).textTheme.titleMedium),
           const SizedBox(height: 12),
@@ -46,8 +46,6 @@ class AboutScreen extends StatelessWidget {
             padding: const EdgeInsets.only(bottom: 10), child: Text('• ${context.t(note)}')),
         ]))),
       const SizedBox(height: 20),
-      Text(context.t('Geliştirici: Zeki Tazegul'),
-        style: Theme.of(context).textTheme.titleMedium),
       const SizedBox(height: 24),
       ListTile(leading: const Icon(Icons.copyright_outlined),
         title: Text(context.t('Kaynaklar ve telif bilgileri')),

@@ -1,5 +1,60 @@
 # Release update notes
 
+## 1.0.46+61 - 20 October 2026
+
+TR: Meal okurken yatay sayfa çevirme geri getirildi. Dikey kesintisiz okuma korunur.
+
+EN: Restored horizontal page turning in the translation reader. Continuous vertical reading remains available.
+
+NL: Horizontaal omslaan is hersteld in de vertaallezer. Doorlopend verticaal lezen blijft beschikbaar.
+
+## 1.0.45+60 - 20 October 2026
+
+TR: Meal okurken aşağı kaydırarak kesintisiz devam edebilirsin. Yatay kaydırma da kullanılabilir.
+
+EN: Scroll down to read the translation continuously. Horizontal swiping is also available.
+
+NL: Scroll omlaag om de vertaling doorlopend te lezen. Horizontaal vegen blijft ook beschikbaar.
+
+
+## 1.0.43+58 - 20 October 2026
+
+- TR: Ekranlardaki kişisel ad ve e-posta yazıları kaldırıldı. Mesaj göndermek için Destek ve geri bildirim kullanılabilir. Yeni özellik eklenmeyen sürümde yenilik penceresi gösterilmez.
+- EN: Removed personal name and email labels. Messages remain available through Support and feedback. Maintenance releases do not show a What's New popup.
+- NL: Persoonlijke naam- en e-maillabels zijn verwijderd. Berichten kunnen nog steeds via Steun en feedback worden verstuurd. Onderhoudsversies tonen geen venster Nieuw.
+
+
+## 1.0.42+57 - 20 October 2026
+
+- TR: Yenilikler ekranı yalnızca iki kısa özellik notu gösterir: uygulamayı paylaşma ve Ayarlar’dan güncelleme.
+- EN: The What's New screen shows only two short feature notes: app sharing and updates from Settings.
+- NL: Het scherm Nieuw toont slechts twee korte functiemeldingen: de app delen en bijwerken via Instellingen.
+
+
+## 1.0.41+56 - 20 October 2026
+
+- TR: Dosya boyutu MB olarak gösterilir; mobil veriyle indirme onay gerektirir. 2 MB üstünde Wi-Fi tavsiye edilir.
+- EN: File size is shown in MB; mobile downloads require confirmation. Wi-Fi is recommended above 2 MB.
+- NL: De bestandsgrootte wordt in MB getoond; downloaden via mobiele data vereist toestemming. Boven 2 MB wordt wifi aanbevolen.
+
+- TR: Güncelleme ekranındaki uyarı internet verisi kullanımı ve Wi-Fi tavsiyesiyle sadeleştirildi.
+- EN: Simplified the update notice to internet data use and a Wi-Fi recommendation.
+- NL: De updatemelding is vereenvoudigd tot datagebruik en een wifi-advies.
+
+
+## 1.0.40+55 - 20 October 2026
+
+- TR: APK paylaşımı ve GitHub üzerinden uygulama içi güncelleme; indirme ve kurulum durumu ekran okuyuculara duyurulur.
+- EN: APK sharing and in-app updates from GitHub; download and installation status is announced to screen readers.
+- NL: APK delen en updates in de app via GitHub; download- en installatiestatus wordt aan schermlezers gemeld.
+
+
+## 1.0.38+53 - 20 October 2026
+
+- TR: Meal Oku’da ayet ve açıklama sütunlarının okuma sırası düzeltildi. Kesme işareti ve parantez yanında satır sonunda bölünen kelimeler birleştirildi. Aynı düzeltme ayet seçimiyle açılan meallere de uygulandı. PDF’nin 1.490 sayfası yeniden denetlendi.
+- EN: Fixed reading order between verse and note columns in Translation. Joined words split at line endings beside apostrophes and parentheses, including translations opened from selected verses. Audited all 1,490 PDF pages again.
+- NL: De leesvolgorde van vers- en toelichtingskolommen in Vertaling is hersteld. Woorden die naast apostrofs en haakjes aan het regeleinde waren afgebroken zijn samengevoegd, ook in vertalingen van geselecteerde verzen. Alle 1.490 PDF-pagina’s zijn opnieuw gecontroleerd.
+
 ## 1.0.37+52 - 18 October 2026
 
 - TR: Alt çubuktaki Meal Oku kısayolu diğer kısayollar gibi açılıp kapanır: ikinci dokunuş açık meal ve okuyucuyu kapatıp ana sayfaya döner. Açık kısayol vurgulanır.
@@ -226,3 +281,12 @@ For each update installed on a phone:
 4. Run `flutter test test/update_dialog_test.dart` and the tests relevant to the changes.
 
 Android supplies the installed version name and build number. After restoring the saved language and completing onboarding, the home screen compares that version with the last acknowledged update. The close button saves the acknowledgement. The same installed version does not show the dialog again; a different version does.
+
+
+## 1.0.39+54
+
+TR: Ayarlar’dan uygulamayı APK olarak paylaşabilir, son sürümü GitHub sayfası açmadan indirip Android onayıyla kurabilirsin.
+
+EN: Share the app as an APK from Settings, and download the latest version without opening GitHub. Android asks for installation confirmation.
+
+NL: Deel de app als APK vanuit Instellingen en download de nieuwste versie zonder GitHub te openen. Android vraagt om bevestiging voor installatie.

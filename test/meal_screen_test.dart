@@ -1,4 +1,4 @@
-﻿import 'dart:convert';
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -32,6 +32,20 @@ void main() {
     final lastSurahVerses = List<String>.from(pages[1335] as List).join(' ');
     expect(lastSurahVerses.indexOf('25. Elbet'), lessThan(lastSurahVerses.indexOf('26. Hesaplarını')));
     expect(lastSurahVerses, contains('Hesaplarını görmek de elbet Biz’e aittir.'));
+    final tevbe = List<String>.from(pages[451] as List);
+    final sixthVerse = tevbe.firstWhere((p) => p.startsWith('6. Bundan'));
+    expect(sixthVerse, contains('sığınma hakkı isteğiyle yanına gelmek'));
+    expect(sixthVerse, endsWith('bir topluluktur.¹'));
+    final tevbeNote = tevbe.firstWhere((p) => p.startsWith('1. Baştan'));
+    expect(tevbeNote, contains('birlikte ele alındığında, İslâm’ın'));
+    expect(tevbe.indexOf(sixthVerse), lessThan(tevbe.indexOf(tevbeNote)));
+    expect(sixthVerse, isNot(contains('âyet-i kerimeler')));
+    final nextTevbePage = List<String>.from(pages[452] as List);
+    expect(nextTevbePage.firstWhere((p) => p.startsWith('8. O')),
+      contains('müşriklerin nasıl ahitleri olabilir'));
+    expect(nextTevbePage.last, startsWith('2. Bu âyet-i kerimede'));
+    expect((pages[450] as List).join(' '), contains('O’nun kudretinden'));
+    expect((pages[453] as List).join(' '), contains('mü’min toplulukların'));
     final hadid = List<String>.from(pages[1210] as List);
     expect(hadid.indexWhere((p) => p.startsWith('57. HADÎD')), lessThan(hadid.indexWhere((p) => p.startsWith('Medine’de'))));
     expect(pages.expand((p) => p as List).where((p) => (p as String).length == 1), isEmpty);
@@ -56,6 +70,60 @@ void main() {
         }
       }
     }
+  });
+
+  testWidgets('vertical reading crosses source boundaries and still allows horizontal turns', (tester) async {
+    final pages = [for (var page = 1; page <= 4; page++)
+      [List.generate(30, (line) => 'Source $page line $line: reading continues without a page break.').join(' ')]];
+    var savedPage = 2, savedOffset = 0;
+    final key = GlobalKey<PaginatedMealTextState>();
+    await tester.pumpWidget(MaterialApp(home: Scaffold(body: SizedBox(width: 360, height: 500,
+      child: PaginatedMealText(key: key, pages: pages, page: 2, offset: 0, fontSize: 22, enabled: true,
+        onChanged: (page, offset) { savedPage = page; savedOffset = offset; })))));
+    await tester.pumpAndSettle();
+    final surface = find.byKey(const ValueKey('meal-reading-surface'));
+    final scroll = tester.widget<CustomScrollView>(find.byType(CustomScrollView)).controller!;
+    await tester.drag(surface, const Offset(0, -130));
+    await tester.pumpAndSettle();
+    expect(scroll.offset, greaterThan(0));
+    expect(savedPage, 2);
+    expect(savedOffset, greaterThan(0));
+    final partial = scroll.offset;
+    final cancelled = await tester.startGesture(tester.getCenter(surface));
+    await cancelled.moveBy(const Offset(-30, 0));
+    await tester.pump();
+    await cancelled.moveBy(const Offset(-20, 0));
+    await tester.pump();
+    await cancelled.cancel();
+    await tester.pumpAndSettle();
+    expect(scroll.offset, partial);
+    expect(tester.widget<Transform>(find.byKey(const ValueKey('meal-horizontal-page')))
+      .transform.storage[12], 0);
+    final horizontalDrag = await tester.startGesture(tester.getCenter(surface));
+    await horizontalDrag.moveBy(const Offset(-30, 0));
+    await tester.pump();
+    await horizontalDrag.moveBy(const Offset(-90, 0));
+    await tester.pump(const Duration(milliseconds: 30));
+    final slide = tester.widget<Transform>(find.byKey(const ValueKey('meal-horizontal-page')));
+    expect(slide.transform.storage[12], lessThan(0));
+    expect(slide.transform.storage[13], 0);
+    expect(scroll.offset, partial, reason: 'Horizontal dragging must not animate vertical scrolling');
+    await horizontalDrag.up();
+    await tester.pumpAndSettle();
+    expect(scroll.offset, greaterThan(partial));
+    for (var i = 0; i < 40 && savedPage == 2; i++) {
+      await tester.drag(surface, const Offset(0, -300));
+      await tester.pumpAndSettle();
+    }
+    expect(savedPage, 3);
+    for (var i = 0; i < 80 && savedPage >= 2; i++) {
+      await tester.drag(surface, const Offset(0, 300));
+      await tester.pumpAndSettle();
+    }
+    expect(savedPage, 1, reason: 'Reading backwards also crosses the original anchor');
+    expect(tester.takeException(), isNull);
+    await tester.pumpWidget(const SizedBox());
+    await tester.pumpAndSettle();
   });
 
   testWidgets('meal turns screenfuls before source pages and restores the text position', (tester) async {

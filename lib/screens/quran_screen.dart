@@ -124,7 +124,7 @@ class _QuranScreenState extends State<QuranScreen> with SingleTickerProviderStat
     } catch (_) { _error('Ses işlemi tamamlanamadı. Tekrar dene.'); }
     finally { if (mounted) setState(() => _audioBusy = false); }
   }
-  Future<void> _mealPage() async {
+  Future<void> _mealPage({bool resume = false}) async {
     try {
       final data = jsonDecode(await rootBundle.loadString('assets/page_verses.json')) as Map;
       final refs = (data['pages'] as List)[_page] as List;
@@ -133,7 +133,7 @@ class _QuranScreenState extends State<QuranScreen> with SingleTickerProviderStat
       await _audio.stop();
       if (!mounted) return;
       await Navigator.push(context, MaterialPageRoute<void>(builder: (_) => MealScreen(
-        initialSurah: first['surah'] as int, initialVerse: first['verse'] as int)));
+        initialSurah: resume ? null : first['surah'] as int, initialVerse: resume ? null : first['verse'] as int)));
     } catch (_) { _error('Meal açılamadı. Tekrar dene.'); }
   }
   Timer? _historyTimer;
@@ -300,7 +300,7 @@ class _QuranScreenState extends State<QuranScreen> with SingleTickerProviderStat
     if (widget.initialPanel != null) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!mounted) return;
-        if (widget.initialPanel == 'meal') _mealPage();
+        if (widget.initialPanel == 'meal') _mealPage(resume: true);
         if (widget.initialPanel == 'surah') _selectSurah();
         if (widget.initialPanel == 'bookmarks') _bookmarks();
         if (widget.initialPanel == 'jump') _jump();
