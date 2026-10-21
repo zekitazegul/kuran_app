@@ -17,15 +17,8 @@ class MainActivity : FlutterActivity() {
         if (::updater.isInitialized) updater.onActivityResult(requestCode)
     }
 
-    private var prayerSpeech: android.speech.tts.TextToSpeech? = null
-    private var prayerResult: MethodChannel.Result? = null
-    private fun stopPrayer() {
-        prayerSpeech?.stop()
-        prayerSpeech?.shutdown()
-        prayerSpeech = null
-        prayerResult?.success(null)
-        prayerResult = null
-    }
+    private val prayerPlayer by lazy { HatimPrayerPlayer(this) }
+    private fun stopPrayer() = prayerPlayer.stop()
     private val audioThread = HandlerThread("quran-audio").apply { start() }
     private val audioHandler = Handler(audioThread.looper)
     private var audioStorage: QuranAudioStorage? = null
@@ -62,40 +55,8 @@ class MainActivity : FlutterActivity() {
                 result.success(null)
                 return@setMethodCallHandler
             }
-            if (call.method == "speakHatimPrayer") {
-                stopPrayer()
-                prayerResult = result
-                val text = call.argument<String>("text") ?: ""
-                prayerSpeech = android.speech.tts.TextToSpeech(applicationContext) { status ->
-                    runOnUiThread {
-                        val speech = prayerSpeech
-                        if (speech != null && prayerResult != null) {
-                            val language = if (status == android.speech.tts.TextToSpeech.SUCCESS)
-                                speech.setLanguage(java.util.Locale.forLanguageTag("tr-TR")) else -1
-                            if (language < 0) {
-                                prayerResult?.error("SPEECH_ERROR", "Türkçe ses kullanılamıyor.", null)
-                                prayerResult = null
-                                stopPrayer()
-                            } else {
-                                speech.setOnUtteranceProgressListener(object : android.speech.tts.UtteranceProgressListener() {
-                                    override fun onStart(id: String?) {}
-                                    override fun onDone(id: String?) { runOnUiThread { stopPrayer() } }
-                                    @Deprecated("Deprecated in Java")
-                                    override fun onError(id: String?) { runOnUiThread {
-                                        prayerResult?.error("SPEECH_ERROR", "Dua okunamadı.", null)
-                                        prayerResult = null
-                                        stopPrayer()
-                                    } }
-                                })
-                                if (speech.speak(text, android.speech.tts.TextToSpeech.QUEUE_FLUSH, null, "hatim") == android.speech.tts.TextToSpeech.ERROR) {
-                                    prayerResult?.error("SPEECH_ERROR", "Dua okunamadı.", null)
-                                    prayerResult = null
-                                    stopPrayer()
-                                }
-                            }
-                        }
-                    }
-                }
+            if (call.method == "playHatimPrayer") {
+                prayerPlayer.play(result)
                 return@setMethodCallHandler
             }
             if (call.method in setOf("loadAudio", "downloadAudio", "playAudio", "playAudioSelection", "playAudioRange", "advanceMemorization", "stopAudio", "removeAudio", "selectAudioReciter")) {

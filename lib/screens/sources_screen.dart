@@ -22,6 +22,12 @@ class SourcesScreen extends StatelessWidget {
         _audioSource(context, 'Abu Bakr Ash-Shatri', 'https://everyayah.com/data/Abu_Bakr_Ash-Shaatree_128kbps/')),
       _section(context, 'Mahir al Muaiqly · EveryAyah',
         _audioSource(context, 'Mahir al Muaiqly', 'https://everyayah.com/data/Maher_AlMuaiqly_64kbps/')),
+      _section(context, 'prayerRecordingSource', Column(
+        crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text(context.t('prayerSourceDetails')),
+          const SizedBox(height: 12),
+          const SelectableText('https://audio.islamweb.net/audio/index.php?audioid=26857&page=audioinfo'),
+        ])),
       _section(context, 'Telif ve kullanım koşulları', Text(context.t('sourcesNotice'))),
       _section(context, 'Reklamsız ve ücretsiz', Text(context.t('noAdsPolicy'))),
     ]),

@@ -2,6 +2,15 @@ import 'package:flutter/material.dart';
 import '../services/app_language.dart';
 
 const translations = <String, Map<String, String>>{
+  "prayerRecordingDetails": {"tr": "Abdurrahman es-Sudeys · Arapça hatim duası. Çevrimdışı dinlenebilir.", "en": "Abdurrahman As-Sudais · Arabic khatm prayer. Available offline.", "nl": "Abdurrahman As-Sudais · Arabisch khatmgebed. Offline beschikbaar."},
+  "prayerTurkishExample": {"tr": "Kısa Türkçe dua örneği", "en": "A short prayer example in Turkish", "nl": "Een kort voorbeeldgebed in het Turks"},
+  "prayerAudioError": {"tr": "Dua kaydı açılamadı. Tekrar deneyin.", "en": "Could not play the prayer recording. Please try again.", "nl": "De gebedsopname kon niet worden afgespeeld. Probeer opnieuw."},
+  "hatimRecordingUpdate": {"tr": "Hatim duasını Abdurrahman es-Sudeys’in sesinden çevrimdışı dinleyebilirsin.", "en": "Listen offline to the khatm prayer recited by Abdurrahman As-Sudais.", "nl": "Luister offline naar het khatmgebed door Abdurrahman As-Sudais."},
+  "prayerRecordingSource": {"tr": "Hatim duası · Abdurrahman es-Sudeys", "en": "Khatm prayer · Abdurrahman As-Sudais", "nl": "Khatmgebed · Abdurrahman As-Sudais"},
+  "prayerSourceDetails": {"tr": "Arapça hatim duası kaydı: Abdurrahman es-Sudeys. Kaynak: Islamweb ses kütüphanesi. Kayıt uygulamaya dahildir ve çevrimdışı oynatılır. Aşağıdaki kısa Türkçe dua ayrı bir örnektir; kaydın birebir metni veya çevirisi değildir.", "en": "Arabic khatm prayer recording: Abdurrahman As-Sudais. Source: Islamweb audio library. The recording is included for offline playback. The short Turkish prayer is a separate example, not a transcript or translation of the recording.", "nl": "Arabische khatmgebedsopname: Abdurrahman As-Sudais. Bron: de audiobibliotheek van Islamweb. De opname is inbegrepen voor offline afspelen. Het korte Turkse gebed is een apart voorbeeld, geen transcriptie of vertaling van de opname."},
+  "Hatminiz tamamlandı": {"tr": "Hatminiz tamamlandı", "en": "Your khatm is complete", "nl": "Je khatm is voltooid"},
+  "Tekrar dinle": {"tr": "Tekrar dinle", "en": "Listen again", "nl": "Opnieuw luisteren"},
+
   "shareAppFeature": {"tr": "Uygulamayı WhatsApp veya e-postayla paylaşabilirsin.", "en": "Share the app via WhatsApp or email.", "nl": "Deel de app via WhatsApp of e-mail."},
   "updateAppFeature": {"tr": "Yeni sürümleri Ayarlar’dan kontrol edip yükleyebilirsin.", "en": "Check for and install updates from Settings.", "nl": "Controleer en installeer updates via Instellingen."},
   "downloadTitle": {"tr": "Güncellemeyi indir", "en": "Download update", "nl": "Update downloaden"},
