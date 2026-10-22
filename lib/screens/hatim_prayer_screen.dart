@@ -2,6 +2,9 @@ import '../widgets/screen_title.dart';
 
 import 'dart:async';
 
+import '../services/prayer_audio_library.dart';
+import '../widgets/prayer_download_dialog.dart';
+
 import 'package:flutter/material.dart';
 
 import '../services/reading_store.dart';
@@ -20,6 +23,8 @@ class HatimPrayerScreen extends StatefulWidget {
 class _HatimPrayerScreenState extends State<HatimPrayerScreen>
     with WidgetsBindingObserver {
   bool playing = false;
+  bool downloaded = false;
+  bool loadingAudio = true;
   int _playRequest = 0;
   String? error;
   double _dragDistance = 0;
@@ -48,7 +53,53 @@ class _HatimPrayerScreenState extends State<HatimPrayerScreen>
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    playRecording();
+    loadRecording();
+  }
+
+  Future<void> loadRecording() async {
+    try {
+      final ready =
+          await ReadingStore.channel.invokeMethod<bool>(
+            'isHatimPrayerDownloaded',
+          ) ==
+          true;
+      if (!mounted) return;
+      setState(() {
+        downloaded = ready;
+        loadingAudio = false;
+      });
+      if (ready) await playRecording();
+    } catch (_) {
+      if (mounted) {
+        setState(() {
+          loadingAudio = false;
+          error = context.t('prayerAudioError');
+        });
+      }
+    }
+  }
+
+  Future<void> requestRecording() async {
+    setState(() => loadingAudio = true);
+    try {
+      final library = await PrayerAudioLibrary.load();
+      if (!mounted) return;
+      final accepted = await showDialog<bool>(
+        context: context,
+        barrierDismissible: false,
+        builder: (_) => PrayerDownloadDialog(library: library),
+      );
+      if (!mounted || accepted != true) return;
+      setState(() {
+        downloaded = true;
+        loadingAudio = false;
+      });
+      unawaited(playRecording());
+    } catch (_) {
+      if (mounted) setState(() => error = context.t('prayerDownloadError'));
+    } finally {
+      if (mounted) setState(() => loadingAudio = false);
+    }
   }
 
   Future<void> playRecording() async {
@@ -107,10 +158,19 @@ class _HatimPrayerScreenState extends State<HatimPrayerScreen>
             icon: const Icon(Icons.arrow_back),
             label: Text(context.t('Okumaya dön')),
           ),
-          const Icon(Icons.task_alt, size: 64),
+          Icon(
+            widget.store?.hatimComplete == true
+                ? Icons.task_alt
+                : Icons.headphones_outlined,
+            size: 64,
+          ),
           const SizedBox(height: 16),
           Text(
-            context.t('Hatminiz tamamlandı'),
+            context.t(
+              widget.store?.hatimComplete == true
+                  ? 'Hatminiz tamamlandı'
+                  : 'Hatim duası',
+            ),
             style: Theme.of(context).textTheme.headlineSmall,
           ),
           const SizedBox(height: 24),
@@ -118,9 +178,23 @@ class _HatimPrayerScreenState extends State<HatimPrayerScreen>
           if (error != null) Text(error!),
           const SizedBox(height: 16),
           FilledButton.icon(
-            onPressed: playing ? stop : playRecording,
+            onPressed: loadingAudio
+                ? null
+                : playing
+                ? stop
+                : downloaded
+                ? playRecording
+                : requestRecording,
             icon: Icon(playing ? Icons.stop : Icons.volume_up),
-            label: Text(context.t(playing ? 'Durdur' : 'Tekrar dinle')),
+            label: Text(
+              context.t(
+                playing
+                    ? 'Durdur'
+                    : downloaded
+                    ? 'Tekrar dinle'
+                    : 'prayerDownloadTitle',
+              ),
+            ),
           ),
           const SizedBox(height: 24),
           Text(

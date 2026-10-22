@@ -8,8 +8,29 @@ import android.media.MediaPlayer
 import android.os.Build
 import io.flutter.plugin.common.MethodChannel
 
-/** Plays the packaged human recording. Never falls back to speech synthesis. */
+/** Plays the downloaded human recording. Never falls back to speech synthesis. */
 class HatimPrayerPlayer(private val context: Context) {
+    companion object {
+        fun recording(context: Context) = java.io.File(context.filesDir, "prayer-audio-v1/hatim_sudais.mp3")
+        fun isDownloaded(context: Context): Boolean {
+            val file = recording(context)
+            if (!file.isFile) return false
+            val valid = try {
+                val digest = java.security.MessageDigest.getInstance("SHA-256")
+                file.inputStream().use { input ->
+                    val buffer = ByteArray(65536)
+                    while (true) {
+                        val count = input.read(buffer)
+                        if (count < 0) break
+                        digest.update(buffer, 0, count)
+                    }
+                }
+                file.length() == 2346176L && digest.digest().joinToString("") { "%02x".format(it) } == "8e84bfb0ffa4a1ed136f7cde3117d195e3946fa426bf022a6d913136ffa1c3dd"
+            } catch (_: Exception) { false }
+            if (!valid) file.delete()
+            return valid
+        }
+    }
     private val manager = context.getSystemService(Context.AUDIO_SERVICE) as AudioManager
     private var player: MediaPlayer? = null
     private var result: MethodChannel.Result? = null
@@ -36,9 +57,8 @@ class HatimPrayerPlayer(private val context: Context) {
             val next = MediaPlayer()
             player = next
             next.setAudioAttributes(attributes)
-            context.assets.openFd("flutter_assets/assets/audio/hatim_sudais.mp3").use { asset ->
-                next.setDataSource(asset.fileDescriptor, asset.startOffset, asset.length)
-            }
+            check(isDownloaded(context)) { "Download required" }
+            next.setDataSource(recording(context).absolutePath)
             next.setOnPreparedListener { if (player === it) it.start() }
             next.setOnCompletionListener { if (player === it) stop() }
             next.setOnErrorListener { media, _, _ ->

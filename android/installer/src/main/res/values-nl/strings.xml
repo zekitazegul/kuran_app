@@ -1,0 +1,36 @@
+<resources>
+    <string name="app_name">Kuran Installer</string>
+    <string name="intro">Download en installeer de nieuwste versie van KuranApp.\n\nKoranpagina’s en audio worden op verzoek in de app gedownload. Wifi wordt aanbevolen.</string>
+    <string name="start_hint">Tik op Downloaden en installeren om te beginnen.</string>
+    <string name="download_install">Downloaden en installeren</string>
+    <string name="cancel">Annuleren</string>
+    <string name="privacy">Downloads gebruiken GitHub en internet of mobiele data. Android vraagt om installatietoestemming en bevestiging.</string>
+    <string name="ready">Het bestand is gereed. Ga verder met installeren.</string>
+    <string name="continue_install">Installatie voortzetten</string>
+    <string name="cancelling">Download annuleren…</string>
+    <string name="checking">Nieuwste versie controleren…</string>
+    <string name="invalid_metadata">Versiegegevens konden niet worden gecontroleerd.</string>
+    <string name="invalid_download">Downloadgegevens konden niet worden gecontroleerd.</string>
+    <string name="open_app">KuranApp openen</string>
+    <string name="already_current">De nieuwste versie van KuranApp is al geïnstalleerd.</string>
+    <string name="size_error">De downloadgrootte kon niet worden gecontroleerd.</string>
+    <string name="verification_error">Het gedownloade bestand kon niet worden gecontroleerd. Probeer opnieuw.</string>
+    <string name="old_download_error">De vorige download kon niet worden verwijderd.</string>
+    <string name="prepare_error">Het installatiebestand kon niet worden voorbereid.</string>
+    <string name="cancelled">Download geannuleerd. Je kunt opnieuw beginnen.</string>
+    <string name="download_error">Downloaden is mislukt. Controleer je internetverbinding en vrije ruimte en probeer opnieuw.</string>
+    <string name="https_error">De downloadverbinding kon niet worden gecontroleerd.</string>
+    <string name="invalid_link">De downloadlink is ongeldig.</string>
+    <string name="server_error">De downloadserver kon niet worden bereikt.</string>
+    <string name="link_error">De downloadlink kon niet worden geopend.</string>
+    <string name="apk_error">Het installatiebestand kon niet worden gecontroleerd. Probeer opnieuw.</string>
+    <string name="signature_error">De apphandtekening kon niet worden gecontroleerd.</string>
+    <string name="grant_permission">Sta app-installaties voor Kuran Installer toe en ga terug.</string>
+    <string name="await_confirmation">Wachten op de installatiebevestiging van Android…</string>
+    <string name="install_error">Het installatiescherm kon niet worden geopend. Probeer opnieuw.</string>
+    <string name="permission_denied">Er is geen installatietoestemming verleend. Tik op Installatie voortzetten om opnieuw te proberen.</string>
+    <string name="installed">KuranApp is geïnstalleerd. Je kunt Kuran Installer later verwijderen via de app-instellingen van je telefoon.</string>
+    <string name="not_completed">De installatie is niet voltooid. Probeer opnieuw zonder te downloaden.</string>
+    <string name="not_found">KuranApp is niet gevonden. Je kunt de app opnieuw installeren.</string>
+    <string name="downloading">KuranApp downloaden… %1$d%% · %2$.1f MB</string>
+</resources>

@@ -2,12 +2,32 @@ import 'package:flutter/material.dart';
 import '../services/app_language.dart';
 
 const translations = <String, Map<String, String>>{
-  "prayerRecordingDetails": {"tr": "Abdurrahman es-Sudeys · Arapça hatim duası. Çevrimdışı dinlenebilir.", "en": "Abdurrahman As-Sudais · Arabic khatm prayer. Available offline.", "nl": "Abdurrahman As-Sudais · Arabisch khatmgebed. Offline beschikbaar."},
+  "prayerListenHint": {"tr": "Bir kez indir, çevrimdışı dinle", "en": "Download once and listen offline", "nl": "Eenmaal downloaden en offline luisteren"},
+  "prayerListen": {"tr": "Hatim duasını dinle", "en": "Listen to the khatm prayer", "nl": "Naar het khatmgebed luisteren"},
+  "updateBadgeFeature": {"tr": "Yeni sürümler Güncellemeler başlığında işaretlenir; yenilikleri okuyabilirsin.", "en": "New versions are marked under Updates; tap to read what’s new.", "nl": "Nieuwe versies worden gemarkeerd bij Updates; tik om te lezen wat er nieuw is."},
+  "updateCheckError": {"tr": "Sürüm bilgisi alınamadı. Bağlantını kontrol edip yeniden dene.", "en": "Could not check for updates. Check your connection and try again.", "nl": "Updates konden niet worden gecontroleerd. Controleer je verbinding en probeer opnieuw."},
+  "updateRefresh": {"tr": "Yeniden kontrol et", "en": "Check again", "nl": "Opnieuw controleren"},
+  "updateNotesFallback": {"tr": "Yeni sürüm hazır.", "en": "A new version is available.", "nl": "Er is een nieuwe versie beschikbaar."},
+  "updateAvailableVersion": {"tr": "Yeni sürüm: {version}", "en": "New version: {version}", "nl": "Nieuwe versie: {version}"},
+  "updateNewBadge": {"tr": "Yeni", "en": "New", "nl": "Nieuw"},
+  "prayerDownloadUpdate": {"tr": "Dua kaydını istediğinde indirip çevrimdışı dinleyebilirsin.", "en": "Download the prayer recording when you want and listen offline.", "nl": "Download de gebedsopname wanneer je wilt en luister offline."},
+  "screenAwakeUpdate": {"tr": "Ekranı açık tutmayı ayarlardan açıp kapatabilirsin.", "en": "Turn Keep screen on on or off in Settings.", "nl": "Schakel Scherm aanhouden in of uit via Instellingen."},
+  "installerUpdate": {"tr": "Uygulamayı küçük Kuran Installer dosyasıyla paylaşabilirsin.", "en": "Share the app using the small Kuran Installer file.", "nl": "Deel de app met het kleine Kuran Installer-bestand."},
+  "prayerRetry": {"tr": "Yeniden dene", "en": "Try again", "nl": "Opnieuw proberen"},
+  "prayerDownloadError": {"tr": "İndirme tamamlanamadı. İnternet bağlantını ve boş alanı kontrol edip yeniden dene.", "en": "Download failed. Check your internet connection and free space, then try again.", "nl": "Downloaden is mislukt. Controleer je internetverbinding en vrije ruimte en probeer opnieuw."},
+  "prayerDownloadHint": {"tr": "Dua kaydı bir kez indirilir ({size} MB). Ardından çevrimdışı dinleyebilirsin. Wi-Fi bağlantısı önerilir.", "en": "Download the prayer recording once ({size} MB), then listen offline. Wi-Fi is recommended.", "nl": "Download de gebedsopname eenmalig ({size} MB) en luister daarna offline. Wifi wordt aanbevolen."},
+  "prayerDownloadTitle": {"tr": "Dua kaydını indir", "en": "Download prayer recording", "nl": "Gebedsopname downloaden"},
+  "screenAwakeHint": {"tr": "Ekran otomatik kapanmaz.", "en": "The screen does not turn off automatically.", "nl": "Het scherm gaat niet automatisch uit."},
+  "screenAwakeEnabled": {"tr": "Uygulama açıkken", "en": "While the app is open", "nl": "Terwijl de app geopend is"},
+  "screenAwakeTitle": {"tr": "Ekranı açık tut", "en": "Keep screen on", "nl": "Scherm aanhouden"},
+  "distributionCheck": {"tr": "Güncellemeler", "en": "Updates", "nl": "Updates"},
+  "distributionInstaller": {"tr": "Kuran Installer’ı paylaş", "en": "Share Kuran Installer", "nl": "Kuran Installer delen"},
+  "prayerRecordingDetails": {"tr": "Abdurrahman es-Sudeys · Arapça hatim duası. Bir kez indirip çevrimdışı dinleyebilirsin.", "en": "Abdurrahman As-Sudais · Arabic khatm prayer. Download once to listen offline.", "nl": "Abdurrahman As-Sudais · Arabisch khatmgebed. Download eenmaal om offline te luisteren."},
   "prayerTurkishExample": {"tr": "Kısa Türkçe dua örneği", "en": "A short prayer example in Turkish", "nl": "Een kort voorbeeldgebed in het Turks"},
   "prayerAudioError": {"tr": "Dua kaydı açılamadı. Tekrar deneyin.", "en": "Could not play the prayer recording. Please try again.", "nl": "De gebedsopname kon niet worden afgespeeld. Probeer opnieuw."},
   "hatimRecordingUpdate": {"tr": "Hatim duasını Abdurrahman es-Sudeys’in sesinden çevrimdışı dinleyebilirsin.", "en": "Listen offline to the khatm prayer recited by Abdurrahman As-Sudais.", "nl": "Luister offline naar het khatmgebed door Abdurrahman As-Sudais."},
   "prayerRecordingSource": {"tr": "Hatim duası · Abdurrahman es-Sudeys", "en": "Khatm prayer · Abdurrahman As-Sudais", "nl": "Khatmgebed · Abdurrahman As-Sudais"},
-  "prayerSourceDetails": {"tr": "Arapça hatim duası kaydı: Abdurrahman es-Sudeys. Kaynak: Islamweb ses kütüphanesi. Kayıt uygulamaya dahildir ve çevrimdışı oynatılır. Aşağıdaki kısa Türkçe dua ayrı bir örnektir; kaydın birebir metni veya çevirisi değildir.", "en": "Arabic khatm prayer recording: Abdurrahman As-Sudais. Source: Islamweb audio library. The recording is included for offline playback. The short Turkish prayer is a separate example, not a transcript or translation of the recording.", "nl": "Arabische khatmgebedsopname: Abdurrahman As-Sudais. Bron: de audiobibliotheek van Islamweb. De opname is inbegrepen voor offline afspelen. Het korte Turkse gebed is een apart voorbeeld, geen transcriptie of vertaling van de opname."},
+  "prayerSourceDetails": {"tr": "Arapça hatim duası kaydı: Abdurrahman es-Sudeys. Kaynak: Islamweb ses kütüphanesi. Kayıt isteğe bağlı indirilir ve ardından çevrimdışı oynatılır. Kısa Türkçe dua ayrı bir örnektir; kaydın birebir metni veya çevirisi değildir.", "en": "Arabic khatm prayer: Abdurrahman As-Sudais. Source: Islamweb audio library. Download the recording on request, then play it offline. The short Turkish prayer is a separate example, not a transcript or translation of the recording.", "nl": "Arabisch khatmgebed: Abdurrahman As-Sudais. Bron: de audiobibliotheek van Islamweb. Download de opname op verzoek en speel deze daarna offline af. Het korte Turkse gebed is een apart voorbeeld, geen transcriptie of vertaling van de opname."},
   "Hatminiz tamamlandı": {"tr": "Hatminiz tamamlandı", "en": "Your khatm is complete", "nl": "Je khatm is voltooid"},
   "Tekrar dinle": {"tr": "Tekrar dinle", "en": "Listen again", "nl": "Opnieuw luisteren"},
 
@@ -22,9 +42,9 @@ const translations = <String, Map<String, String>>{
   "downloadCancelled": {"tr": "İndirme iptal edildi.", "en": "Download cancelled.", "nl": "Download geannuleerd."},
   "downloadSizeRelease": {"tr": "İndirmeden önce dosya boyutu gösterilir. Mobil veride indirme onayı alınır; büyük dosyalarda Wi-Fi önerilir.", "en": "File size is shown before downloading. Mobile data requires confirmation; Wi-Fi is recommended for larger files.", "nl": "De bestandsgrootte wordt vooraf getoond. Mobiele data vereist toestemming; wifi wordt aanbevolen voor grotere bestanden."},
   "distributionShare": {"tr": "Uygulamayı paylaş", "en": "Share app", "nl": "App delen"},
-  "distributionShareHint": {"tr": "Kurulu sürümü WhatsApp, e-posta veya başka bir uygulamayla APK olarak gönder.", "en": "Send the installed version as an APK using WhatsApp, email or another app.", "nl": "Verstuur de geïnstalleerde versie als APK via WhatsApp, e-mail of een andere app."},
-  "distributionPreparing": {"tr": "APK hazırlanıyor…", "en": "Preparing APK…", "nl": "APK voorbereiden…"},
-  "shareError": {"tr": "APK paylaşılamadı. Boş alanı kontrol edip yeniden dene.", "en": "Could not share APK. Check free space and try again.", "nl": "APK delen is mislukt. Controleer de vrije ruimte en probeer opnieuw."},
+  "distributionShareHint": {"tr": "Küçük Kuran Installer dosyasını gönder. KuranApp alıcının telefonuna internetten indirilir; sesler isteğe bağlıdır.", "en": "Send the small Kuran Installer file. KuranApp is downloaded on the recipient’s phone; audio is optional.", "nl": "Verstuur het kleine Kuran Installer-bestand. KuranApp wordt op de telefoon van de ontvanger gedownload; audio is optioneel."},
+  "distributionPreparing": {"tr": "Kurulum dosyası hazırlanıyor…", "en": "Preparing installer…", "nl": "Installatiebestand voorbereiden…"},
+  "shareError": {"tr": "Kurulum dosyası paylaşılamadı. Boş alanı kontrol edip yeniden dene.", "en": "Could not share the installer. Check free space and try again.", "nl": "Het installatiebestand kon niet worden gedeeld. Controleer de vrije ruimte en probeer opnieuw."},
   "distributionUpdate": {"tr": "Güncelle", "en": "Update", "nl": "Bijwerken"},
   "updateIdle": {"tr": "Yeni sürümü kontrol et", "en": "Check for a new version", "nl": "Controleren op een nieuwe versie"},
   "updateChecking": {"tr": "Son güncellemeler kontrol ediliyor…", "en": "Checking for updates…", "nl": "Controleren op updates…"},
@@ -36,7 +56,7 @@ const translations = <String, Map<String, String>>{
   "updateCurrent": {"tr": "Uygulamanız zaten en son sürüm olan {version} sürümünde.", "en": "Your app is already on the latest version, {version}.", "nl": "Je app heeft al de nieuwste versie, {version}."},
   "updateError": {"tr": "Güncelleme alınamadı veya doğrulanamadı. İnternet bağlantını ve boş alanı kontrol edip yeniden dene.", "en": "Could not download or verify the update. Check your connection and free space, then retry.", "nl": "De update kan niet worden gedownload of gecontroleerd. Controleer je verbinding en vrije ruimte en probeer opnieuw."},
   "distributionRelease": {"tr": "Ayarlar’dan uygulamayı APK olarak paylaşabilir, son sürümü GitHub sayfası açmadan indirip Android onayıyla kurabilirsin.", "en": "Share the app as an APK from Settings, and download the latest version without opening GitHub. Android asks for installation confirmation.", "nl": "Deel de app als APK vanuit Instellingen en download de nieuwste versie zonder GitHub te openen. Android vraagt om bevestiging voor installatie."},
-  "distributionPrivacy": {"tr": "Güncellemeyi indirmek internet verisi kullanır. Wi-Fi bağlantısı önerilir.", "en": "Downloading updates uses internet data. A Wi-Fi connection is recommended.", "nl": "Updates downloaden gebruikt internetdata. Een wifi-verbinding wordt aanbevolen."},
+  "distributionPrivacy": {"tr": "Kuran Installer paylaşımında yalnızca küçük kurulum dosyası gönderilir. Ayarlar açıldığında sürüm bilgisi GitHub üzerinden kontrol edilir. Uygulama ve güncellemeleri GitHub üzerinden, isteğe bağlı dua kaydı Islamweb üzerinden indirilir. Bu hizmetler IP adresi gibi bağlantı bilgilerini görebilir. Konum ve cihaz istatistiği gönderilmez.", "en": "Sharing Kuran Installer sends only the small installer file. Opening Settings checks version information on GitHub. The app and its updates are downloaded from GitHub, and the optional prayer recording from Islamweb. These services can see network information such as your IP address. No location or device statistics are sent.", "nl": "Bij het delen van Kuran Installer wordt alleen het kleine installatiebestand verstuurd. Bij het openen van Instellingen wordt versie-informatie op GitHub gecontroleerd. De app en updates worden van GitHub gedownload en de optionele gebedsopname van Islamweb. Deze diensten kunnen netwerkgegevens zoals je IP-adres zien. Er worden geen locatie- of apparaatstatistieken verstuurd."},
   'mealTextOrderUpdate': {'tr': 'Meal Oku’da ayetlerle açıklamaların birbirine karışmasına yol açan sütun sırası düzeltildi. Satır sonunda bölünen kelimelerin birleştirilmesi iyileştirildi; PDF’nin tüm sayfaları yeniden denetlendi.', 'en': 'Fixed the column order that mixed verses with notes in Translation. Improved joining words split at line endings and audited every PDF page again.', 'nl': 'De kolomvolgorde waardoor verzen en toelichtingen in Vertaling door elkaar raakten is hersteld. Woorden die aan het regeleinde waren afgebroken worden beter samengevoegd; alle PDF-pagina’s zijn opnieuw gecontroleerd.'},
   'mealShortcutToggleUpdate': {'tr': 'Alt navigasyon çubuğundaki Meal Oku kısayoluna ikinci kez dokunduğunda açık meal kapanır ve ana sayfaya dönülür. Açık kısayol çubukta vurgulanır.', 'en': 'Tapping the Translation shortcut in the bottom navigation bar a second time closes it and returns to Home. The active shortcut is highlighted in the bar.', 'nl': 'Tik een tweede keer op de vertaalsnelkoppeling in de onderste navigatiebalk om deze te sluiten en terug te keren naar het startscherm. De actieve snelkoppeling wordt gemarkeerd in de balk.'},
   'stabilityUpdate': {'tr': 'Okuma sayfalarında görsel belleği yönetimi düzeltildi. Ayet konum verileri arayüzü meşgul etmeden işlenir. Kullanılmayan ikon bağımlılığı ve taslak meal verisinin kurulum paketine eklenmesi kaldırıldı.', 'en': 'Fixed image memory management in reading pages. Verse position data is processed off the UI thread. Removed an unused icon dependency and excluded draft translation data from the installation package.', 'nl': 'Het beheer van afbeeldingsgeheugen op leespagina’s is hersteld. Verspositiegegevens worden buiten de UI-thread verwerkt. Een ongebruikte pictogramafhankelijkheid is verwijderd en conceptvertaalgegevens worden niet meer in het installatiepakket opgenomen.'},
@@ -468,9 +488,9 @@ const translations = <String, Map<String, String>>{
     "en": "Ahıska Yayınevi",
     "nl": "Ahıska Yayınevi"
   },
-  "Paylaştığınız Hüsrev hatlı mushaf": {
-    "en": "Hüsrev Quran edition",
-    "nl": "Koraneditie in Hüsrev-schrift"
+  "Hüsrev Altınbaşak hattı, Hayrat Vakfı": {
+    "en": "Hüsrev Altınbaşak script, Hayrat Foundation",
+    "nl": "Hüsrev Altınbaşak-schrift, Hayrat Stichting"
   },
   "OKUMA DENEYİMİ": {
     "en": "READING EXPERIENCE",

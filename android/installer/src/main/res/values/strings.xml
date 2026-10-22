@@ -1,0 +1,36 @@
+<resources>
+    <string name="app_name">Kuran Installer</string>
+    <string name="intro">Download and install the latest KuranApp version.\n\nQuran pages and audio are downloaded on request inside the app. Wi-Fi is recommended.</string>
+    <string name="start_hint">Tap Download and install to start.</string>
+    <string name="download_install">Download and install</string>
+    <string name="cancel">Cancel</string>
+    <string name="privacy">Downloads use GitHub and internet or mobile data. Android asks for installation permission and confirmation.</string>
+    <string name="ready">The file is ready. Continue installing.</string>
+    <string name="continue_install">Continue installing</string>
+    <string name="cancelling">Cancelling download…</string>
+    <string name="checking">Checking the latest version…</string>
+    <string name="invalid_metadata">Could not verify version information.</string>
+    <string name="invalid_download">Could not verify download information.</string>
+    <string name="open_app">Open KuranApp</string>
+    <string name="already_current">The latest KuranApp version is already installed.</string>
+    <string name="size_error">Could not verify download size.</string>
+    <string name="verification_error">Could not verify the downloaded file. Try again.</string>
+    <string name="old_download_error">Could not clear the previous download.</string>
+    <string name="prepare_error">Could not prepare the installer file.</string>
+    <string name="cancelled">Download cancelled. You can start again.</string>
+    <string name="download_error">Download failed. Check your internet connection and free space and try again.</string>
+    <string name="https_error">Could not verify the download connection.</string>
+    <string name="invalid_link">The download link is invalid.</string>
+    <string name="server_error">Could not reach the download server.</string>
+    <string name="link_error">Could not open the download link.</string>
+    <string name="apk_error">Could not verify the installation file. Try again.</string>
+    <string name="signature_error">Could not verify the app signature.</string>
+    <string name="grant_permission">Allow app installations for Kuran Installer, then return.</string>
+    <string name="await_confirmation">Waiting for Android installation confirmation…</string>
+    <string name="install_error">Could not open the installation screen. Try again.</string>
+    <string name="permission_denied">Installation permission was not granted. Tap Continue installing to try again.</string>
+    <string name="installed">KuranApp is installed. You can remove Kuran Installer later in your phone’s app settings.</string>
+    <string name="not_completed">Installation was not completed. Try again without downloading.</string>
+    <string name="not_found">KuranApp was not found. You can reinstall it.</string>
+    <string name="downloading">Downloading KuranApp… %1$d%% · %2$.1f MB</string>
+</resources>

@@ -1,21 +1,21 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kuran_app/main.dart';
+import 'package:kuran_app/l10n/translations.dart';
 import 'package:kuran_app/services/app_language.dart';
 import 'package:kuran_app/services/reading_store.dart';
 import 'package:kuran_app/widgets/compact_confirmation_dialog.dart';
 
 void main() {
-  for (final entry in const {
-    'tr': ['Yenilikler · 1.0.2', 'Kapat'],
-    'en': ['What’s new · 1.0.2', 'Close'],
-    'nl': ['Nieuw · 1.0.2', 'Sluiten'],
-  }.entries) {
-    testWidgets('maintenance update uses saved ${entry.key} and acknowledges without a popup', (tester) async {
+  for (final language in ['tr', 'en', 'nl']) {
+    testWidgets('New release notes use saved $language once per version', (
+      tester,
+    ) async {
       String? seen;
-      var version = '1.0.2+16';
+      var version = '1.1.0+63';
       AppLanguage.instance.value = const Locale('tr');
-      final messenger = TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger;
+      final messenger =
+          TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger;
       messenger.setMockMethodCallHandler(ReadingStore.channel, (call) async {
         if (call.method == 'acknowledgeUpdate') {
           seen = version;
@@ -23,9 +23,15 @@ void main() {
         }
         if (call.method == 'load') {
           return {
-          'directory': '/test', 'lastPage': 1, 'bookmarks': <int>[],
-          'downloaded': <int>[], 'informationSeen': true, 'guideSeen': true,
-          'language': entry.key, 'appVersion': version, 'seenUpdateVersion': seen,
+            'directory': '/test',
+            'lastPage': 1,
+            'bookmarks': <int>[],
+            'downloaded': <int>[],
+            'informationSeen': true,
+            'guideSeen': true,
+            'language': language,
+            'appVersion': version,
+            'seenUpdateVersion': seen,
           };
         }
         return null;
@@ -34,23 +40,32 @@ void main() {
         messenger.setMockMethodCallHandler(ReadingStore.channel, null);
         AppLanguage.instance.value = const Locale('tr');
       });
-      await tester.pumpWidget(KuranApp(key: UniqueKey()));
-      await tester.pumpAndSettle();
-      expect(find.text(entry.value.first), findsNothing);
-      expect(AppLanguage.instance.value?.languageCode, entry.key);
-      expect(seen, version);
+      Future<void> open() async {
+        await tester.pumpWidget(KuranApp(key: UniqueKey()));
+        await tester.pumpAndSettle();
+      }
+
+      Future<void> closeNotes() async {
+        expect(find.byType(CompactConfirmationDialog), findsOneWidget);
+        expect(
+          find.textContaining(translate('installerUpdate', language)),
+          findsOneWidget,
+        );
+        await tester.tap(find.text(translate('Kapat', language)));
+        await tester.pumpAndSettle();
+        expect(seen, version);
+      }
+
+      await open();
+      expect(AppLanguage.instance.value?.languageCode, language);
+      await closeNotes();
       await tester.pumpWidget(const SizedBox());
-      await tester.pumpAndSettle();
-      await tester.pumpWidget(KuranApp(key: UniqueKey()));
-      await tester.pumpAndSettle();
-      expect(find.text(entry.value.first), findsNothing);
-      await tester.pumpWidget(const SizedBox());
-      await tester.pumpAndSettle();
-      version = '1.0.3+17';
-      await tester.pumpWidget(KuranApp(key: UniqueKey()));
-      await tester.pumpAndSettle();
+      await open();
       expect(find.byType(CompactConfirmationDialog), findsNothing);
-      expect(seen, version);
+      await tester.pumpWidget(const SizedBox());
+      version = '1.1.1+64';
+      await open();
+      await closeNotes();
       await tester.pumpWidget(const SizedBox());
       await tester.pumpAndSettle();
     });

@@ -62,3 +62,16 @@ Source attribution alone is not a licence.
 Technical notes: [translation audit](docs/MEAL_AUDIT.md),
 [audio and translation](docs/LISTENING_AND_MEAL.md),
 [reading history](docs/READING_HISTORY.md).
+
+
+## Kuran Installer
+
+TR: Paylaş düğmesi yalnızca küçük Kuran Installer dosyasını gönderir. Alıcı uygulamayı internetten indirip Android onayıyla kurar. Sesler isteğe bağlı indirilir. Güncelle, Paylaş ve Ekranı açık tut bölümleri açılabilir başlıklardır; Görünüm ve okuma en üsttedir.
+
+EN: Share sends only the small Kuran Installer file. The recipient downloads the app and installs it with Android confirmation. Audio downloads are optional. Update, Share and Keep screen on use expandable headings; Appearance and reading comes first.
+
+NL: Delen verstuurt alleen het kleine Kuran Installer-bestand. De ontvanger downloadt en installeert de app met Android-bevestiging. Audiodownloads zijn optioneel. Bijwerken, Delen en Scherm aanhouden zijn uitklapbare koppen; Weergave en lezen staat bovenaan.
+
+Build: `flutter build apk --release` builds the native installer from source and embeds it in the main APK. Both modules use the existing local release signing configuration. Never commit credentials or generated APKs. `powershell -ExecutionPolicy Bypass -File tools/publish_release.ps1 -PrepareOnly` verifies and prepares the artifacts without publishing. Publish only after validating the build and the phone workflow.
+
+Download counts: `powershell -ExecutionPolicy Bypass -File tools/download-counts.ps1` reads public GitHub asset download counts without API keys. Repeated downloads and development checks count too; these are not device or user counts.

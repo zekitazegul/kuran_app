@@ -8,19 +8,15 @@ import java.io.File
 class ApkSharing(private val activity: MainActivity, channel: MethodChannel) {
     init {
         channel.setMethodCallHandler { call, result ->
-                if (call.method == "shareApk") {
-                    if (!activity.applicationInfo.splitSourceDirs.isNullOrEmpty()) {
-                        result.error("split", "shareError", null)
-                        return@setMethodCallHandler
-                    }
+                if (call.method == "shareInstaller") {
                     Thread {
                         try {
                             val folder = File(activity.cacheDir, "shared-apk").apply { mkdirs() }
-                            val version = activity.packageManager.getPackageInfo(activity.packageName, 0).versionName ?: "1"
-                            val safeVersion = version.replace(Regex("[^A-Za-z0-9._-]"), "_")
-                            val apk = File(folder, "KuranApp-$safeVersion.apk")
+                            val apk = File(folder, "Kuran-Installer.apk")
                             val temporary = File(folder, "preparing.tmp")
-                            File(activity.applicationInfo.sourceDir).copyTo(temporary, overwrite = true)
+                            activity.assets.open("Kuran-Installer.apk").use { input ->
+                                temporary.outputStream().use { output -> input.copyTo(output) }
+                            }
                             if (apk.exists() && !apk.delete()) throw IllegalStateException("Old APK unavailable")
                             if (!temporary.renameTo(apk)) throw IllegalStateException("APK unavailable")
                             val uri = FileProvider.getUriForFile(activity, "${activity.packageName}.apkshare", apk)
@@ -29,8 +25,8 @@ class ApkSharing(private val activity: MainActivity, channel: MethodChannel) {
                                     val intent = Intent(Intent.ACTION_SEND).apply {
                                         type = "application/vnd.android.package-archive"
                                         putExtra(Intent.EXTRA_STREAM, uri)
-                                        putExtra(Intent.EXTRA_SUBJECT, "KuranApp $version")
-                                        clipData = ClipData.newRawUri("KuranApp APK", uri)
+                                        putExtra(Intent.EXTRA_SUBJECT, "Kuran Installer")
+                                        clipData = ClipData.newRawUri("Kuran Installer", uri)
                                         addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
                                     }
                                     activity.startActivity(Intent.createChooser(intent, (call.argument<String>("title") ?: "KuranApp")))

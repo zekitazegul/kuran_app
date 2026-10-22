@@ -35,6 +35,26 @@ class MainActivity : FlutterActivity() {
         val readingChannel = MethodChannel(flutterEngine.dartExecutor.binaryMessenger,
             "com.zekitazegul.kuranapp/reading")
         readingChannel.setMethodCallHandler { call, result ->
+            if (call.method == "setKeepScreenOn") {
+                try {
+                    val enabled = requireNotNull(call.argument<Boolean>("enabled"))
+                    check(getSharedPreferences("reading-computer-v1", MODE_PRIVATE).edit().putBoolean("keepScreenOn", enabled).commit())
+                    applyScreenPreference()
+                    result.success(null)
+                } catch (e: Exception) { result.error("PREFERENCE_ERROR", "Could not save preference", null) }
+                return@setMethodCallHandler
+            }
+            if (call.method == "prayerAudioDirectory") {
+                result.success(java.io.File(filesDir, "prayer-audio-v1").absolutePath)
+                return@setMethodCallHandler
+            }
+            if (call.method == "isHatimPrayerDownloaded") {
+                storageExecutor.execute {
+                    val ready = HatimPrayerPlayer.isDownloaded(applicationContext)
+                    runOnUiThread { result.success(ready) }
+                }
+                return@setMethodCallHandler
+            }
             if (call.method == "loadMealPreferences" || call.method == "saveMealPreferences") {
                 try {
                     val prefs = getSharedPreferences("meal-v1", MODE_PRIVATE)
@@ -146,8 +166,13 @@ class MainActivity : FlutterActivity() {
 
     override fun onResume() {
         super.onResume()
-        // Keep the screen awake while the app is in the foreground for reading.
-        window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+        applyScreenPreference()
+    }
+
+    private fun applyScreenPreference() {
+        if (getSharedPreferences("reading-computer-v1", MODE_PRIVATE).getBoolean("keepScreenOn", true)) {
+            window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+        } else window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
     }
 
     override fun onPause() {

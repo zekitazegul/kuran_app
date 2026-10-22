@@ -18,6 +18,7 @@ void main() {
     AppLanguage.instance.restore('tr');
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
         .setMockMethodCallHandler(ReadingStore.channel, (call) async {
+          if (call.method == 'isHatimPrayerDownloaded') return true;
           calls.add(call.method);
           if (call.method == 'playHatimPrayer') {
             playback = Completer<void>();
@@ -66,6 +67,7 @@ void main() {
   ) async {
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
         .setMockMethodCallHandler(ReadingStore.channel, (call) async {
+          if (call.method == 'isHatimPrayerDownloaded') return true;
           calls.add(call.method);
           if (call.method == 'playHatimPrayer') {
             throw PlatformException(code: 'PRAYER_AUDIO_ERROR');
@@ -77,6 +79,28 @@ void main() {
     expect(find.text(translate('prayerAudioError', 'tr')), findsOneWidget);
     expect(calls, ['playHatimPrayer']);
     expect(find.text('Tekrar dinle'), findsOneWidget);
+    await tester.pumpWidget(const SizedBox());
+    await tester.pumpAndSettle();
+  });
+  testWidgets('Missing prayer audio waits for a voluntary download request', (
+    tester,
+  ) async {
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(ReadingStore.channel, (call) async {
+          if (call.method == 'isHatimPrayerDownloaded') return false;
+          if (call.method == 'prayerAudioDirectory') return '/test-prayer';
+          calls.add(call.method);
+          return null;
+        });
+    await tester.pumpWidget(const MaterialApp(home: HatimPrayerScreen()));
+    await tester.pumpAndSettle();
+    expect(calls, isNot(contains('playHatimPrayer')));
+    await tester.tap(find.text(translate('prayerDownloadTitle', 'tr')));
+    await tester.pumpAndSettle();
+    expect(find.text(translate('downloadAccept', 'tr')), findsOneWidget);
+    await tester.tap(find.text(translate('downloadCancel', 'tr')));
+    await tester.pumpAndSettle();
+    expect(calls, isNot(contains('playHatimPrayer')));
     await tester.pumpWidget(const SizedBox());
     await tester.pumpAndSettle();
   });

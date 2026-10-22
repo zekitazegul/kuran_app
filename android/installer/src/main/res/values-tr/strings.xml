@@ -1,0 +1,36 @@
+<resources>
+    <string name="app_name">Kuran Installer</string>
+    <string name="intro">KuranApp’in güncel sürümünü internetten indirip kolayca kurabilirsin.\n\nKur’an sayfaları ve sesler uygulama içinde isteğe bağlı indirilir. Wi-Fi bağlantısı önerilir.</string>
+    <string name="start_hint">Başlamak için İndir ve kur’a dokun.</string>
+    <string name="download_install">İndir ve kur</string>
+    <string name="cancel">Vazgeç</string>
+    <string name="privacy">İndirme GitHub üzerinden yapılır. İnternet veya mobil veri kullanılır. Kurulum için Android’in izin ve onay ekranları açılır.</string>
+    <string name="ready">Dosya hazır. Kuruluma devam edebilirsin.</string>
+    <string name="continue_install">Kuruluma devam et</string>
+    <string name="cancelling">İndirme iptal ediliyor…</string>
+    <string name="checking">Güncel sürüm kontrol ediliyor…</string>
+    <string name="invalid_metadata">Sürüm bilgisi doğrulanamadı.</string>
+    <string name="invalid_download">İndirme bilgisi doğrulanamadı.</string>
+    <string name="open_app">KuranApp’i aç</string>
+    <string name="already_current">KuranApp’in güncel sürümü zaten yüklü.</string>
+    <string name="size_error">İndirme boyutu doğrulanamadı.</string>
+    <string name="verification_error">İndirilen dosya doğrulanamadı. Yeniden dene.</string>
+    <string name="old_download_error">Önceki indirme temizlenemedi.</string>
+    <string name="prepare_error">Kurulum dosyası hazırlanamadı.</string>
+    <string name="cancelled">İndirme iptal edildi. Tekrar başlatabilirsin.</string>
+    <string name="download_error">İndirme tamamlanamadı. İnternet bağlantını ve boş alanı kontrol edip yeniden dene.</string>
+    <string name="https_error">İndirme bağlantısı doğrulanamadı.</string>
+    <string name="invalid_link">İndirme bağlantısı geçerli değil.</string>
+    <string name="server_error">İndirme sunucusuna ulaşılamadı.</string>
+    <string name="link_error">İndirme bağlantısı açılamadı.</string>
+    <string name="apk_error">Kurulum dosyası doğrulanamadı. Yeniden dene.</string>
+    <string name="signature_error">Uygulama imzası doğrulanamadı.</string>
+    <string name="grant_permission">Kuran Installer için uygulama yükleme iznini açıp geri dön.</string>
+    <string name="await_confirmation">Android kurulum onayını bekliyor…</string>
+    <string name="install_error">Kurulum ekranı açılamadı. Yeniden dene.</string>
+    <string name="permission_denied">Kurulum izni verilmedi. Kuruluma devam et’e dokunarak yeniden deneyebilirsin.</string>
+    <string name="installed">KuranApp yüklendi. Kuran Installer’ı daha sonra telefonunun uygulama ayarlarından kaldırabilirsin.</string>
+    <string name="not_completed">Kurulum tamamlanmadı. İndirmeden tekrar deneyebilirsin.</string>
+    <string name="not_found">KuranApp bulunamadı. Yeniden kurabilirsin.</string>
+    <string name="downloading">KuranApp indiriliyor… %1$d%% · %2$.1f MB</string>
+</resources>

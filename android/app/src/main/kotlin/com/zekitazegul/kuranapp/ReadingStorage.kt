@@ -151,6 +151,7 @@ class ReadingStorage(private val context: Context, requestedEdition: String? = n
         "informationSeen" to global.getBoolean("informationSeen", false),
         "guideSeen" to global.getBoolean("guideSeen", false),
         "pageAnimations" to global.getBoolean("pageAnimations", true),
+        "keepScreenOn" to global.getBoolean("keepScreenOn", true),
         "pageEffect" to global.getString("pageEffect", "slide"),
         "bookmarkDates" to toCodec(JSONObject(preferences.getString("bookmarkDates", "{}")!!)),
         "bookmarks" to preferences.getStringSet("bookmarks", emptySet())!!.mapNotNull { it.toIntOrNull() },
