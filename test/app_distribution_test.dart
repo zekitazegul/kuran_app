@@ -177,6 +177,19 @@ void main() {
         findsOneWidget,
       );
       expect(calls, ['checkUpdate', 'checkUpdate']);
+      await tester.tap(find.text(translate('distributionCheck', language)));
+      await tester.pumpAndSettle();
+      expect(
+        find.widgetWithText(
+          FilledButton,
+          translate('distributionUpdate', language),
+        ),
+        findsNothing,
+      );
+      expect(calls.length, 2);
+      await tester.tap(find.text(translate('distributionCheck', language)));
+      await tester.pumpAndSettle();
+      expect(calls, ['checkUpdate', 'checkUpdate', 'checkUpdate']);
       expect(
         find.widgetWithText(
           FilledButton,

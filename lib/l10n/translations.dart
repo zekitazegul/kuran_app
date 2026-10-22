@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../services/app_language.dart';
 
 const translations = <String, Map<String, String>>{
+  'updatesToggleFeature': {'tr': 'Güncellemeler bölümü açılıp kapatılabilir.', 'en': 'The Updates section can be expanded and collapsed.', 'nl': 'Het onderdeel Updates kan worden geopend en gesloten.'},
   "prayerListenHint": {"tr": "Bir kez indir, çevrimdışı dinle", "en": "Download once and listen offline", "nl": "Eenmaal downloaden en offline luisteren"},
   "prayerListen": {"tr": "Hatim duasını dinle", "en": "Listen to the khatm prayer", "nl": "Naar het khatmgebed luisteren"},
   "updateBadgeFeature": {"tr": "Yeni sürümler Güncellemeler başlığında işaretlenir; yenilikleri okuyabilirsin.", "en": "New versions are marked under Updates; tap to read what’s new.", "nl": "Nieuwe versies worden gemarkeerd bij Updates; tik om te lezen wat er nieuw is."},

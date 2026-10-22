@@ -58,7 +58,6 @@ class AboutScreen extends StatelessWidget {
       const SizedBox(height: 12),
       const SupportCard(),
       const SizedBox(height: 16),
-      Text(context.t('Okumak her zaman ücretsiz.'), textAlign: TextAlign.center),
     ]),
   );
 }

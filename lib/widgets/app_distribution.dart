@@ -41,6 +41,16 @@ class _AppDistributionState extends State<AppDistribution> {
     super.dispose();
   }
 
+  void toggleUpdates() {
+    if (revealed) {
+      setState(() => revealed = false);
+    } else if (checking || busy) {
+      setState(() => revealed = true);
+    } else {
+      check(force: true);
+    }
+  }
+
   Future<void> check({bool force = false}) async {
     if (checking) return;
     setState(() {
@@ -150,8 +160,8 @@ class _AppDistributionState extends State<AppDistribution> {
                         dimension: 20,
                         child: CircularProgressIndicator(strokeWidth: 2),
                       )
-                    : const Icon(Icons.expand_more),
-                onTap: checking || busy ? null : () => check(force: true),
+                    : Icon(revealed ? Icons.expand_less : Icons.expand_more),
+                onTap: toggleUpdates,
               ),
               if (revealed && !checking)
                 Padding(

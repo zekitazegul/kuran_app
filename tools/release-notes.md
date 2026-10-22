@@ -1,5 +1,5 @@
-Kuran Installer ile paylaşım. İsteğe bağlı dua indirme. Ekranı açık tutma ayarı ve yeni sürüm işareti.
+Güncellemeler bölümü açılıp kapatılabilir.
 
-Sharing with Kuran Installer. Optional prayer download. Keep screen on setting and new version indicator.
+The Updates section can be expanded and collapsed.
 
-Delen met Kuran Installer. Optionele gebedsdownload. Scherm aanhouden en melding van nieuwe versies.
+Het onderdeel Updates kan worden geopend en gesloten.

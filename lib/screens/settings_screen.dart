@@ -364,12 +364,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
         _section('support', 'Destek ve geri bildirim', Icons.favorite_outline, [
           const SupportCard(),
         ]),
-        const SizedBox(height: 12),
-        Text(
-          context.t('Okumak her zaman ücretsiz.'),
-          textAlign: TextAlign.center,
-          style: Theme.of(context).textTheme.bodySmall,
-        ),
       ],
     ),
   );
