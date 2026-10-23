@@ -5,6 +5,33 @@ import 'package:kuran_app/services/app_language.dart';
 import 'package:kuran_app/widgets/reader_action_bar.dart';
 
 void main() {
+  for (final language in ['tr', 'en', 'nl']) {
+    for (final width in [640.0, 1280.0]) {
+      testWidgets('corner icons work in $language at $width', (tester) async {
+        AppLanguage.instance.value = Locale(language);
+        tester.view.physicalSize = Size(width, 400);
+        tester.view.devicePixelRatio = 1;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
+        final calls = <String>[];
+        await tester.pumpWidget(MaterialApp(home: Scaffold(body: Align(
+          alignment: Alignment.topCenter,
+          child: ReaderActionBar(compact: true, loading: false, playing: false,
+            stopping: false, onListen: () => calls.add('listen'),
+            onMeal: () => calls.add('meal'))))));
+        final listen = find.byKey(const ValueKey('reader-listen'));
+        final meal = find.byKey(const ValueKey('reader-meal'));
+        expect(tester.getTopLeft(listen), Offset.zero);
+        expect(tester.getTopRight(meal), Offset(width, 0));
+        expect(tester.getSize(listen), const Size(48, 48));
+        expect(find.byType(TextButton), findsNothing);
+        await tester.tap(listen);
+        await tester.tap(meal);
+        expect(calls, ['listen', 'meal']);
+        expect(tester.takeException(), isNull);
+      });
+    }
+  }
   for (final language in ['tr','en','nl']) {
     for (final size in [const Size(320,640),const Size(800,360),const Size(800,1280),const Size(1280,800)]) {
       testWidgets('labeled actions fit $language $size with large text', (tester) async {

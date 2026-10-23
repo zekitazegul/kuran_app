@@ -14,6 +14,10 @@ import 'package:kuran_app/services/app_preferences.dart';
 
 void main() {
   testWidgets('navigation destinations toggle closed; home stays open', (tester) async {
+    tester.view.physicalSize = const Size(600, 900);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
     AppLanguage.instance.value = const Locale('tr');
     final messenger = TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger;
     messenger.setMockMethodCallHandler(ReadingStore.channel, (call) async {

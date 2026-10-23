@@ -34,6 +34,7 @@ import org.json.JSONObject;
 public final class InstallerActivity extends Activity {
     private static final String APP_ID = "com.zekitazegul.kuranapp";
     private static final int PERMISSION = 8101, INSTALL = 8102;
+    private boolean cleanupRequested;
     private static final long MAX_APK = 250L * 1024 * 1024;
     private android.widget.Spinner languages;
     private TextView status;
@@ -115,6 +116,14 @@ public final class InstallerActivity extends Activity {
         body.addView(privacy);
         scroll.addView(body);
         setContentView(scroll);
+        cleanupRequested = saved != null && saved.getBoolean("cleanupRequested");
+        if (installedVersion() > 0) {
+            installedReady = true;
+            primary.setText(getString(R.string.open_app));
+            status.setText(getString(R.string.installed));
+            if (!cleanupRequested) openReader();
+            return;
+        }
         if (saved != null && saved.getBoolean("ready")) {
             expectedVersion = saved.getLong("version");
             try {
@@ -190,6 +199,7 @@ public final class InstallerActivity extends Activity {
                         installedReady = true;
                         primary.setText(getString(R.string.open_app));
                         status.setText(getString(R.string.already_current));
+                        openReader();
                     });
                     return;
                 }
@@ -341,17 +351,34 @@ public final class InstallerActivity extends Activity {
                 status.setText(getString(R.string.installed));
                 target().delete();
                 ready = false;
+                openReader();
             } else status.setText(getString(R.string.not_completed));
         }
     }
     private void openReader() {
         Intent launch = getPackageManager().getLaunchIntentForPackage(APP_ID);
-        if (launch != null) startActivity(launch);
+        if (launch != null) {
+            target().delete();
+            startActivity(launch);
+            if (!cleanupRequested) {
+                cleanupRequested = true;
+                try {
+                    Intent cleanup = new Intent(Intent.ACTION_UNINSTALL_PACKAGE,
+                        Uri.parse("package:" + getPackageName()));
+                    startActivity(cleanup);
+                    finish();
+                } catch (android.content.ActivityNotFoundException | SecurityException e) {
+                    cleanupRequested = false;
+                    status.setText(getString(R.string.cleanup_error));
+                }
+            }
+        }
         else { installedReady = false; primary.setText(getString(R.string.download_install)); status.setText(getString(R.string.not_found)); }
     }
     @Override protected void onSaveInstanceState(Bundle state) {
         state.putBoolean("ready", ready);
         state.putLong("version", expectedVersion);
+        state.putBoolean("cleanupRequested", cleanupRequested);
         super.onSaveInstanceState(state);
     }
     @Override public void onBackPressed() {

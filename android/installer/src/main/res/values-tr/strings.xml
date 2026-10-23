@@ -29,7 +29,8 @@
     <string name="await_confirmation">Android kurulum onayını bekliyor…</string>
     <string name="install_error">Kurulum ekranı açılamadı. Yeniden dene.</string>
     <string name="permission_denied">Kurulum izni verilmedi. Kuruluma devam et’e dokunarak yeniden deneyebilirsin.</string>
-    <string name="installed">KuranApp yüklendi. Kuran Installer’ı daha sonra telefonunun uygulama ayarlarından kaldırabilirsin.</string>
+    <string name="installed">KuranApp yüklendi. Şimdi Android, Kuran Installer’ı kaldırmak için onay isteyecek.</string>
+    <string name="cleanup_error">Kuran Installer’ı kaldırmak için telefonunun uygulama ayarlarını aç.</string>
     <string name="not_completed">Kurulum tamamlanmadı. İndirmeden tekrar deneyebilirsin.</string>
     <string name="not_found">KuranApp bulunamadı. Yeniden kurabilirsin.</string>
     <string name="downloading">KuranApp indiriliyor… %1$d%% · %2$.1f MB</string>

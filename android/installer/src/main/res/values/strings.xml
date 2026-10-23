@@ -29,7 +29,8 @@
     <string name="await_confirmation">Waiting for Android installation confirmation…</string>
     <string name="install_error">Could not open the installation screen. Try again.</string>
     <string name="permission_denied">Installation permission was not granted. Tap Continue installing to try again.</string>
-    <string name="installed">KuranApp is installed. You can remove Kuran Installer later in your phone’s app settings.</string>
+    <string name="installed">KuranApp is installed. Android will now ask to remove Kuran Installer.</string>
+    <string name="cleanup_error">To remove Kuran Installer, open its app settings.</string>
     <string name="not_completed">Installation was not completed. Try again without downloading.</string>
     <string name="not_found">KuranApp was not found. You can reinstall it.</string>
     <string name="downloading">Downloading KuranApp… %1$d%% · %2$.1f MB</string>

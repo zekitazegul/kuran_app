@@ -124,7 +124,12 @@ class _QuranScreenState extends State<QuranScreen> with SingleTickerProviderStat
     } catch (_) { _error('Ses işlemi tamamlanamadı. Tekrar dene.'); }
     finally { if (mounted) setState(() => _audioBusy = false); }
   }
+  bool _mealOpen = false;
   Future<void> _mealPage({bool resume = false}) async {
+    _mealOpen = true;
+    if (identical(AppNavigation.instance.fullscreenReader.value, this)) {
+      AppNavigation.instance.fullscreenReader.value = null;
+    }
     try {
       final data = jsonDecode(await rootBundle.loadString('assets/page_verses.json')) as Map;
       final refs = (data['pages'] as List)[_page] as List;
@@ -135,6 +140,12 @@ class _QuranScreenState extends State<QuranScreen> with SingleTickerProviderStat
       await Navigator.push(context, MaterialPageRoute<void>(builder: (_) => MealScreen(
         initialSurah: resume ? null : first['surah'] as int, initialVerse: resume ? null : first['verse'] as int)));
     } catch (_) { _error('Meal açılamadı. Tekrar dene.'); }
+    finally {
+      _mealOpen = false;
+      if (mounted && _fullscreen && (ModalRoute.of(context)?.isCurrent ?? false)) {
+        AppNavigation.instance.fullscreenReader.value = this;
+      }
+    }
   }
   Timer? _historyTimer;
   String _historySession = DateTime.now().microsecondsSinceEpoch.toString();
@@ -214,6 +225,38 @@ class _QuranScreenState extends State<QuranScreen> with SingleTickerProviderStat
   late int _page;
   int? _target;
   bool _fullscreen = false;
+  bool _fullscreenBeforeLandscape = false;
+  bool _showLandscapeActions = false;
+  int? _readingScrollPointer;
+  Offset? _readingScrollStart;
+
+  void _readingScrollDown(PointerDownEvent event) {
+    if (!_landscape || !_fullscreen) return;
+    if (_readingScrollPointer != null) {
+      _readingScrollStart = null;
+      return;
+    }
+    _readingScrollPointer = event.pointer;
+    _readingScrollStart = event.position;
+  }
+
+  void _readingScrollMove(PointerMoveEvent event) {
+    if (event.pointer != _readingScrollPointer) return;
+    final start = _readingScrollStart;
+    if (start == null || !_landscape || !_fullscreen || _zoomed) return;
+    final delta = event.position - start;
+    if (delta.dy.abs() >= widget.store.edgeTapWidth && delta.dy.abs() > delta.dx.abs() * 1.5) {
+      final show = delta.dy > 0;
+      if (_showLandscapeActions != show) setState(() => _showLandscapeActions = show);
+      _readingScrollStart = event.position;
+    }
+  }
+
+  void _readingScrollUp(PointerUpEvent event) {
+    if (event.pointer != _readingScrollPointer) return;
+    _readingScrollPointer = null;
+    _readingScrollStart = null;
+  }
   bool _showOuterFrame = false;
   bool _preparing = false;
   bool _bookmarkSaving = false;
@@ -456,6 +499,45 @@ class _QuranScreenState extends State<QuranScreen> with SingleTickerProviderStat
     super.dispose();
   }
 
+  Widget _hatimControls(bool busy) => PersonalPageSwipe(
+    onNavigate: (delta) => AppNavigation.instance.switchPage?.call(delta),
+    child: SafeArea(top: false, child: Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 8),
+      child: SizedBox(height: 48, child: Row(children: [
+        Tooltip(message: context.t('hatimProgressActions'), child: TextButton.icon(
+          style: TextButton.styleFrom(minimumSize: const Size(48, 48),
+            padding: const EdgeInsets.symmetric(horizontal: 8)),
+          onPressed: busy || _hatimSaving ? null : _hatimSelection,
+          icon: const Icon(Icons.checklist, size: 18),
+          label: Text('${widget.store.hatimPages.length}/${widget.store.edition.pageCount}',
+            style: const TextStyle(fontSize: 12)))),
+        const Spacer(),
+        Text(context.t('Okundu'), style: const TextStyle(fontSize: 12)),
+        Checkbox(key: const ValueKey('hatim-read-checkbox'),
+          materialTapTargetSize: MaterialTapTargetSize.padded,
+          value: widget.store.hatimPages.contains(_page),
+          onChanged: busy || _hatimSaving ? null : (_) => _markHatim()),
+      ]))),
+    ),
+  );
+
+  Widget _pageControls(bool busy) => PersonalPageSwipe(
+    onNavigate: AppNavigation.instance.switchPage,
+    child: Padding(padding: const EdgeInsets.symmetric(horizontal: 8), child: Row(
+      mainAxisAlignment: MainAxisAlignment.spaceEvenly, children: [
+        IconButton(tooltip: context.t('Sonraki sayfa'),
+          onPressed: busy || (_page == widget.store.edition.lastPage && !(widget.hatim && widget.store.hatimComplete)) ? null : () => _go(_page + 1),
+          icon: const Icon(Icons.chevron_left)),
+        TextButton(onPressed: _jump, child: Text('$_page / ${widget.store.edition.lastPage}')),
+        IconButton(tooltip: widget.store.bookmarks.contains(_page) ? context.t('Ayracı kaldır') : context.t('Ayraç ekle'),
+          onPressed: busy || _bookmarkSaving ? null : _toggleBookmark,
+          icon: Icon(widget.store.bookmarks.contains(_page) ? Icons.bookmark : Icons.bookmark_border)),
+        IconButton(tooltip: context.t('Önceki sayfa'),
+          onPressed: busy || _page == widget.store.edition.firstPage ? null : () => _go(_page - 1),
+          icon: const Icon(Icons.chevron_right)),
+      ])),
+  );
+
   Widget _image(int page) => TweenAnimationBuilder<double>(
     tween: Tween(end: widget.hatim && widget.store.hatimPages.contains(page) ? 1 : 0),
     duration: MediaQuery.disableAnimationsOf(context) ? Duration.zero : const Duration(milliseconds: 380),
@@ -503,11 +585,27 @@ class _QuranScreenState extends State<QuranScreen> with SingleTickerProviderStat
     }
     final orientation = MediaQuery.orientationOf(context);
     if (_orientation != orientation) {
+      if (orientation == Orientation.landscape) {
+        _fullscreenBeforeLandscape = _fullscreen;
+        _fullscreen = true;
+        _showOuterFrame = false;
+      } else if (_orientation == Orientation.landscape) {
+        _fullscreen = _fullscreenBeforeLandscape;
+        _showOuterFrame = false;
+      }
       _orientation = orientation;
+      _showLandscapeActions = false;
+      _readingScrollPointer = null;
+      _readingScrollStart = null;
       _zoom.value = Matrix4.identity();
       _zoomed = false;
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) _resetReadingPosition();
+        if (!mounted) return;
+        _resetReadingPosition();
+        if (!_mealOpen && (ModalRoute.of(context)?.isCurrent ?? false)) {
+          AppNavigation.instance.fullscreenReader.value = _fullscreen ? this : null;
+        }
+        SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
       });
     }
     _landscape = orientation == Orientation.landscape;
@@ -532,15 +630,28 @@ class _QuranScreenState extends State<QuranScreen> with SingleTickerProviderStat
             catch (_) { _error('Ses işlemi tamamlanamadı. Tekrar dene.'); }
             finally { if (mounted) setState(() => _audioBusy = false); }
           }, icon: const Icon(Icons.skip_next), label: Text(context.t('verseAdvance'))))) : null,
-      body: Stack(fit: StackFit.expand, children: [
+      body: Listener(behavior: HitTestBehavior.opaque,
+        onPointerDown: _readingScrollDown, onPointerMove: _readingScrollMove, onPointerUp: _readingScrollUp,
+        onPointerCancel: (_) { _readingScrollPointer = null; _readingScrollStart = null; },
+        child: Stack(fit: StackFit.expand, children: [
       SafeArea(top: !_fullscreen, bottom: !_fullscreen, child: Column(children: [
-        ReaderActionBar(loading: _audioBusy, playing: _audio.playing != null, stopping: _audio.stopPending,
+        TweenAnimationBuilder<double>(
+          tween: Tween(end: !(_landscape && _fullscreen) || _showLandscapeActions ? 1 : 0),
+          duration: _landscape && !MediaQuery.disableAnimationsOf(context)
+            ? const Duration(milliseconds: 180) : Duration.zero,
+          builder: (context, visibility, child) => visibility == 0 ? const SizedBox.shrink()
+            : ClipRect(child: Align(heightFactor: visibility, alignment: Alignment.bottomCenter,
+                child: IgnorePointer(ignoring: _landscape && _fullscreen && !_showLandscapeActions,
+                  child: child))),
+          child: Padding(
+          padding: _landscape && _fullscreen ? const EdgeInsets.symmetric(horizontal: 4) : EdgeInsets.zero,
+          child: ReaderActionBar(compact: _landscape && _fullscreen,
+          loading: _audioBusy, playing: _audio.playing != null, stopping: _audio.stopPending,
           onListen: busy || _audioBusy || _audio.stopPending ? null : _listenPage,
-          onMeal: busy || _audioBusy ? null : _mealPage),
+          onMeal: busy || _audioBusy ? null : _mealPage))),
         Expanded(child: GestureDetector(
           key: const ValueKey('quran-reading-surface'),
           behavior: HitTestBehavior.opaque,
-          onDoubleTap: _doubleTapFullscreen,
           child: Listener(
             onPointerDown: (event) {
               if (_touchPointer != null) {
@@ -549,7 +660,7 @@ class _QuranScreenState extends State<QuranScreen> with SingleTickerProviderStat
                 return;
               }
               if (_turn.isAnimating || _preparing || _target != null) return;
-              _exitFromBottomEdge = _fullscreen && event.localPosition.dy >= _readerHeight - 56;
+              _exitFromBottomEdge = _fullscreen && !_landscape && event.localPosition.dy >= _readerHeight - 56;
               _touchPointer = event.pointer;
               _touchStart = event.position;
               _multiTouch = false;
@@ -614,51 +725,28 @@ class _QuranScreenState extends State<QuranScreen> with SingleTickerProviderStat
                   physics: _zoomed || _target != null
                       ? NeverScrollableScrollPhysics()
                       : ClampingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
-                  child: SizedBox(width: constraints.maxWidth, height: sheetHeight, child: child),
+                  child: Column(children: [
+                    GestureDetector(behavior: HitTestBehavior.opaque,
+                      onDoubleTap: _doubleTapFullscreen,
+                      child: SizedBox(width: constraints.maxWidth, height: sheetHeight, child: child)),
+                    if (_landscape && _fullscreen) SafeArea(top: false,
+                      child: Column(key: const ValueKey('landscape-reading-footer'), children: [
+                        if (widget.hatim) _hatimControls(busy),
+                        _pageControls(busy),
+                      ])),
+                  ]),
               ));
           })),
         )),
-        if (widget.hatim) TweenAnimationBuilder<double>(
-          tween: Tween(end: _landscape && _fullscreen ? 0 : 1),
-          duration: MediaQuery.disableAnimationsOf(context) ? Duration.zero : const Duration(milliseconds: 320),
-          curve: Curves.easeInOutCubic,
-          builder: (context, visibility, child) => ClipRect(child: Align(
-            heightFactor: visibility, alignment: Alignment.bottomCenter,
-            child: Opacity(opacity: visibility, child: child))),
-          child: IgnorePointer(ignoring: _landscape && _fullscreen,
-            child: ExcludeSemantics(excluding: _landscape && _fullscreen,
-              child: PersonalPageSwipe(onNavigate: (delta) => AppNavigation.instance.switchPage?.call(delta), child: SafeArea(top: false, child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 8),
-                child: SizedBox(height: 48, child: Row(children: [
-                  Tooltip(message: context.t('hatimProgressActions'), child: TextButton.icon(
-                    style: TextButton.styleFrom(minimumSize: const Size(48, 48),
-                      padding: const EdgeInsets.symmetric(horizontal: 8)),
-                    onPressed: busy || _hatimSaving ? null : _hatimSelection,
-                    icon: const Icon(Icons.checklist, size: 18),
-                    label: Text('${widget.store.hatimPages.length}/${widget.store.edition.pageCount}',
-                      style: const TextStyle(fontSize: 12)))),
-                  const Spacer(),
-                  Text(context.t('Okundu'), style: const TextStyle(fontSize: 12)),
-                  Checkbox(key: const ValueKey('hatim-read-checkbox'),
-                    materialTapTargetSize: MaterialTapTargetSize.padded,
-                    value: widget.store.hatimPages.contains(_page),
-                    onChanged: busy || _hatimSaving ? null : (_) => _markHatim()),
-                ]))),
-              )))),
-        ),
-        if (!_fullscreen) PersonalPageSwipe(onNavigate: AppNavigation.instance.switchPage, child: Padding(padding: EdgeInsets.symmetric(horizontal: 8), child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceEvenly, children: [
-            IconButton(tooltip: context.t('Sonraki sayfa'), onPressed: busy || (_page == widget.store.edition.lastPage && !(widget.hatim && widget.store.hatimComplete)) ? null : () => _go(_page + 1), icon: Icon(Icons.chevron_left)),
-            TextButton(onPressed: _jump, child: Text('$_page / ${widget.store.edition.lastPage}')),
-            IconButton(tooltip: widget.store.bookmarks.contains(_page) ? context.t('Ayracı kaldır') : context.t('Ayraç ekle'),
-              onPressed: busy || _bookmarkSaving ? null : _toggleBookmark, icon: Icon(widget.store.bookmarks.contains(_page) ? Icons.bookmark : Icons.bookmark_border)),
-            IconButton(tooltip: context.t('Önceki sayfa'), onPressed: busy || _page == widget.store.edition.firstPage ? null : () => _go(_page - 1), icon: Icon(Icons.chevron_right)),
-          ]))),
+        if (!(_landscape && _fullscreen)) ...[
+          if (widget.hatim) _hatimControls(busy),
+          if (!_fullscreen) _pageControls(busy),
+        ],
       ])),
       Positioned(top: 12, left: 20, right: 20, child: SafeArea(
         child: SajdahNotice(page: _page, editionId: widget.store.edition.id))),
 
-      ]),
+      ])),
     ));
   }
 }

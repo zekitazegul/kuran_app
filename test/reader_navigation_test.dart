@@ -45,7 +45,105 @@ void main() {
       .setMockMethodCallHandler(ReadingStore.channel, null);
   });
 
+  for (final hatim in [false, true]) {
+    for (final portrait in [const Size(400, 800), const Size(800, 1280)]) {
+      testWidgets('rotation fills the screen without controls ($hatim $portrait)', (tester) async {
+        tester.view.physicalSize = portrait;
+        tester.view.devicePixelRatio = 1;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
+        await tester.pumpWidget(MaterialApp(home: QuranScreen(
+          store: store, initialPage: 439, hatim: hatim)));
+        await tester.pumpAndSettle();
+        expect(find.byType(AppBar), findsOneWidget);
+        tester.view.physicalSize = Size(portrait.height, portrait.width);
+        await tester.pumpAndSettle();
+        final surface = find.byKey(const ValueKey('quran-reading-surface'));
+        expect(tester.getRect(surface), Rect.fromLTWH(0, 0, portrait.height, portrait.width));
+        expect(find.byType(AppBar), findsNothing);
+        expect(AppNavigation.instance.fullscreenReader.value, isNotNull);
+        expect(tester.widget<ReadingPage>(find.byType(ReadingPage)).crop,
+          store.edition.normalizedCrop(439));
+        expect(find.byKey(const ValueKey('reader-listen')), findsNothing);
+        expect(find.byKey(const ValueKey('reader-meal')), findsNothing);
+        tester.view.physicalSize = portrait;
+        await tester.pumpAndSettle();
+        expect(find.byType(AppBar), findsOneWidget);
+        expect(AppNavigation.instance.fullscreenReader.value, isNull);
+        expect(find.byKey(const ValueKey('reader-listen')), findsOneWidget);
+        expect(find.byKey(const ValueKey('reader-meal')), findsOneWidget);
+        expect(store.lastPage, 439);
+        expect(tester.takeException(), isNull);
+        await tester.pumpWidget(const SizedBox());
+      });
+    }
+  }
+
+  for (final hatim in [false, true]) {
+    testWidgets('playing audio survives rotation with hidden controls ($hatim)', (tester) async {
+      tester.view.physicalSize = const Size(400, 800);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      String? playing;
+      var plays = 0;
+      var stops = 0;
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(ReadingStore.channel, (call) async {
+          if (call.method == 'loadAudio') { return {
+            'tracks': [{'id': 'shatri_page_45', 'page': 45, 'surah': 2, 'bytes': 1000}],
+            'downloaded': ['shatri_page_45'], 'playing': playing,
+          }; }
+          if (call.method == 'playAudio') { playing = 'shatri_page_45'; plays++; }
+          if (call.method == 'stopAudio') stops++;
+          return null;
+        });
+      await tester.pumpWidget(MaterialApp(home: QuranScreen(
+        store: store, initialPage: 45, hatim: hatim)));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const ValueKey('reader-listen')));
+      await tester.pumpAndSettle();
+      expect(plays, 1);
+      expect(stops, 0);
+      tester.view.physicalSize = const Size(800, 400);
+      await tester.pumpAndSettle();
+      await tester.pump(const Duration(seconds: 3));
+      expect(find.byKey(const ValueKey('reader-listen')), findsNothing);
+      expect(find.byKey(const ValueKey('reader-meal')), findsNothing);
+      expect(playing, 'shatri_page_45');
+      expect(plays, 1);
+      expect(stops, 0);
+      expect(store.lastPage, 45);
+      await tester.dragFrom(const Offset(400, 160), const Offset(0, 100));
+      await tester.pumpAndSettle();
+      expect(find.byKey(const ValueKey('reader-listen')), findsOneWidget);
+      expect(find.byKey(const ValueKey('reader-meal')), findsOneWidget);
+      expect(tester.getBottomRight(find.byKey(const ValueKey('reader-meal'))).dy,
+        lessThanOrEqualTo(tester.getTopLeft(find.byKey(const ValueKey('quran-reading-surface'))).dy));
+      expect(playing, 'shatri_page_45');
+      expect(stops, 0);
+      await tester.dragFrom(const Offset(400, 260), const Offset(0, -100));
+      await tester.pumpAndSettle();
+      expect(find.byKey(const ValueKey('reader-listen')), findsNothing);
+      expect(find.byKey(const ValueKey('reader-meal')), findsNothing);
+      expect(plays, 1);
+      expect(stops, 0);
+      tester.view.physicalSize = const Size(400, 800);
+      await tester.pumpAndSettle();
+      expect(find.byTooltip('Durdur'), findsOneWidget);
+      expect(stops, 0);
+      await tester.tap(find.byKey(const ValueKey('reader-listen')));
+      await tester.pumpAndSettle();
+      expect(stops, 1);
+      await tester.pumpWidget(const SizedBox());
+    });
+  }
+
   testWidgets('separately opened Quran reader uses bottom area to switch screens', (tester) async {
+    tester.view.physicalSize = const Size(600, 900);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
     final switches = <int>[];
     AppNavigation.instance.switchPage = switches.add;
     await tester.pumpWidget(MaterialApp(home: QuranScreen(store: store, initialPage: 439)));
@@ -66,6 +164,10 @@ void main() {
   });
 
   testWidgets('leaving a retained fullscreen reader restores listening title and reader controls', (tester) async {
+    tester.view.physicalSize = const Size(600, 900);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
     AppPreferences.instance.value = const UiPreferences(customPages: [['hatim'], ['search']]);
     addTearDown(() => AppPreferences.instance.restore(null));
     final controller = PageController(initialPage: 2);
@@ -96,6 +198,10 @@ void main() {
   });
 
   testWidgets('personal hatim has one header with live surah across phone and tablet sizes', (tester) async {
+    tester.view.physicalSize = const Size(600, 900);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
     AppPreferences.instance.value = const UiPreferences(customPages: [['hatim']]);
     addTearDown(() => AppPreferences.instance.restore(null));
     final controller = PageController(initialPage: 2);
@@ -110,10 +216,13 @@ void main() {
       tester.view.physicalSize = size;
       await tester.pumpAndSettle();
       expect(tester.takeException(), isNull, reason: 'Hatim must fit $size');
-      expect(find.text('HATİM'), findsOneWidget);
-      expect(find.byKey(const ValueKey('personal-reader-surah')), findsOneWidget);
+      final landscape = size.width > size.height;
+      expect(find.text('HATİM'), landscape ? findsNothing : findsOneWidget);
+      expect(find.byKey(const ValueKey('personal-reader-surah')), landscape ? findsNothing : findsOneWidget);
       expect(find.byType(AppBar), findsNothing);
     }
+    tester.view.physicalSize = const Size(412, 915);
+    await tester.pumpAndSettle();
     final title = tester.widget<Text>(find.byKey(const ValueKey('personal-reader-surah'))).data;
     await tester.drag(find.byKey(const ValueKey('quran-reading-surface')), const Offset(200, 0));
     await tester.pumpAndSettle();
@@ -135,6 +244,10 @@ void main() {
 
   for (final hatim in [false, true]) {
     testWidgets('fullscreen reader keeps page audio and meal controls ($hatim)', (tester) async {
+    tester.view.physicalSize = const Size(600, 900);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
       String? playing;
       var pending = false;
       TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.setMockMethodCallHandler(ReadingStore.channel, (call) async {
@@ -168,6 +281,10 @@ void main() {
   }
 
   testWidgets('hatim page label opens page 45 while only checkbox marks read', (tester) async {
+    tester.view.physicalSize = const Size(600, 900);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
     await tester.pumpWidget(MaterialApp(home: QuranScreen(store: store, initialPage: 439, hatim: true)));
     await tester.pumpAndSettle();
     await tester.tap(find.byTooltip('Sayfa / cüz işaretle'));
@@ -187,6 +304,10 @@ void main() {
   });
 
   testWidgets('completed hatim prayer can return to last page and unmark it', (tester) async {
+    tester.view.physicalSize = const Size(600, 900);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
     store.hatimPages.addAll(List.generate(605, (i) => i));
     await tester.pumpWidget(MaterialApp(home: QuranScreen(store: store, initialPage: 604,
       initialPanel: 'prayer', hatim: true)));
@@ -218,6 +339,10 @@ void main() {
   });
 
   testWidgets('history records visible pages after two seconds and pauses in background', (tester) async {
+    tester.view.physicalSize = const Size(600, 900);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
     final writes = <Map>[];
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
       .setMockMethodCallHandler(ReadingStore.channel, (call) async {
@@ -246,6 +371,10 @@ void main() {
   });
 
   testWidgets('hatim checkbox toggles without turning the page; swipe remains manual', (tester) async {
+    tester.view.physicalSize = const Size(600, 900);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
     await tester.pumpWidget(MaterialApp(home: QuranScreen(store: store, initialPage: 439, hatim: true)));
     await tester.pumpAndSettle();
     final checkbox = find.byKey(const ValueKey('hatim-read-checkbox'));
@@ -267,33 +396,59 @@ void main() {
     await tester.pumpWidget(const SizedBox());
   });
 
-  testWidgets('landscape hatim controls fade out and return with a short bottom swipe', (tester) async {
-    tester.view.physicalSize = const Size(1200, 600);
+  for (final hatim in [false, true]) {
+    for (final size in [const Size(640, 360), const Size(1280, 800)]) {
+      testWidgets('landscape footer scrolls after verses ($hatim $size)', (tester) async {
+        tester.view.physicalSize = size;
+        tester.view.devicePixelRatio = 1;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
+        await tester.pumpWidget(MaterialApp(home: QuranScreen(
+          store: store, initialPage: 439, hatim: hatim)));
+        await tester.pumpAndSettle();
+        final footer = find.byKey(const ValueKey('landscape-reading-footer'));
+        expect(footer.hitTestable(), findsNothing);
+        expect(find.text('439 / 604').hitTestable(), findsNothing);
+        final scroll = tester.widget<SingleChildScrollView>(find.byType(SingleChildScrollView));
+        scroll.controller!.jumpTo(scroll.controller!.position.maxScrollExtent);
+        await tester.pumpAndSettle();
+        expect(tester.getTopLeft(footer).dy, greaterThanOrEqualTo(0));
+        expect(find.text('439 / 604').hitTestable(), findsOneWidget);
+        expect(tester.getBottomRight(find.byType(ReadingPage)).dy,
+          lessThanOrEqualTo(tester.getTopLeft(footer).dy));
+        expect(tester.getBottomRight(footer).dy, lessThanOrEqualTo(size.height));
+        expect(find.byType(AppBar), findsNothing);
+        await tester.tap(find.byTooltip('Ayraç ekle'));
+        await tester.pumpAndSettle();
+        expect(store.bookmarks, contains(439));
+        if (hatim) {
+          expect(find.byKey(const ValueKey('hatim-read-checkbox')).hitTestable(), findsOneWidget);
+          await tester.tap(find.byKey(const ValueKey('hatim-read-checkbox')));
+          await tester.pumpAndSettle();
+          expect(store.hatimPages, contains(439));
+          expect(store.lastPage, 439);
+        }
+        scroll.controller!.jumpTo(0);
+        await tester.pumpAndSettle();
+        expect(footer.hitTestable(), findsNothing);
+        scroll.controller!.jumpTo(scroll.controller!.position.maxScrollExtent);
+        await tester.pumpAndSettle();
+        await tester.tap(find.byTooltip('Sonraki sayfa'));
+        await tester.pumpAndSettle();
+        expect(store.lastPage, 440);
+        expect(scroll.controller!.offset, 0);
+        expect(footer.hitTestable(), findsNothing);
+        expect(tester.takeException(), isNull);
+        await tester.pumpWidget(const SizedBox());
+      });
+    }
+  }
+
+  testWidgets('arrows can turn repeatedly without a paper animation', (tester) async {
+    tester.view.physicalSize = const Size(600, 900);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
-    await tester.pumpWidget(MaterialApp(home: QuranScreen(store: store, initialPage: 439, hatim: true)));
-    await tester.pumpAndSettle();
-    final reader = find.byKey(const ValueKey('quran-reading-surface'));
-    var center = tester.getCenter(reader);
-    await tester.tapAt(center);
-    await tester.pump(const Duration(milliseconds: 80));
-    await tester.tapAt(center);
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 100));
-    final fading = find.ancestor(of: find.byKey(const ValueKey('hatim-read-checkbox')), matching: find.byType(Opacity));
-    expect(tester.widget<Opacity>(fading).opacity, lessThan(1));
-    await tester.pumpAndSettle();
-    expect(tester.widget<Opacity>(fading).opacity, 0);
-    final bounds = tester.getRect(reader);
-    await tester.dragFrom(Offset(bounds.center.dx, bounds.bottom - 12), const Offset(0, -45));
-    await tester.pumpAndSettle();
-    expect(tester.widget<Opacity>(fading).opacity, 1);
-    expect(store.hatimPages, isEmpty);
-    await tester.pumpWidget(const SizedBox());
-  });
-
-  testWidgets('arrows can turn repeatedly without a paper animation', (tester) async {
     await tester.pumpWidget(MaterialApp(home: QuranScreen(store: store, initialPage: 439)));
     await tester.pumpAndSettle();
     for (final page in [440, 441]) {
@@ -311,6 +466,10 @@ void main() {
   });
 
   testWidgets('page follows finger but returns when released below one centimeter', (tester) async {
+    tester.view.physicalSize = const Size(600, 900);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
     await tester.pumpWidget(MaterialApp(home: QuranScreen(store: store, initialPage: 439)));
     await tester.pumpAndSettle();
     final reader = find.byKey(const ValueKey('quran-reading-surface'));
@@ -341,6 +500,10 @@ void main() {
   });
 
   testWidgets('edge taps and vertical overscroll never turn pages or exit fullscreen', (tester) async {
+    tester.view.physicalSize = const Size(600, 900);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
     tester.view.physicalSize = const Size(1200, 600);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.resetPhysicalSize);
@@ -355,10 +518,6 @@ void main() {
       await tester.pumpAndSettle();
       expect(store.lastPage, 439);
     }
-    await tester.tapAt(bounds.center);
-    await tester.pump(const Duration(milliseconds: 60));
-    await tester.tapAt(bounds.center);
-    await tester.pumpAndSettle();
     expect(find.byType(AppBar), findsNothing);
     await tester.dragFrom(tester.getCenter(reader), const Offset(0, 160));
     await tester.pumpAndSettle();
@@ -376,6 +535,10 @@ void main() {
   });
 
   testWidgets('manual slide unlocks navigation after completion', (tester) async {
+    tester.view.physicalSize = const Size(600, 900);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
     await tester.pumpWidget(MaterialApp(home: QuranScreen(store: store, initialPage: 439)));
     await tester.pumpAndSettle();
     final reader = find.byKey(const ValueKey('quran-reading-surface'));
@@ -395,6 +558,10 @@ void main() {
     await tester.pumpWidget(const SizedBox());
   });
   testWidgets('only double taps zoom; bottom-edge upward swipe exits fullscreen', (tester) async {
+    tester.view.physicalSize = const Size(600, 900);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
     await tester.pumpWidget(MaterialApp(home: QuranScreen(store: store, initialPage: 439)));
     await tester.pumpAndSettle();
     ReadingPage page() => tester.widget<ReadingPage>(find.byType(ReadingPage));

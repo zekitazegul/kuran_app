@@ -6,13 +6,23 @@ class ReaderActionBar extends StatelessWidget {
   final bool loading;
   final bool playing;
   final bool stopping;
+  final bool compact;
   final VoidCallback? onListen;
   final VoidCallback? onMeal;
   const ReaderActionBar({super.key, required this.loading, required this.playing,
-    required this.stopping, this.onListen, this.onMeal});
+    required this.stopping, this.onListen, this.onMeal, this.compact = false});
 
   @override
-  Widget build(BuildContext context) => Align(alignment: Alignment.center,
+  Widget build(BuildContext context) => compact ? Row(
+    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+    children: [
+      _cornerAction(context, 'reader-listen',
+        stopping ? 'Ayet sonunda duracak' : playing ? 'Durdur' : "Kur'an dinle",
+        playing ? Icons.stop_circle_outlined : Icons.headphones_rounded,
+        onListen, busy: loading),
+      _cornerAction(context, 'reader-meal', 'Meal Oku', Icons.menu_book_rounded, onMeal),
+    ],
+  ) : Align(alignment: Alignment.center,
     child: Padding(padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
       child: ConstrainedBox(constraints: const BoxConstraints(maxWidth: 280),
         child: Material(color: Theme.of(context).colorScheme.surface.withValues(alpha: .95),
@@ -25,6 +35,16 @@ class ReaderActionBar extends StatelessWidget {
             _action(context, 'reader-meal', 'readerMealLabel', Icons.menu_book_rounded,
               onMeal, tooltip: 'Meal Oku'),
           ])))));
+
+  Widget _cornerAction(BuildContext context, String key, String tooltip,
+    IconData icon, VoidCallback? onPressed, {bool busy = false}) =>
+    Material(color: Theme.of(context).colorScheme.surface.withValues(alpha: .88),
+      shape: const CircleBorder(),
+      child: IconButton(key: ValueKey(key), tooltip: context.t(tooltip),
+        onPressed: onPressed, iconSize: 18,
+        constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
+        icon: busy ? const SizedBox.square(dimension: 18,
+          child: CircularProgressIndicator(strokeWidth: 2)) : Icon(icon)));
 
   Widget _action(BuildContext context, String key, String label, IconData icon,
     VoidCallback? onPressed, {required String tooltip, bool busy = false}) =>

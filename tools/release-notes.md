@@ -1,5 +1,5 @@
-Güncellemeler bölümü açılıp kapatılabilir.
+Yatay tam ekran okuma ve kaydırmayla açılan dinle/meal kontrolleri. Sayfa sonunda ayraç, sayfa ve Hatim kontrolleri. Kurulumdan sonra otomatik açılış ve kurucuyu kaldırma onayı.
 
-The Updates section can be expanded and collapsed.
+Landscape fullscreen reading with swipe-to-show listen/translation controls. Bookmarks, page navigation and Hatim controls at the end of each page. Automatic opening after installation and an installer removal prompt.
 
-Het onderdeel Updates kan worden geopend en gesloten.
+Liggend lezen op volledig scherm met luister- en vertaalpictogrammen die met vegen verschijnen. Bladwijzers, paginanavigatie en Hatim-bediening aan het einde van elke pagina. Automatisch openen na installatie en een verzoek om het installatieprogramma te verwijderen.

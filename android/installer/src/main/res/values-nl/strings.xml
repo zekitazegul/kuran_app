@@ -29,7 +29,8 @@
     <string name="await_confirmation">Wachten op de installatiebevestiging van Android…</string>
     <string name="install_error">Het installatiescherm kon niet worden geopend. Probeer opnieuw.</string>
     <string name="permission_denied">Er is geen installatietoestemming verleend. Tik op Installatie voortzetten om opnieuw te proberen.</string>
-    <string name="installed">KuranApp is geïnstalleerd. Je kunt Kuran Installer later verwijderen via de app-instellingen van je telefoon.</string>
+    <string name="installed">KuranApp is geïnstalleerd. Android vraagt nu om Kuran Installer te verwijderen.</string>
+    <string name="cleanup_error">Open de app-instellingen om Kuran Installer te verwijderen.</string>
     <string name="not_completed">De installatie is niet voltooid. Probeer opnieuw zonder te downloaden.</string>
     <string name="not_found">KuranApp is niet gevonden. Je kunt de app opnieuw installeren.</string>
     <string name="downloading">KuranApp downloaden… %1$d%% · %2$.1f MB</string>

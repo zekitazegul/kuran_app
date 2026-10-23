@@ -12,6 +12,10 @@ import 'package:kuran_app/widgets/home_pages.dart';
 void main() {
   for (final embedded in [false, true]) {
     testWidgets('bookmarks is a list and opens a reader only after selecting a bookmark ($embedded)', (tester) async {
+      tester.view.physicalSize = const Size(600, 900);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
       final store = ReadingStore(directory: '/bookmarks-test', lastPage: 1,
         informationSeen: true, bookmarks: {439}, downloaded: Set.of(List.generate(605, (i) => i)));
       TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
