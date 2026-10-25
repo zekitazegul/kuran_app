@@ -1,3 +1,6 @@
+import '../services/voice_control.dart';
+import '../services/voice_intents.dart';
+import '../widgets/voice_button.dart';
 import '../widgets/screen_title.dart';
 import '../widgets/paginated_meal_text.dart';
 import '../widgets/personal_page_scope.dart';
@@ -19,6 +22,19 @@ class MealScreen extends StatefulWidget {
 
 class _MealScreenState extends State<MealScreen> implements FullscreenReadingSession {
   final _reader = MealReader();
+  Future<bool> _voiceAction(VoiceCommand command) async {
+    switch(command.action) {
+      case VoiceAction.larger: if(!_busy) await _resize(2);return true;
+      case VoiceAction.smaller: if(!_busy) await _resize(-2);return true;
+      case VoiceAction.hideMeal:
+        exitFullscreen();if(mounted) Navigator.of(context).pop();return true;
+      case VoiceAction.showMeal:return true;
+      case VoiceAction.fullscreen:if(!_fullscreen)_toggleFullscreen();return true;
+      case VoiceAction.exitFullscreen:exitFullscreen();return true;
+      default:return false;
+    }
+  }
+
   List<List<String>> _pages = [];
   int _fontSize = 22;
   bool _busy = true;
@@ -70,11 +86,14 @@ class _MealScreenState extends State<MealScreen> implements FullscreenReadingSes
         }
       });
     }
+    VoiceControl.unregister(this);
     super.dispose();
   }
 
   @override
-  void initState() { super.initState(); _load(); }
+  void initState() { super.initState();
+    VoiceControl.register(this,()=>mounted && (ModalRoute.of(context)?.isCurrent??false),_voiceAction);
+    _load(); }
 
   Future<void> _load() async {
     try {
@@ -124,12 +143,14 @@ class _MealScreenState extends State<MealScreen> implements FullscreenReadingSes
       if (!didPop && _fullscreen) _toggleFullscreen();
     }, child: Scaffold(
       appBar: _fullscreen ? null : AppBar(automaticallyImplyLeading: PersonalPageScope.of(context) == null, title: PersonalPageScope.of(context)?.heading ?? ScreenTitle(context, context.t('Meal Oku')), actions: [
+        const VoiceButton(),
         IconButton(key: const ValueKey('meal-font-smaller'), tooltip: context.t('Yazıyı küçült'), onPressed: _busy || _fontSize <= 16 ? null : () => _resize(-2), icon: const Icon(Icons.text_decrease)),
         IconButton(key: const ValueKey('meal-font-larger'), tooltip: context.t('Yazıyı büyüt'), onPressed: _busy || _fontSize >= 40 ? null : () => _resize(2), icon: const Icon(Icons.text_increase)),
       ]),
       body: SafeArea(top: false, child: _pages.isEmpty && _busy ? const Center(child: CircularProgressIndicator()) : _failed
         ? Center(child: TextButton(onPressed: _load, child: Text(context.t('Tekrar dene'))))
         : Column(children: [
+          if(_fullscreen) const SafeArea(bottom:false,child:Align(alignment:Alignment.centerRight,child:VoiceButton())),
           if (!_fullscreen) Padding(padding: const EdgeInsets.fromLTRB(16, 0, 16, 0), child: DecoratedBox(
             decoration: BoxDecoration(border: Border(bottom: BorderSide(color: Theme.of(context).colorScheme.outline))),
             child: Row(children: [

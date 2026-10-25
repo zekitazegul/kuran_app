@@ -43,6 +43,8 @@ class QuranAudioStorage(private val context: Context) {
     private var onStopped: (() -> Unit)? = null
     private var playbackError: String? = null
     private var playing: String? = null
+    private var repeatTotal = 0
+    private var repeatCompleted = 0
     private val recordings by lazy { (0 until catalog.length()).map { catalog.getJSONObject(it) } }
     private val verses by lazy { recordings.filter { !it.isNull("verse") } }
     private val verseGroups by lazy { verses.groupBy { it.getString("reciter") + ":" + it.getInt("surah") } }
@@ -107,6 +109,10 @@ class QuranAudioStorage(private val context: Context) {
                 "page" to if (t.has("page")) t.getInt("page") else null, "bytes" to t.getLong("bytes")) },
             "downloaded" to stored.toList(), "playing" to playing, "stopPending" to (queue?.stopPending == true),
             "memorizing" to (queue?.cumulative == true),
+            "paused" to (player != null && player?.playWhenReady == false),
+            "currentSurah" to queue?.current?.getInt("surah"),
+            "repeatTotal" to repeatTotal, "repeatCurrent" to queue?.currentRepetition,
+            "repeatRemaining" to (queue?.remainingRepetitions ?: 0), "repeatCompleted" to repeatCompleted,
             "currentVerse" to queue?.current?.let { if (it.isNull("verse")) null else it.getInt("verse") }, "error" to playbackError
         )
     }
@@ -162,11 +168,13 @@ class QuranAudioStorage(private val context: Context) {
             check(temp.renameTo(target))
         } finally { connection?.disconnect(); temp.delete() }
     }
-    fun play(id: String) {
+    fun play(id: String, repetitions: Int = 1) {
+        require(repetitions in 1..999)
         check(playing == null) { "Current verse must finish first" }
         val selected = sequence(id)
         check(selected.isNotEmpty() && selected.all { downloaded(it) }) { "Download required" }
-        queue = VersePlaybackQueue(selected); playing = id; playbackError = null
+        queue = VersePlaybackQueue(selected, repetitions); playing = id; playbackError = null
+        repeatTotal = repetitions; repeatCompleted = 0
         try { playCurrent() } catch (error: Exception) { finish(); throw error }
     }
     fun playRange(surah: Int, first: Int, last: Int, repetitions: Int, cumulative: Boolean = false) {
@@ -177,6 +185,7 @@ class QuranAudioStorage(private val context: Context) {
         }
         check(selected.all { downloaded(it) }) { "Download required" }
         queue = VersePlaybackQueue(selected, repetitions, cumulative)
+        repeatTotal = repetitions; repeatCompleted = 0
         playing = "${reciter}_range_${surah}_${first}_${last}"
         playbackError = null
         try { playCurrent() } catch (error: Exception) { finish(); throw error }
@@ -189,6 +198,7 @@ class QuranAudioStorage(private val context: Context) {
         } }
         check(selected.all { downloaded(it) }) { "Download required" }
         queue = VersePlaybackQueue(selected, repetitions, cumulative)
+        repeatTotal = repetitions; repeatCompleted = 0
         playing = "${reciter}_selection"
         playbackError = null
         try { playCurrent() } catch (error: Exception) { finish(); throw error }
@@ -210,7 +220,7 @@ class QuranAudioStorage(private val context: Context) {
                     if (state != Player.STATE_ENDED) return
                     Log.i("QuranPlayback", "completed ${entry.getString("id")}")
                     player = null; next.release()
-                    if (queue?.completeVerse() != true) finish()
+                    if (queue?.completeVerse() != true) { repeatCompleted = if(queue?.stopPending == true) (queue?.currentRepetition ?: 1)-1 else repeatTotal; finish() }
                     else try { playCurrent() } catch (error: Exception) { playbackError = error.message; finish() }
                 }
                 override fun onPlayerError(error: PlaybackException) {
@@ -231,8 +241,18 @@ class QuranAudioStorage(private val context: Context) {
         if (!active.advanceStage()) finish()
         else try { playCurrent() } catch (error: Exception) { playbackError = error.message; finish(); throw error }
     }
+    fun pause() { player?.pause() }
+    fun resume() { player?.play() }
+    fun stopImmediately() { repeatTotal = 0; repeatCompleted = 0; finish() }
+    fun replay() { player?.seekTo(0); player?.play() }
+    fun nextVerse(): Boolean {
+        val active = queue ?: return false
+        if (!active.nextVerse()) return false
+        val old = player; player = null; old?.release()
+        playCurrent(); return true
+    }
     fun requestStop() {
-        if (queue?.current?.isNull("verse") == true) finish() else queue?.requestStop()
+        if (queue?.current?.isNull("verse") == true || player?.playWhenReady == false) finish() else queue?.requestStop()
     }
     fun closeAfterVerse(callback: () -> Unit) {
         if (playing == null) callback() else { onStopped = callback; requestStop() }

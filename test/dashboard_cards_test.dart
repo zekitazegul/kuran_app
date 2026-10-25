@@ -67,7 +67,7 @@ void main() {
     AppNavigation.instance.value = null;
   });
   test('fresh install includes hatim and explicitly empty dashboard stays empty', () {
-    expect(const UiPreferences().dashboardOrder, ['hatim', 'search', 'bookmarks', 'support', 'settings']);
+    expect(const UiPreferences().dashboardOrder, ['hatim', 'history']);
     final empty = const UiPreferences().copyWith(dashboardCards: []);
     expect(UiPreferences.fromMap(empty.toMap()).dashboardOrder, isEmpty);
     final added = empty.copyWith(shortcuts: [...empty.shortcuts, const HomeShortcut(ShortcutKind.surah, 2)]);

@@ -5,12 +5,15 @@ import android.os.HandlerThread
 import android.view.WindowManager
 import android.content.Intent
 import android.net.Uri
+import android.speech.RecognizerIntent
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
 import java.util.concurrent.Executors
 import io.flutter.embedding.android.FlutterActivity
 
 class MainActivity : FlutterActivity() {
+    private var voiceResult: MethodChannel.Result? = null
+    private val voiceRequest = 8401
     fun installUpdate(apk: java.io.File) {
         val uri = androidx.core.content.FileProvider.getUriForFile(this, "$packageName.apkshare", apk)
         startActivityForResult(Intent(Intent.ACTION_VIEW).apply {
@@ -21,6 +24,13 @@ class MainActivity : FlutterActivity() {
     private lateinit var updater: AppUpdater
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
+        if (requestCode == voiceRequest) {
+            val reply = voiceResult; voiceResult = null
+            reply?.success(if (resultCode == RESULT_OK)
+                data?.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS) ?: arrayListOf<String>()
+                else arrayListOf<String>())
+            return
+        }
         if (::updater.isInitialized) updater.onActivityResult(requestCode)
     }
 
@@ -42,6 +52,25 @@ class MainActivity : FlutterActivity() {
         val readingChannel = MethodChannel(flutterEngine.dartExecutor.binaryMessenger,
             "com.zekitazegul.kuranapp/reading")
         readingChannel.setMethodCallHandler { call, result ->
+            if (call.method == "recognizeVoice") {
+                if (voiceResult != null) { result.error("VOICE_BUSY", null, null); return@setMethodCallHandler }
+                val language = call.argument<String>("language") ?: "tr-TR"
+                val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
+                    putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
+                    putExtra(RecognizerIntent.EXTRA_LANGUAGE, language)
+                    putExtra(RecognizerIntent.EXTRA_PROMPT, call.argument<String>("prompt"))
+                    putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 5)
+                }
+                voiceResult = result
+                try { startActivityForResult(intent, voiceRequest) }
+                catch (_: android.content.ActivityNotFoundException) {
+                    voiceResult = null; result.error("VOICE_UNAVAILABLE", null, null)
+                }
+                catch (_: SecurityException) {
+                    voiceResult = null; result.error("VOICE_UNAVAILABLE", null, null)
+                }
+                return@setMethodCallHandler
+            }
             if (call.method == "setKeepScreenOn") {
                 try {
                     val enabled = requireNotNull(call.argument<Boolean>("enabled"))
@@ -86,7 +115,7 @@ class MainActivity : FlutterActivity() {
                 prayerPlayer.play(result)
                 return@setMethodCallHandler
             }
-            if (call.method in setOf("loadAudio", "downloadAudio", "playAudio", "playAudioSelection", "playAudioRange", "advanceMemorization", "stopAudio", "removeAudio", "selectAudioReciter")) {
+            if (call.method in setOf("pauseAudio", "resumeAudio", "replayAudio", "nextAudioVerse", "stopAudioImmediately", "loadAudio", "downloadAudio", "playAudio", "playAudioSelection", "playAudioRange", "advanceMemorization", "stopAudio", "removeAudio", "selectAudioReciter")) {
                 audioHandler.post {
                     try {
                         val audio = audioStorage ?: QuranAudioStorage(applicationContext).also { audioStorage = it }
@@ -94,7 +123,12 @@ class MainActivity : FlutterActivity() {
                             "loadAudio" -> audio.load()
                             "selectAudioReciter" -> audio.selectReciter(requireNotNull(call.argument<String>("id"))).let { null }
                             "downloadAudio" -> audio.download(requireNotNull(call.argument<String>("id"))).let { null }
-                            "playAudio" -> audio.play(requireNotNull(call.argument<String>("id"))).let { null }
+                            "pauseAudio" -> audio.pause().let { null }
+                            "resumeAudio" -> audio.resume().let { null }
+                            "replayAudio" -> audio.replay().let { null }
+                            "nextAudioVerse" -> audio.nextVerse()
+                            "stopAudioImmediately" -> audio.stopImmediately().let { null }
+                            "playAudio" -> audio.play(requireNotNull(call.argument<String>("id")), call.argument<Int>("repetitions") ?: 1).let { null }
                             "playAudioSelection" -> audio.playSelection(requireNotNull(call.argument<List<String>>("ids")),
                                 call.argument<Int>("repetitions") ?: 1, call.argument<Boolean>("cumulative") == true).let { null }
                             "playAudioRange" -> audio.playRange(
@@ -164,6 +198,7 @@ class MainActivity : FlutterActivity() {
     }
 
     override fun onDestroy() {
+        voiceResult?.success(arrayListOf<String>()); voiceResult = null
         mealPdf?.close()
         stopPrayer()
         audioHandler.post { audioStorage?.closeAfterVerse { audioThread.quitSafely() } ?: audioThread.quitSafely() }

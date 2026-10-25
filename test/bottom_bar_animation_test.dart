@@ -60,7 +60,7 @@ void main() {
     final end = tester.getCenter(find.byKey(const ValueKey('navigation-settings')));
     final gesture = await tester.startGesture(start);
     await tester.pump(const Duration(milliseconds: 600));
-    await gesture.moveTo(end + const Offset(130, 0));
+    await gesture.moveTo(end + const Offset(20, 0));
     await tester.pump(const Duration(milliseconds: 400));
     await gesture.moveBy(const Offset(1, 0));
     await tester.pump(const Duration(milliseconds: 400));

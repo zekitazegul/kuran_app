@@ -12,11 +12,13 @@ void main() {
       tester,
     ) async {
       String? seen;
+      Map uiPreferences={};
       var version = '1.1.0+63';
       AppLanguage.instance.value = const Locale('tr');
       final messenger =
           TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger;
       messenger.setMockMethodCallHandler(ReadingStore.channel, (call) async {
+        if(call.method=='saveUiPreferences') { uiPreferences=(call.arguments as Map)['preferences'] as Map; return null; }
         if (call.method == 'acknowledgeUpdate') {
           seen = version;
           return null;
@@ -32,6 +34,7 @@ void main() {
             'language': language,
             'appVersion': version,
             'seenUpdateVersion': seen,
+            'uiPreferences':uiPreferences,
           };
         }
         return null;
@@ -48,11 +51,16 @@ void main() {
       Future<void> closeNotes() async {
         expect(find.byType(CompactConfirmationDialog), findsOneWidget);
         expect(
-          find.textContaining(translate('guidedCleanupFeature', language)),
+          find.textContaining(translate('voiceExpandedFeature', language)),
           findsOneWidget,
         );
         await tester.tap(find.text(translate('Kapat', language)));
         await tester.pumpAndSettle();
+        if(find.byKey(const ValueKey('demo-skip')).evaluate().isNotEmpty) {
+          await tester.tap(find.byKey(const ValueKey('demo-skip')));
+          await tester.pumpAndSettle();
+        }
+        expect(uiPreferences['demoRevision'],3);
         expect(seen, version);
       }
 

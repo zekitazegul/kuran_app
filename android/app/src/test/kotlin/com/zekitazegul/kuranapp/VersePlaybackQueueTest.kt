@@ -4,6 +4,27 @@ import org.junit.Assert.*
 import org.junit.Test
 
 class VersePlaybackQueueTest {
+    @Test fun fiveSurahRepeatsCountDownOnlyAfterTheWholeSurah() {
+        val queue = VersePlaybackQueue((1..8).toList(), 5)
+        val played = mutableListOf<Int>()
+        for (round in 1..5) {
+            for (verse in 1..8) {
+                assertEquals(round, queue.currentRepetition)
+                assertEquals(5 - round, queue.remainingRepetitions)
+                assertEquals(verse, queue.current)
+                played.add(queue.current)
+                assertEquals(round != 5 || verse != 8, queue.completeVerse())
+            }
+        }
+        assertEquals((1..5).flatMap { (1..8).toList() }, played)
+    }
+    @Test fun wholeChapterRecordingAlsoRepeatsExactlyFiveTimes() {
+        val queue = VersePlaybackQueue(listOf("whole-surah"), 5)
+        var completed = 0
+        do { completed++ } while(queue.completeVerse())
+        assertEquals(5, completed)
+        assertEquals(0, queue.remainingRepetitions)
+    }
     @Test fun cumulativeRangeIncludesBothEndpoints() {
         val queue = VersePlaybackQueue(listOf(1, 2, 3), 3, true)
         val played = mutableListOf(queue.current)

@@ -1,3 +1,5 @@
+import 'package:kuran_app/widgets/app_bottom_bar.dart';
+import 'support/reading_images.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kuran_app/services/app_preferences.dart';
@@ -59,10 +61,13 @@ void main() {
         }
         throw StateError(call.method);
       });
+    cacheReadingImages('/test', [439]);
     await tester.pumpWidget(const KuranApp());
     await tester.pumpAndSettle();
+    AppNavigation.instance.exitFullscreen();await tester.pumpAndSettle();
     expect(find.text('Kütüphanem'), findsNothing);
-    await tester.tap(find.byTooltip('Ayarlar')); await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('home-menu'))); await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('home-menu-settings'))); await tester.pumpAndSettle();
     await tester.tap(find.text('Görünüm ve okuma')); await tester.pumpAndSettle();
     final appearance = find.widgetWithText(ListTile, 'Görünüm ve kısayollar');
     await tester.ensureVisible(appearance); await tester.pumpAndSettle();

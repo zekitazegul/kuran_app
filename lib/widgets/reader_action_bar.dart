@@ -1,3 +1,4 @@
+import 'voice_button.dart';
 import 'package:flutter/material.dart';
 import '../l10n/translations.dart';
 
@@ -24,7 +25,7 @@ class ReaderActionBar extends StatelessWidget {
     ],
   ) : Align(alignment: Alignment.center,
     child: Padding(padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-      child: ConstrainedBox(constraints: const BoxConstraints(maxWidth: 280),
+      child: ConstrainedBox(constraints: const BoxConstraints(maxWidth: 328),
         child: Material(color: Theme.of(context).colorScheme.surface.withValues(alpha: .95),
           borderRadius: BorderRadius.circular(20),
           child: Row(children: [
@@ -32,6 +33,7 @@ class ReaderActionBar extends StatelessWidget {
               stopping ? 'readerStoppingLabel' : playing ? 'Durdur' : 'readerListenLabel',
               playing ? Icons.stop_circle_outlined : Icons.headphones_rounded,
               onListen, tooltip: stopping ? 'Ayet sonunda duracak' : playing ? 'Durdur' : "Kur'an dinle", busy: loading),
+            const VoiceButton(),
             _action(context, 'reader-meal', 'readerMealLabel', Icons.menu_book_rounded,
               onMeal, tooltip: 'Meal Oku'),
           ])))));

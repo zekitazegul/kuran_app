@@ -1,3 +1,5 @@
+import 'motif_surface.dart';
+import '../services/shortcut_transfer.dart';
 import 'dart:async';
 import 'package:flutter/material.dart';
 import '../l10n/translations.dart';
@@ -27,7 +29,7 @@ class _DashboardCardsState extends State<DashboardCards> {
     final prefs = AppPreferences.instance.value;
     final hidden = prefs.availableDashboardCards.where((id) => widget.cards.containsKey(id) && !_order(prefs).contains(id)).toList();
     final id = await showModalBottomSheet<String>(context: context, isScrollControlled: true,
-      builder: (context) => SafeArea(child: ConstrainedBox(
+      builder: (context) => MotifSurface(menu:true,child:SafeArea(child: ConstrainedBox(
         constraints: BoxConstraints(maxHeight: MediaQuery.sizeOf(context).height * .7),
         child: ListView(shrinkWrap: true, children: [
           ListTile(title: Text(context.t('Kısayol ekle'), style: const TextStyle(fontWeight: FontWeight.w700))),
@@ -37,8 +39,17 @@ class _DashboardCardsState extends State<DashboardCards> {
               : context.t('Cüz {number}', {'number': id.split(':').last})),
             onTap: () => Navigator.pop(context, id)),
           if (hidden.isEmpty) ListTile(title: Text(context.t('Tüm kısayollar eklendi.'))),
-        ]))));
+        ])))));
     if (id != null && mounted) await _save([..._order(AppPreferences.instance.value), id]);
+  }
+  Future<void> _accept(DashboardDrag drag,{String? before}) async {
+    try {
+      final message=await ShortcutTransfer.put('home',drag.id,before:before,reorder:drag.source=='home');
+      if(message!=null && mounted) { ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content:Text(context.t(message)))); }
+    } catch (_) {
+      if(mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text(context.t('Tercih kaydedilemedi.'))));
+    }
   }
   Future<void> _save(List<String> order) async {
     if (_saving) return;
@@ -96,11 +107,15 @@ class _DashboardCardsState extends State<DashboardCards> {
   @override
   Widget build(BuildContext context) => ValueListenableBuilder<UiPreferences>(
     valueListenable: AppPreferences.instance,
-    builder: (context, preferences, _) => LayoutBuilder(builder: (context, constraints) => Column(children: [
+    builder: (context, preferences, _) => DragTarget<DashboardDrag>(key:const ValueKey('home-drop'),
+      onWillAcceptWithDetails:(_)=>!widget.personal,
+      onAcceptWithDetails:(details)=>_accept(details.data),
+      builder:(context,candidates,rejected)=>LayoutBuilder(builder: (context, constraints) => Column(children: [
       for (final id in _order(preferences).where(widget.cards.containsKey))
         DragTarget<DashboardDrag>(key: ValueKey('dashboard-card-$id'),
           onWillAcceptWithDetails: (details) => details.data.id != id,
           onAcceptWithDetails: (details) {
+            if(!widget.personal && details.data.source!='home') { _accept(details.data,before:id); return; }
             final order = [..._order(AppPreferences.instance.value)];
             final from = order.indexOf(details.data.id);
             final to = order.indexOf(id);
@@ -125,6 +140,6 @@ class _DashboardCardsState extends State<DashboardCards> {
         key: const ValueKey('dashboard-add'), tooltip: context.t('Kısayol ekle'),
         onPressed: _saving ? null : _add, icon: const Icon(Icons.add)),
       ])),
-    ])),
+    ]))),
   );
 }

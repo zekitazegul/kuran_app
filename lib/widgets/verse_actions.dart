@@ -1,3 +1,4 @@
+import 'voice_button.dart';
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -35,6 +36,7 @@ Future<void> showVerseMeal(BuildContext context, VerseRegion verse, {List<VerseR
       child: Padding(padding: const EdgeInsets.all(20), child: Column(mainAxisSize: MainAxisSize.min, children: [
         Row(children: [Expanded(child: Text('${context.t('Meal Oku')} · ${verseSelectionLabel(verses)}',
           style: Theme.of(context).textTheme.titleMedium)),
+          const VoiceButton(),
           IconButton(tooltip: context.t('Kapat'), onPressed: () => Navigator.pop(context), icon: const Icon(Icons.close))]),
         Text(context.t('verseMealSource'), style: Theme.of(context).textTheme.labelMedium),
         const SizedBox(height: 12),

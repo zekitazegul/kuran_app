@@ -1,3 +1,4 @@
+import 'support/reading_images.dart';
 import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/services.dart';
@@ -32,6 +33,7 @@ void main() {
       }
     });
     try {
+      cacheReadingImages('/test/computer', [439]);
       await tester.pumpWidget(const KuranApp());
       await tester.pumpAndSettle();
       expect(find.text('Hüsrev hattını indir'), findsOneWidget);

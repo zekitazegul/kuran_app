@@ -1,3 +1,7 @@
+import '../widgets/voice_button.dart';
+import '../services/voice_intents.dart';
+import '../services/voice_control.dart';
+import '../data/verse_counts.dart';
 import '../widgets/verse_selection_overlay.dart';
 import '../widgets/reader_action_bar.dart';
 import '../widgets/screen_title.dart';
@@ -30,14 +34,134 @@ class QuranScreen extends StatefulWidget {
   final ReadingStore store;
   final int initialPage;
   final String? initialPanel;
+  final int? initialPlaySurah;
   final bool hatim;
-  const QuranScreen({super.key, required this.store, required this.initialPage, this.initialPanel, this.hatim = false});
+  final VoiceCommand? initialVoice;
+  const QuranScreen({super.key, required this.store, required this.initialPage, this.initialPanel, this.initialPlaySurah, this.initialVoice, this.hatim = false});
   @override
   State<QuranScreen> createState() => _QuranScreenState();
 }
 
 class _QuranScreenState extends State<QuranScreen> with SingleTickerProviderStateMixin, WidgetsBindingObserver implements FullscreenReadingSession {
   final _audio = QuranAudio();
+  VerseRegion? _voiceVerse;
+  List<VerseRegion> _voiceSelection = [];
+  bool _voiceMealDialog = false;
+
+  Future<VerseRegion?> _voiceReference() async {
+    await _audio.load();
+    if (_voiceSelection.isNotEmpty) return _voiceSelection.first;
+    if (_audio.playing != null && _audio.currentSurah != null && _audio.currentVerse != null) {
+      return VerseRegion(_audio.currentSurah!,_audio.currentVerse!,[]);
+    }
+    if (_voiceVerse != null) return _voiceVerse;
+    final regions = _verseRegions ?? await VerseRegions.load();
+    final verses = regions.page(widget.store.edition.id,_page);
+    return verses.isEmpty ? null : verses.first;
+  }
+
+  Future<void> _playWholeSurah(int surah,int repeats) async {
+    await _audio.load();
+    if(!mounted) return;
+    if(_audio.playing!=null) await _audio.stopImmediately();
+    final chapter=_audio.find(surah,null);
+    if(chapter==null) {
+      final verses=_audio.tracks.where((t)=>t.surah==surah && t.verse!=null && t.page==null).toList();
+      if(verses.isEmpty) {_error('verseAudioUnavailable');return;}
+      await _playVerses(surah,1,verses.map((v)=>v.verse!).reduce(math.max),repeats,autoDownload:true);
+    } else {
+      if(_audioBusy) return;
+      setState(()=>_audioBusy=true);
+      try {
+        await _audio.download(chapter);
+        if(!mounted) return;
+        await _audio.play(chapter,repetitions:repeats);
+        await _audio.load();
+      } finally {if(mounted) setState(()=>_audioBusy=false);}
+    }
+  }
+
+  Future<bool> _voiceAction(VoiceCommand command) async {
+    if(!mounted) return false;
+    if(command.action==VoiceAction.hideMeal && _voiceMealDialog) {
+      Navigator.of(context).pop(); return true;
+    }
+    if(_voiceMealDialog) return false;
+    switch(command.action) {
+      case VoiceAction.pause:
+      case VoiceAction.resume:
+      case VoiceAction.stop:
+      case VoiceAction.replay:
+        await _audio.load();
+        if(_audio.playing==null) {_error('voiceNoPlayback');return true;}
+        if(command.action==VoiceAction.pause) await _audio.pause();
+        if(command.action==VoiceAction.resume) await _audio.resume();
+        if(command.action==VoiceAction.stop) await _audio.stopImmediately();
+        if(command.action==VoiceAction.replay) await _audio.replay();
+        if(mounted) setState((){});
+        return true;
+      case VoiceAction.fullscreen:
+        if(!_fullscreen) _toggleFullscreen(); return true;
+      case VoiceAction.exitFullscreen:
+        exitFullscreen(); return true;
+      case VoiceAction.larger:
+      case VoiceAction.smaller:
+        final scale=(_zoom.value.getMaxScaleOnAxis()+(command.action==VoiceAction.larger ? .25 : -.25)).clamp(1.0,3.0);
+        setState(() {_zoom.value=Matrix4.diagonal3Values(scale,scale,1);_zoomed=scale>1.01;});
+        return true;
+      case VoiceAction.bookmark:
+        if(!widget.store.bookmarks.contains(_page)) await _toggleBookmark();
+        if(widget.store.bookmarks.contains(_page)) _error('voiceBookmarkSaved'); return true;
+      case VoiceAction.bookmarks:
+        unawaited(_bookmarks());return true;
+      case VoiceAction.showMeal:
+        final verse=await _voiceReference();
+        if(verse==null) {_error('voiceInvalidTarget');return true;}
+        if(!mounted) return true;
+        _voiceMealDialog=true;
+        unawaited(showVerseMeal(context,verse).whenComplete(()=>_voiceMealDialog=false));
+        return true;
+      case VoiceAction.repeatSurah:
+        final verse=await _voiceReference();
+        if(verse==null) {_error('voiceInvalidTarget');return true;}
+        if(!_fullscreen) _toggleFullscreen();
+        await _playWholeSurah(verse.surah,command.repetitions);return true;
+      case VoiceAction.repeatVerse:
+      case VoiceAction.nextVerse:
+        if(command.action==VoiceAction.nextVerse) {
+          await _audio.load();
+          if(_audio.playing!=null) {
+            final moved=await QuranAudio.channel.invokeMethod<bool>('nextAudioVerse');
+            if(moved==true) {
+              await _audio.load();_voiceSelection=[];
+              _voiceVerse=_audio.currentSurah!=null && _audio.currentVerse!=null
+                ? VerseRegion(_audio.currentSurah!,_audio.currentVerse!,[]) : null;
+              if(mounted)setState((){});return true;
+            }
+          }
+        }
+        var verse=await _voiceReference();
+        if(verse==null) {_error('voiceInvalidTarget');return true;}
+        if(command.action==VoiceAction.nextVerse) {
+          final n=verse.verse+1;
+          if(n>verseCounts[verse.surah-1]) {
+            if(verse.surah==114) {_error('voiceInvalidTarget');return true;}
+            verse=VerseRegion(verse.surah+1,1,[]);
+          } else {verse=VerseRegion(verse.surah,n,[]);}
+        }
+        final regions=_verseRegions??await VerseRegions.load();
+        for(var p=widget.store.edition.firstPage;p<=widget.store.edition.lastPage;p++) {
+          if(regions.page(widget.store.edition.id,p).any((v)=>v.surah==verse!.surah && v.verse==verse.verse)) {await _go(p);break;}
+        }
+        await _audio.stopImmediately();
+        _voiceSelection=[];
+        _voiceVerse=verse;
+        await _playVerses(verse.surah,verse.verse,verse.verse,command.repetitions,autoDownload:true);
+        if(mounted) setState((){});return true;
+      default:return false;
+    }
+  }
+
   Timer? _audioTimer;
   bool _audioBusy = false;
   VerseRegions? _verseRegions;
@@ -62,7 +186,7 @@ class _QuranScreenState extends State<QuranScreen> with SingleTickerProviderStat
     } catch (_) { _error('Ses işlemi tamamlanamadı. Tekrar dene.'); }
   }
 
-  Future<void> _playVerses(int surah, int first, int last, int repeats, {bool cumulative = false, List<VerseRegion>? selection}) async {
+  Future<void> _playVerses(int surah, int first, int last, int repeats, {bool cumulative = false, List<VerseRegion>? selection, bool autoDownload = false}) async {
     if (_audioBusy) return;
     final page = _page;
     setState(() => _audioBusy = true);
@@ -81,7 +205,7 @@ class _QuranScreenState extends State<QuranScreen> with SingleTickerProviderStat
       final missing = tracks.where((t) => !_audio.downloaded.contains(t.id)).toList();
       if (missing.isNotEmpty) {
         if (!mounted) return;
-        final yes = await showDialog<bool>(context: context, builder: (context) => CompactConfirmationDialog(
+        final yes = autoDownload ? true : await showDialog<bool>(context: context, builder: (context) => CompactConfirmationDialog(
           title: Text(context.t('Ses dosyasını indir')),
           content: Text(context.t('verseDownloadHint', {'count': missing.length,
             'size': (missing.fold<int>(0, (sum, t) => sum + t.bytes) / 1000000).toStringAsFixed(1)})),
@@ -314,6 +438,7 @@ class _QuranScreenState extends State<QuranScreen> with SingleTickerProviderStat
         await _turn.animateTo(1, duration: const Duration(milliseconds: 240), curve: Curves.easeOutCubic).orCancel;
         if (!mounted) return;
         setState(() { _page = target; _target = null; });
+        _voiceSelection=[]; _voiceVerse=null;
         _resetReadingPosition();
         await _remember(target);
       } else {
@@ -330,6 +455,7 @@ class _QuranScreenState extends State<QuranScreen> with SingleTickerProviderStat
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    VoiceControl.register(this,()=>mounted && ((ModalRoute.of(context)?.isCurrent??false)||_voiceMealDialog),_voiceAction);
     _page = widget.initialPage.clamp(widget.store.edition.firstPage, widget.store.edition.lastPage).toInt();
     _turn = AnimationController(vsync: this, duration: Duration(milliseconds: 300));
     _remember(_page);
@@ -337,7 +463,7 @@ class _QuranScreenState extends State<QuranScreen> with SingleTickerProviderStat
       if (mounted) setState(() => _verseRegions = regions);
     }).catchError((Object _) { _error('verseRegionsUnavailable'); });
     _audioTimer = Timer.periodic(const Duration(seconds: 2), (_) async {
-      if (_audioBusy || _audio.playing == null) return;
+      if (_audioBusy || (_audio.playing == null && _audio.repeatTotal == 0)) return;
       _audioBusy = true;
       try {
         final previousError = _audio.playbackError;
@@ -348,6 +474,26 @@ class _QuranScreenState extends State<QuranScreen> with SingleTickerProviderStat
       } catch (_) { /* Refresh on the next tick. */ }
       finally { _audioBusy = false; if (mounted) setState(() {}); }
     });
+    if (widget.initialPlaySurah != null || widget.initialVoice != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) async {
+        if(!mounted) return;
+        final command=widget.initialVoice;
+        if(command?.action==VoiceAction.surah) _voiceVerse=VerseRegion(command!.number!,1,[]);
+        try {
+          if(command?.action==VoiceAction.verse) {
+            _voiceVerse=VerseRegion(command!.number!,command.verse!,[]);
+            if(command.play) {
+              if(!_fullscreen) _toggleFullscreen();
+              await _playVerses(command.number!,command.verse!,command.verse!,command.repetitions,autoDownload:true);
+            }
+            if(mounted) setState((){});
+          } else if(widget.initialPlaySurah!=null) {
+            if(!_fullscreen) _toggleFullscreen();
+            await _playWholeSurah(widget.initialPlaySurah!,command?.repetitions??1);
+          }
+        } catch(_) {_error('voiceUnavailable');}
+      });
+    }
     if (widget.initialPanel != null) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!mounted) return;
@@ -378,6 +524,7 @@ class _QuranScreenState extends State<QuranScreen> with SingleTickerProviderStat
       return;
     }
     if (_target != null || _preparing || page < widget.store.edition.firstPage || page > widget.store.edition.lastPage || page == _page) return;
+    _voiceSelection=[]; _voiceVerse=null;
     _resetReadingPosition();
     if (!animate || !widget.store.pageAnimations || MediaQuery.of(context).disableAnimations) {
       setState(() => _page = page);
@@ -496,6 +643,7 @@ class _QuranScreenState extends State<QuranScreen> with SingleTickerProviderStat
         AppNavigation.instance.fullscreenReader.value = null;
       }
     });
+    VoiceControl.unregister(this);
     WidgetsBinding.instance.removeObserver(this);
     _historyTimer?.cancel();
     _audioTimer?.cancel();
@@ -570,7 +718,8 @@ class _QuranScreenState extends State<QuranScreen> with SingleTickerProviderStat
       return ClipRect(child: Stack(fit: StackFit.expand, children: [
         ReadingPage(image: FileImage(File(widget.store.pagePath(page))), crop: _normalizedActiveCrop(page)),
         VerseSelectionOverlay(page: page, verses: regions, imageSize: widget.store.edition.pageSize(page),
-          crop: _normalizedActiveCrop(page), sajdah: sajdah, onChanged: (selection) {
+          crop: _normalizedActiveCrop(page), sajdah: sajdah, focus: _voiceVerse, onChanged: (selection) {
+            _voiceSelection=selection;
             if (_verseSelectionActive != selection.isNotEmpty) {
               setState(() => _verseSelectionActive = selection.isNotEmpty);
             }
@@ -646,6 +795,7 @@ class _QuranScreenState extends State<QuranScreen> with SingleTickerProviderStat
         onPointerCancel: (_) { _readingScrollPointer = null; _readingScrollStart = null; },
         child: Stack(fit: StackFit.expand, children: [
       SafeArea(top: !_fullscreen, bottom: !_fullscreen, child: Column(children: [
+        if(_landscape && _fullscreen && _audio.repeatTotal<=1) const Align(alignment:Alignment.center,child:VoiceButton()),
         TweenAnimationBuilder<double>(
           tween: Tween(end: !(_landscape && _fullscreen) || _showLandscapeActions ? 1 : 0),
           duration: _landscape && !MediaQuery.disableAnimationsOf(context)
@@ -660,6 +810,19 @@ class _QuranScreenState extends State<QuranScreen> with SingleTickerProviderStat
           loading: _audioBusy, playing: _audio.playing != null, stopping: _audio.stopPending,
           onListen: busy || _audioBusy || _audio.stopPending ? null : _listenPage,
           onMeal: busy || _audioBusy ? null : _mealPage))),
+        if(_audio.repeatTotal>1) Padding(padding:const EdgeInsets.symmetric(horizontal:8),
+          child: Wrap(alignment:WrapAlignment.center,crossAxisAlignment:WrapCrossAlignment.center,children:[
+            if(_landscape && _fullscreen) const VoiceButton(),
+            Text(_audio.repeatCompleted==_audio.repeatTotal
+              ? context.t('voiceRepeatComplete',{'total':_audio.repeatTotal})
+              : context.t('voiceRepeatProgress',{'current':_audio.repeatCurrent,'total':_audio.repeatTotal,'remaining':_audio.repeatRemaining}),
+              key:const ValueKey('voice-repeat-progress')),
+            if(_audio.playing!=null) IconButton(tooltip:context.t(_audio.paused?'voiceResume':'voicePause'),
+              onPressed:() async {if(_audio.paused) {await _audio.resume();} else {await _audio.pause();} if(mounted)setState((){});},
+              icon:Icon(_audio.paused?Icons.play_arrow:Icons.pause)),
+            if(_audio.playing!=null) IconButton(tooltip:context.t('Durdur'),onPressed:() async {
+              await _audio.stopImmediately();if(mounted)setState((){});},icon:const Icon(Icons.stop)),
+          ])),
         Expanded(child: GestureDetector(
           key: const ValueKey('quran-reading-surface'),
           behavior: HitTestBehavior.opaque,
@@ -734,7 +897,7 @@ class _QuranScreenState extends State<QuranScreen> with SingleTickerProviderStat
               },
               child: SingleChildScrollView(
                   controller: _verticalScroll,
-                  physics: _zoomed || _target != null
+                  physics: _verseSelectionActive || _zoomed || _target != null
                       ? NeverScrollableScrollPhysics()
                       : ClampingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
                   child: Column(children: [

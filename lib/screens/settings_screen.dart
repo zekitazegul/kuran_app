@@ -1,3 +1,4 @@
+import '../widgets/feature_demo.dart';
 import 'hatim_prayer_screen.dart';
 import '../widgets/screen_title.dart';
 import '../widgets/app_distribution.dart';
@@ -337,6 +338,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     ),
                   ),
                 ),
+                ListTile(leading:const Icon(Icons.play_circle_outline),
+                  title:Text(context.t('featureDemo')),trailing:const Icon(Icons.chevron_right),
+                  onTap:()=>showFeatureDemo(context)),
                 ListTile(
                   leading: Icon(Icons.help_outline),
                   title: Text(context.t('Kullanım kılavuzu')),

@@ -1,22 +1,27 @@
+import 'widgets/motif_surface.dart';
+import 'widgets/feature_demo.dart';
+import 'widgets/dashboard_cards.dart';
+import 'screens/about_screen.dart';
 import 'screens/bookmarks_screen.dart';
 import 'widgets/update_dialog.dart';
 import 'widgets/required_update_gate.dart';
 import 'widgets/compact_confirmation_dialog.dart';
 import 'services/app_preferences.dart';
+import 'services/voice_intents.dart';
+import 'services/voice_control.dart';
+import 'services/verse_regions.dart';
 import 'widgets/app_bottom_bar.dart';
-import 'widgets/dashboard_cards.dart';
+import 'widgets/home_menu.dart';
 import 'widgets/bottom_up_page_transitions.dart';
 import 'screens/reading_history_screen.dart';
 import 'screens/support_screen.dart';
 import 'dart:async';
-import 'screens/about_screen.dart';
 import 'l10n/translations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'services/app_language.dart';
 import 'screens/language_screen.dart';
-import 'widgets/language_selector.dart';
 import 'screens/information_screen.dart';
 import 'screens/guide_screen.dart';
 import 'screens/settings_screen.dart';
@@ -42,7 +47,7 @@ class KuranApp extends StatelessWidget {
       valueListenable: AppLanguage.instance,
       builder: (context, locale, _) => MaterialApp(
         navigatorKey: appNavigatorKey,
-        builder: (context, child) => RequiredUpdateGate(child: NavigationOverlay(child: Column(children: [Expanded(child: child!), const AnimatedAppBottomBar()]))),
+        builder: (context, child) => RequiredUpdateGate(child: NavigationOverlay(child: Stack(fit:StackFit.expand,children:[const Positioned.fill(child:MotifSurface()),Column(children: [Expanded(child: child!), const AnimatedAppBottomBar()])]))),
         locale: locale ?? const Locale('tr'),
         supportedLocales: const [Locale('tr'), Locale('en'), Locale('nl')],
         localizationsDelegates: GlobalMaterialLocalizations.delegates,
@@ -59,10 +64,13 @@ class KuranApp extends StatelessWidget {
     final dark = brightness == Brightness.dark;
     final scheme = ColorScheme.fromSeed(seedColor: seed, brightness: brightness);
     return ThemeData(useMaterial3: true, colorScheme: scheme,
+      bottomSheetTheme:const BottomSheetThemeData(
+        shape:RoundedRectangleBorder(borderRadius:BorderRadius.vertical(top:Radius.circular(24))),
+        clipBehavior:Clip.antiAlias),
       pageTransitionsTheme: PageTransitionsTheme(builders: {
         for (final platform in TargetPlatform.values) platform: const BottomUpPageTransitionsBuilder(),
       }),
-      scaffoldBackgroundColor: dark ? scheme.surface : const Color(0xFFF8F4EB),
+      scaffoldBackgroundColor: Colors.transparent,
       appBarTheme: AppBarTheme(backgroundColor: dark ? scheme.surface : const Color(0xFFF8F4EB),
         foregroundColor: scheme.onSurface, centerTitle: false, elevation: 0),
       filledButtonTheme: FilledButtonThemeData(style: FilledButton.styleFrom(
@@ -85,6 +93,7 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   ReadingStore? _store;
   final _dashboardScroll = ScrollController();
+  final _homeScaffold = GlobalKey<ScaffoldState>();
   String? _error;
   bool _downloadError = false;
   bool _downloading = false;
@@ -93,15 +102,20 @@ class _HomeScreenState extends State<HomeScreen> {
   bool _returningToReading = false;
   bool _exitConfirmationOpen = false;
   bool _updateScheduled = false;
+  bool _voiceBusy = false;
   int _navigationId = 0;
   Completer<void>? _downloadStopped;
 
   @override
   void initState() {
     super.initState();
+    VoiceControl.listen = _voiceCommand;
+    VoiceControl.help = _showVoiceHelp;
     AppNavigation.instance.open = _navigate;
     AppNavigation.instance.openCard = _openDashboardCard;
+    AppNavigation.instance.navigationContext = () => appNavigatorKey.currentState?.overlay?.context;
     AppNavigation.instance.switchPage = null;
+    AppPreferences.instance.addListener(_refreshChrome);
     AppNavigation.instance.fullscreenReader.addListener(_refreshChrome);
     AppNavigation.instance.fullscreenMeal.addListener(_refreshChrome);
     _load();
@@ -125,6 +139,147 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _refreshChrome() { if (mounted) setState(() {}); }
+
+  void _selectMenu(String id) {
+    AppNavigation.instance.exitFullscreen();
+    _homeScaffold.currentState?.closeDrawer();
+    final store = _store;
+    if (store == null) return;
+    switch (id) {
+      case 'home': _navigate(AppDestination.home);
+      case 'exit': _navigate(AppDestination.exit);
+      case 'page': _read(store.lastPage,panel:'jump');
+      case 'settings': _settings();
+      case 'support': Navigator.push(context, MaterialPageRoute<void>(builder: (_) => const SupportScreen()));
+      case 'search': _read(store.lastPage, panel: 'surah');
+      case 'bookmarks': _openBookmarks();
+      case 'history': _navigate(AppDestination.history);
+      case 'hatim': _navigate(AppDestination.hatim);
+      default: _openDashboardCard(id);
+    }
+  }
+
+  Future<void> _voiceCommand() async {
+    if (_voiceBusy || _store?.ready != true) return;
+    setState(() => _voiceBusy = true);
+    VoiceControl.busy.value = true;
+    VoiceCommand? command;
+    String? interruptedAudio;
+    try {
+      final audio=await ReadingStore.channel.invokeMapMethod<String,dynamic>('loadAudio');
+      if(audio?['playing']!=null && audio?['paused']!=true) {
+        interruptedAudio=audio!['playing'] as String;
+        await ReadingStore.channel.invokeMethod<void>('pauseAudio');
+      }
+      if(!mounted)return;
+      final results = await ReadingStore.channel.invokeListMethod<String>('recognizeVoice', {
+        'language': {'tr': 'tr-TR', 'en': 'en-US', 'nl': 'nl-NL'}[context.language],
+        'prompt': context.t('voicePrompt'),
+      });
+      if (!mounted || results == null || results.isEmpty) return;
+      for (final result in results) {
+        command = VoiceIntents.parse(result);
+        if (command != null) break;
+      }
+      if (command == null) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(context.t('voiceNotUnderstood'))));
+      } else {
+        await _executeVoice(command);
+      }
+    } catch (_) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(context.t('voiceUnavailable'))));
+    } finally {
+      if(interruptedAudio!=null && command?.action!=VoiceAction.pause && command?.action!=VoiceAction.stop) {
+        try {
+          final audio=await ReadingStore.channel.invokeMapMethod<String,dynamic>('loadAudio');
+          if(audio?['playing']==interruptedAudio && audio?['paused']==true) {
+            await ReadingStore.channel.invokeMethod<void>('resumeAudio');
+          }
+        } catch(_) { /* A stopped recording does not need resuming. */ }
+      }
+      VoiceControl.busy.value = false;
+      if (mounted) setState(() => _voiceBusy = false);
+    }
+  }
+
+  Future<void> _executeVoice(VoiceCommand command) async {
+    final store = _store!;
+
+    if (command.action == VoiceAction.help) {
+      _showVoiceHelp();
+      return;
+    }
+    if (command.action == VoiceAction.night || command.action == VoiceAction.day) {
+      await AppPreferences.instance.save(AppPreferences.instance.value.copyWith(
+        themeMode:command.action==VoiceAction.night?ThemeMode.dark:ThemeMode.light));
+      return;
+    }
+    if (await VoiceControl.dispatch(command)) return;
+    switch(command.action) {
+      case VoiceAction.continueReading:
+        unawaited(_readVoice(store.lastPage));
+      case VoiceAction.surah:
+        unawaited(_readVoice(store.edition.surahIndex[command.number!-1].startPage,
+          voice:command,playSurah:command.play?command.number:null));
+      case VoiceAction.page:
+        if(command.number!<store.edition.firstPage || command.number!>store.edition.lastPage) { _voiceNotice('voiceInvalidTarget'); return; }
+        unawaited(_readVoice(command.number!));
+      case VoiceAction.juz:
+        final page=command.number==1?store.edition.firstPage:(command.number!-1)*20+1;
+        if(page>store.edition.lastPage) { _voiceNotice('voiceInvalidTarget');return; }
+        unawaited(_readVoice(page));
+      case VoiceAction.verse:
+        final regions=await VerseRegions.load();
+        int? page;
+        for(var p=store.edition.firstPage;p<=store.edition.lastPage;p++) {
+          if(regions.page(store.edition.id,p).any((v)=>v.surah==command.number && v.verse==command.verse)) {page=p;break;}
+        }
+        if(page==null) {_voiceNotice('voiceInvalidTarget');return;}
+        unawaited(_readVoice(page,voice:command));
+      case VoiceAction.bookmarks:
+        unawaited(_navigate(AppDestination.bookmarks));
+      default:
+        _voiceNotice('voiceOpenReader');
+    }
+  }
+
+  Future<void> _readVoice(int page,{VoiceCommand? voice,int? playSurah}) async {
+    final navigator=appNavigatorKey.currentState;
+    if(navigator==null)return;
+    if(navigator.canPop()) {
+      navigator.popUntil((route)=>route.isFirst);
+      await Future<void>.delayed(const Duration(milliseconds:400));
+      if(!mounted)return;
+    }
+    unawaited(_read(page,voice:voice,playSurah:playSurah));
+  }
+
+  void _showVoiceHelp() {
+    final controller=TextEditingController();
+    final visible=appNavigatorKey.currentState?.overlay?.context;
+    if(visible==null)return;
+    unawaited(showDialog<String>(context:visible,builder:(context)=>AlertDialog(
+      title:Text(context.t('voiceHelpTitle')),
+      content:SizedBox(width:520,child:SingleChildScrollView(child:Column(mainAxisSize:MainAxisSize.min,children:[
+        Text(context.t('voiceHelpBody')),
+        const SizedBox(height:16),
+        TextField(key:const ValueKey('voice-command-input'),controller:controller,
+          decoration:InputDecoration(labelText:context.t('voiceTypeHint')),
+          onSubmitted:(value)=>Navigator.pop(context,value)),
+      ]))),
+      actions:[TextButton(onPressed:()=>Navigator.pop(context),child:Text(context.t('Kapat'))),
+        FilledButton(key:const ValueKey('voice-command-apply'),onPressed:()=>Navigator.pop(context,controller.text),child:Text(context.t('voiceApply')))]
+    )).then((text) async {
+      if(text==null || text.trim().isEmpty || !mounted)return;
+      final command=VoiceIntents.parse(text);
+      if(command==null) {_voiceNotice('voiceNotUnderstood');return;}
+      try {await _executeVoice(command);}catch(_) {_voiceNotice('voiceUnavailable');}
+    }).whenComplete(() {Future.delayed(const Duration(milliseconds:400),controller.dispose);}));
+  }
+
+  void _voiceNotice(String key) {
+    if(mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text(context.t(key))));
+  }
 
   Future<void> _navigate(AppDestination destination) async {
     if (destination == AppDestination.exit) {
@@ -323,8 +478,8 @@ class _HomeScreenState extends State<HomeScreen> {
     if (mounted) setState(() {});
   }
 
-  Future<void> _read(int page, {String? panel}) async {
-    await Navigator.push(context, MaterialPageRoute<void>(builder: (_) => QuranScreen(store: _store!, initialPage: page, initialPanel: panel)));
+  Future<void> _read(int page, {String? panel, int? playSurah, VoiceCommand? voice}) async {
+    await Navigator.push(context, MaterialPageRoute<void>(builder: (_) => QuranScreen(store: _store!, initialPage: page, initialPanel: panel, initialPlaySurah: playSurah, initialVoice: voice)));
     AppNavigation.instance.refresh();
     if (mounted) setState(() {});
   }
@@ -332,7 +487,10 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void dispose() {
     _pauseRequested = true;
+    VoiceControl.listen = null;
+    VoiceControl.help = null;
     _dashboardScroll.dispose();
+    AppPreferences.instance.removeListener(_refreshChrome);
     AppNavigation.instance.fullscreenReader.removeListener(_refreshChrome);
     AppNavigation.instance.fullscreenMeal.removeListener(_refreshChrome);
     AppNavigation.instance.open = null;
@@ -368,6 +526,13 @@ class _HomeScreenState extends State<HomeScreen> {
       WidgetsBinding.instance.addPostFrameCallback((_) async {
         if (!mounted) return;
         await showUpdateDialog(context, store.appVersion!.split('+').first);
+        if (!context.mounted) return;
+        if(AppPreferences.instance.value.demoRevision<featureDemoRevision) {
+          await showFeatureDemo(context,initialStep:AppPreferences.instance.value.demoRevision>=1?4:0);
+          if (!mounted) return;
+          try { await AppPreferences.instance.save(AppPreferences.instance.value.copyWith(demoRevision:featureDemoRevision)); }
+          catch (_) { /* The next feature update can retry saving the tutorial preference. */ }
+        }
         if (!mounted) return;
         try {
           await ReadingStore.channel.invokeMethod<void>('acknowledgeUpdate');
@@ -377,31 +542,14 @@ class _HomeScreenState extends State<HomeScreen> {
         }
       });
     }
-    final cards = <String, Widget>{if (store != null) ...{
-            'meal': _MenuRow(icon: Icons.menu_book_rounded,
-              title: context.t('Meal Oku'),
-              onTap: () => _openDashboardCard('meal')),
-            if (store.ready) ...{
-              'hatim': _MenuRow(icon: Icons.auto_stories_rounded, title: context.t('Hatim'),
-                onTap: () => _navigate(AppDestination.hatim)),
-              'history': _MenuRow(icon: Icons.history_rounded, title: context.t('Okuma geçmişi'),
-              onTap: () => _navigate(AppDestination.history)),
-              'search': _MenuRow(icon: Icons.search_rounded, title: context.t('Sureler'),
-              onTap: () => _read(store.lastPage, panel: 'surah')),
-              'bookmarks': _MenuRow(icon: Icons.bookmarks_rounded, title: context.t('Ayraçlarım'),
-              onTap: _openBookmarks),
-            for (final shortcut in AppPreferences.instance.value.shortcuts)
-              shortcut.id: _MenuRow(icon: shortcut.kind == ShortcutKind.surah ? Icons.menu_book_outlined : Icons.auto_stories_outlined,
-                title: _shortcutName(shortcut), onTap: () => _openShortcut(shortcut)),
-              'support': _MenuRow(icon: Icons.favorite_outline, title: context.t('Destek'),
-              onTap: () => Navigator.push(context, MaterialPageRoute<void>(builder: (_) => const SupportScreen()))),
-              'settings': _MenuRow(icon: Icons.settings_rounded, title: context.t('Ayarlar'), onTap: _settings),
-            },
-          }};
     return PopScope(
       canPop: false,
       onPopInvokedWithResult: (didPop, result) {
         if (!didPop) {
+          if (_homeScaffold.currentState?.isDrawerOpen ?? false) {
+            _homeScaffold.currentState?.closeDrawer();
+            return;
+          }
           if (store == null || store.ready) {
             _confirmExit();
           } else {
@@ -409,24 +557,18 @@ class _HomeScreenState extends State<HomeScreen> {
           }
         }
       },
-      child: Scaffold(backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-      appBar: AppBar(
-        automaticallyImplyLeading: false,
-        title: const Text('KuranApp', style: TextStyle(fontWeight: FontWeight.w700)),
-        actions: [
-          IconButton(tooltip: context.t('Ayarlar'), icon: const Icon(Icons.settings_rounded),
-            onPressed: store == null || _downloading || _returningToReading ? null : _settings),
-          const LanguageSelector(),
-        ]),
+      child: Scaffold(key: _homeScaffold, drawerEnableOpenDragGesture: false, backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      appBar: AppNavigation.instance.fullscreenReader.value != null ? null : HomeHeader(
+        onMenu: () => _homeScaffold.currentState?.openDrawer(),
+        onVoice: store?.ready == true && !_voiceBusy ? _voiceCommand : null),
+      drawer: store == null ? null : HomeMenu(preferences: AppPreferences.instance.value,
+        ready: store.ready, shortcutName: _shortcutName, onSelected: _selectMenu),
       body: SafeArea(child: Center(child: ConstrainedBox(constraints: BoxConstraints(maxWidth: 680),
         child: ListView(controller: _dashboardScroll, padding: EdgeInsets.fromLTRB(20, 12, 20, 32), children: [
           Container(decoration: BoxDecoration(borderRadius: BorderRadius.circular(28),
-            gradient: LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight,
-              colors: [AppPreferences.instance.value.seed,
-                HSLColor.fromColor(AppPreferences.instance.value.seed).withLightness(.12).toColor()])),
+            color: AppPreferences.instance.value.seed),
             clipBehavior: Clip.antiAlias,
             child: Stack(children: [
-              Positioned(top: -45, right: -45, child: _Ornament()),
               Padding(padding: const EdgeInsets.all(20), child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch, children: [
                   if (store != null && store.ready) ...[
@@ -453,11 +595,16 @@ class _HomeScreenState extends State<HomeScreen> {
                 ])),
             ])),
           SizedBox(height: 24),
+          if(store != null && store.ready) DashboardCards(scrollController: _dashboardScroll,
+            cards: {for(final id in AppPreferences.instance.value.availableDashboardCards)
+              id: Card(child: ListTile(leading: Icon(bottomShortcutIcon(id)),
+                title: Text(dashboardCardLabels.containsKey(id) ? context.t(dashboardCardLabels[id]!) :
+                  _shortcutName(AppPreferences.instance.value.shortcuts.firstWhere((s)=>s.id==id))),
+                trailing: const Icon(Icons.chevron_right),onTap:()=>_selectMenu(id)))}),
           if (store == null && _error == null) Center(child: CircularProgressIndicator()),
           if (_error != null) Padding(padding: EdgeInsets.only(bottom: 16),
             child: Text(_downloadError ? context.t('İndirme tamamlanamadı: {detail}\n\nİndirilen sayfalar korunur; tekrar deneyerek devam edebilirsiniz.', {'detail': context.t(_error!)}) : context.t(_error!), style: TextStyle(color: Theme.of(context).colorScheme.error))),
           if (store == null && _error != null) OutlinedButton(onPressed: _load, child: Text(context.t('Tekrar dene'))),
-          if (store != null) DashboardCards(scrollController: _dashboardScroll, cards: cards),
           if (store != null && !store.ready) ...[
             Card(child: Padding(padding: EdgeInsets.all(22), child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch, children: [
@@ -501,33 +648,4 @@ class _HomeScreenState extends State<HomeScreen> {
         ])))),
     ));
   }
-}
-
-class _MenuRow extends StatelessWidget {
-  final IconData icon;
-  final String title;
-  final VoidCallback onTap;
-  const _MenuRow({required this.icon, required this.title, required this.onTap});
-  @override
-  Widget build(BuildContext context) => Card(
-    margin: const EdgeInsets.only(bottom: 8),
-    child: ListTile(dense: true, minVerticalPadding: 10,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      leading: Icon(icon, color: Theme.of(context).colorScheme.primary),
-      title: Text(title, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 16)),
-      trailing: const Icon(Icons.chevron_right, size: 20), onTap: onTap),
-  );
-}
-
-class _Ornament extends StatelessWidget {
-  const _Ornament();
-  @override
-  Widget build(BuildContext context) => Transform.rotate(angle: .45,
-    child: SizedBox(width: 180, height: 180, child: Stack(alignment: Alignment.center, children: [
-      for (var i = 0; i < 4; i++) Transform.rotate(angle: i * .39,
-        child: Container(width: 125, height: 125,
-          decoration: BoxDecoration(border: Border.all(color: Color(0x24E5C383), width: 1.5)))),
-      Container(width: 170, height: 170, decoration: BoxDecoration(shape: BoxShape.circle,
-        border: Border.all(color: Color(0x18E5C383)))),
-    ])));
 }

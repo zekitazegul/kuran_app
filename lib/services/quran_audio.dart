@@ -18,6 +18,9 @@ class QuranAudio {
   Set<String> downloaded = {};
   String? playing;
   bool stopPending = false;
+  bool paused = false;
+  int? currentSurah;
+  int repeatTotal = 0, repeatCurrent = 0, repeatRemaining = 0, repeatCompleted = 0;
   bool memorizing = false;
   int? currentVerse;
   String? playbackError;
@@ -32,6 +35,12 @@ class QuranAudio {
     downloaded = Set<String>.from(result['downloaded'] as List);
     playing = result['playing'] as String?;
     stopPending = result['stopPending'] == true;
+    paused = result['paused'] == true;
+    currentSurah = result['currentSurah'] as int?;
+    repeatTotal = result['repeatTotal'] as int? ?? 0;
+    repeatCurrent = result['repeatCurrent'] as int? ?? 0;
+    repeatRemaining = result['repeatRemaining'] as int? ?? 0;
+    repeatCompleted = result['repeatCompleted'] as int? ?? 0;
     memorizing = result['memorizing'] == true;
     currentVerse = result['currentVerse'] as int?;
     playbackError = result['error'] as String?;
@@ -60,14 +69,18 @@ class QuranAudio {
     await channel.invokeMethod<void>('downloadAudio', {'id': track.id});
     downloaded.add(track.id);
   }
-  Future<void> play(AudioTrack track) async {
+  Future<void> play(AudioTrack track, {int repetitions = 1}) async {
     if (playing != null) throw StateError('Current verse must finish first');
     if (!downloaded.contains(track.id)) throw StateError('Download required');
-    await channel.invokeMethod<void>('playAudio', {'id': track.id});
+    await channel.invokeMethod<void>('playAudio', {'id': track.id, 'repetitions': repetitions});
     playing = track.id;
     stopPending = false;
     currentVerse = track.verse ?? 1;
   }
+  Future<void> pause() async { await channel.invokeMethod<void>('pauseAudio'); await load(); }
+  Future<void> resume() async { await channel.invokeMethod<void>('resumeAudio'); await load(); }
+  Future<void> replay() async { await channel.invokeMethod<void>('replayAudio'); await load(); }
+  Future<void> stopImmediately() async { await channel.invokeMethod<void>('stopAudioImmediately'); await load(); }
   Future<void> stop() async {
     await channel.invokeMethod<void>('stopAudio');
     if (playing != null) stopPending = true;

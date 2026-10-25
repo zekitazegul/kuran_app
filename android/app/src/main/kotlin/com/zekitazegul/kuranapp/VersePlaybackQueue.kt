@@ -1,7 +1,7 @@
 package com.zekitazegul.kuranapp
 
 /** A stop request never changes the current verse; only its completion can advance. */
-class VersePlaybackQueue<T>(private val verses: List<T>, private val repetitions: Int = 1,
+class VersePlaybackQueue<T>(private val verses: List<T>, val repetitions: Int = 1,
     val cumulative: Boolean = false) {
     init { require(verses.isNotEmpty()); require(repetitions in 1..999) }
     private var index = 0
@@ -10,6 +10,12 @@ class VersePlaybackQueue<T>(private val verses: List<T>, private val repetitions
     var stopPending = false
         private set
     val current: T get() = verses[index]
+    val currentRepetition: Int get() = repetition + 1
+    val remainingRepetitions: Int get() = repetitions - repetition - 1
+    fun nextVerse(): Boolean {
+        if (stopPending || index >= stage) return false
+        index++; return true
+    }
     fun requestStop() { stopPending = true }
     fun advanceStage(): Boolean {
         if (!cumulative || stopPending || stage == verses.lastIndex) return false

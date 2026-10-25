@@ -3,7 +3,8 @@ import 'quran_artwork.dart';
 
 class DashboardDrag {
   final String id;
-  const DashboardDrag(this.id);
+  final String source;
+  const DashboardDrag(this.id, {this.source = 'home'});
   static final active = ValueNotifier<bool>(false);
   static final overNavigation = ValueNotifier<bool>(false);
   static Offset? position;

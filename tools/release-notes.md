@@ -1,5 +1,11 @@
-Ayet seçimini başlangıç ve bitiş tutamaçlarıyla değiştirebilirsin. Ezber aralığı ve tekrar sayısı birlikte görünür. Yeni sürüm varsa açılışta güncelleme istenir. Kurulumun son adımı, KuranApp’in kalacağını ve yalnızca geçici kurucunun kaldırılacağını açıklar.
+tr
+- Sayfa, cüz, ayet, meal ve görünümü sesli komutlarla yönet.
+- Sure ve ayetleri istediğin sayıda dinle; tekrar sayısını ve kalan tekrarları ekranda gör.
 
-Adjust selected verses with start and end handles. Memorization range and repeat count are shown together. A new version requires an update at startup. The final setup step explains that KuranApp stays installed and only the temporary installer is removed.
+en
+- Control pages, juz, verses, translation and display with voice commands.
+- Repeat surahs and verses and see the repeat count and remaining rounds.
 
-Pas geselecteerde verzen aan met begin- en eindgrepen. Het memoriseerbereik en aantal herhalingen staan bij elkaar. Een nieuwe versie vereist een update bij het openen. De laatste installatiestap legt uit dat KuranApp blijft staan en alleen het tijdelijke installatiehulpmiddel wordt verwijderd.
+nl
+- Bedien pagina’s, djoez, verzen, vertaling en weergave met spraakopdrachten.
+- Herhaal soera’s en verzen en bekijk het aantal herhalingen en resterende rondes.

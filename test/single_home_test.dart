@@ -43,16 +43,18 @@ void main() {
       PaintingBinding.instance.imageCache.clear(); PaintingBinding.instance.imageCache.clearLiveImages(); image.dispose();
     });
     await tester.pumpWidget(const KuranApp()); await tester.pumpAndSettle();
+    AppNavigation.instance.exitFullscreen();await tester.pumpAndSettle();
     expect(find.byType(PageView),findsNothing);
     expect(AppPreferences.instance.value.personalPages,isEmpty);
     for (var i=0;i<2;i++) {
       expect(find.byKey(const ValueKey('dashboard-card-listen')),findsNothing);
-      await tester.tap(find.byKey(const ValueKey('dashboard-card-meal'))); await tester.pump(const Duration(milliseconds:500));
+      await tester.tap(find.byKey(const ValueKey('home-menu')));await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const ValueKey('home-menu-meal'))); await tester.pump(const Duration(milliseconds:500));
       await tester.runAsync(() async => Future<void>.delayed(const Duration(milliseconds:500)));
       await tester.pump(); await tester.pump(const Duration(milliseconds:500));
       expect(find.byType(MealScreen),findsOneWidget);
       expect(tester.widget<MealScreen>(find.byType(MealScreen)).initialSurah, isNull);
-      expect(tester.widget<QuranScreen>(find.byType(QuranScreen,skipOffstage:false)).initialPanel,'meal');
+      expect(tester.widgetList<QuranScreen>(find.byType(QuranScreen,skipOffstage:false)).any((r)=>r.initialPanel=='meal'),true);
       AppNavigation.instance.open!(AppDestination.home); await tester.pumpAndSettle();
       expect(appNavigatorKey.currentState!.canPop(),isFalse);
     }
@@ -74,6 +76,7 @@ void main() {
       tester.view.physicalSize = size;
       tester.view.devicePixelRatio = 1;
       await tester.pumpAndSettle();
+      AppNavigation.instance.exitFullscreen();await tester.pumpAndSettle();
       for (var repeat = 0; repeat < 2; repeat++) {
         await openMealShortcut();
         expect(find.byType(MealScreen), findsOneWidget);

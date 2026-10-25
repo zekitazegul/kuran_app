@@ -1,3 +1,5 @@
+import 'package:kuran_app/widgets/app_bottom_bar.dart';
+import 'support/reading_images.dart';
 import 'package:flutter/material.dart';
 import 'dart:async';
 import 'package:flutter/services.dart';
@@ -19,7 +21,9 @@ void main() {
       'directory': '/test', 'lastPage': 439, 'bookmarks': <int>[],
       'downloaded': List<int>.generate(605, (i) => i), 'informationSeen': true, 'guideSeen': true,
     });
+    cacheReadingImages('/test', [439]);
     await tester.pumpWidget(const KuranApp()); await tester.pumpAndSettle();
+    AppNavigation.instance.exitFullscreen();await tester.pumpAndSettle();
     unawaited(appNavigatorKey.currentState!.push(MaterialPageRoute<void>(builder: (_) => const Scaffold(body: Text('first screen')))));
     await tester.pumpAndSettle();
     unawaited(appNavigatorKey.currentState!.push(MaterialPageRoute<void>(builder: (_) => const Scaffold(body: Text('second screen')))));
@@ -57,7 +61,9 @@ void main() {
       'informationSeen': true, 'guideSeen': true,
     });
     try {
-      await tester.pumpWidget(const KuranApp()); await tester.pumpAndSettle();
+      cacheReadingImages('/test', [439]);
+    await tester.pumpWidget(const KuranApp()); await tester.pumpAndSettle();
+    AppNavigation.instance.exitFullscreen();await tester.pumpAndSettle();
       await tester.tap(find.byKey(const ValueKey('navigation-exit'))); await tester.pumpAndSettle();
       expect(find.text(entry.value[0]), findsOneWidget); expect(exits, 0);
       final dialog = tester.getRect(find.byKey(const ValueKey('exit-confirmation')));

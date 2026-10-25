@@ -1,3 +1,5 @@
+import '../widgets/motif_picker.dart';
+import '../widgets/motif_surface.dart';
 import '../widgets/screen_title.dart';
 import 'package:flutter/material.dart';
 import '../data/surahs.dart';
@@ -21,13 +23,25 @@ class _PersonalizationScreenState extends State<PersonalizationScreen> {
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(context.t('Tercih kaydedilemedi.'))));
     } finally { if (mounted) setState(() => _saving = false); }
   }
+  Future<void> _chooseMotif(bool menu) async {
+    await showModalBottomSheet<void>(context:context,isScrollControlled:true,builder:(sheetContext)=>
+      MotifSurface(menu:true,child:SafeArea(child:SizedBox(height:MediaQuery.sizeOf(sheetContext).height*.8,
+        child:Column(children:[Padding(padding:const EdgeInsets.all(16),
+          child:Text(context.t(menu?'menuMotif':'backgroundMotif'),style:Theme.of(context).textTheme.titleLarge)),
+          Expanded(child:MotifPicker(menu:menu,onSelected:(pattern) async {
+            final prefs=AppPreferences.instance.value;
+            await _save(menu?prefs.copyWith(menuMotif:pattern):prefs.copyWith(backgroundMotif:pattern));
+            if(sheetContext.mounted) Navigator.pop(sheetContext);
+          })),
+        ])))));
+  }
   String _name(HomeShortcut shortcut) => shortcut.kind == ShortcutKind.juz
     ? context.t('Cüz {number}', {'number': shortcut.number})
     : shortcut.number == 36 ? context.t('Yasin') : surahName(surahs[shortcut.number - 1], context.language);
 
   Future<void> _addShortcut() async {
     final shortcut = await showModalBottomSheet<HomeShortcut>(context: context,
-      isScrollControlled: true, builder: (_) => const _ShortcutPicker());
+      isScrollControlled: true, builder: (_) => const ShortcutPicker());
     if (shortcut == null || !mounted) return;
     final preferences = AppPreferences.instance.value;
     if (preferences.shortcuts.any((s) => s.id == shortcut.id)) {
@@ -66,7 +80,7 @@ class _PersonalizationScreenState extends State<PersonalizationScreen> {
                   ? null : () => _save(preferences.copyWith(bottomShortcuts:
                     preferences.bottomShortcuts.where((id) => id != preferences.bottomShortcuts[i]).toList()))),
             ])),
-        if (preferences.bottomShortcuts.length < 6)
+        if (preferences.bottomShortcuts.length < 5)
           Wrap(spacing: 8, children: [
             for (final id in [...UiPreferences.availableBottomShortcuts, ...preferences.shortcuts.map((s) => s.id)].where((id) => !preferences.bottomShortcuts.contains(id)))
               ActionChip(avatar: const Icon(Icons.add, size: 18),
@@ -77,6 +91,16 @@ class _PersonalizationScreenState extends State<PersonalizationScreen> {
         TextButton(onPressed: _saving ? null : () => _save(preferences.copyWith(bottomShortcuts: UiPreferences.defaultBottomShortcuts)),
           child: Text(context.t('Alt çubuğu sıfırla'))),
         const SizedBox(height: 24),
+        Text(context.t('motifSettings'),style:Theme.of(context).textTheme.titleLarge),
+        const SizedBox(height:12),
+        for(final menu in [false,true]) ListTile(
+          key:ValueKey('motif-picker-${menu?'menu':'background'}'),
+          leading:ClipRRect(borderRadius:BorderRadius.circular(8),child:SizedBox(width:56,height:56,
+            child:MotifSurface(menu:menu,preview:true))),
+          title:Text(context.t(menu?'menuMotif':'backgroundMotif')),
+          subtitle:Text(context.t('motif-${menu?preferences.menuMotif:preferences.backgroundMotif}')),
+          trailing:const Icon(Icons.chevron_right),onTap:_saving?null:()=>_chooseMotif(menu)),
+        const SizedBox(height:24),
         Text(context.t('Tema'), style: Theme.of(context).textTheme.titleLarge),
         const SizedBox(height: 12),
         Wrap(spacing: 8, children: [
@@ -142,12 +166,12 @@ class _PersonalizationScreenState extends State<PersonalizationScreen> {
   );
 }
 
-class _ShortcutPicker extends StatefulWidget {
-  const _ShortcutPicker();
+class ShortcutPicker extends StatefulWidget {
+  const ShortcutPicker({super.key});
   @override
-  State<_ShortcutPicker> createState() => _ShortcutPickerState();
+  State<ShortcutPicker> createState() => ShortcutPickerState();
 }
-class _ShortcutPickerState extends State<_ShortcutPicker> {
+class ShortcutPickerState extends State<ShortcutPicker> {
   ShortcutKind kind = ShortcutKind.surah;
   String query = '';
   @override
@@ -156,7 +180,7 @@ class _ShortcutPickerState extends State<_ShortcutPicker> {
       ? surahs.where((s) => matchesSurah(s, query)).map((s) => HomeShortcut(kind, s.number)).toList()
       : List.generate(30, (i) => HomeShortcut(kind, i + 1)).where((s) =>
           query.trim().isEmpty || s.number.toString() == query.trim()).toList();
-    return SafeArea(child: Padding(padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(context).bottom),
+    return MotifSurface(menu:true,child:SafeArea(child: Padding(padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(context).bottom),
       child: SizedBox(height: MediaQuery.sizeOf(context).height * .75,
         child: Column(children: [
           Padding(padding: const EdgeInsets.all(16), child: Text(context.t('Kısayol ekle'),
@@ -179,6 +203,6 @@ class _ShortcutPickerState extends State<_ShortcutPicker> {
                 trailing: const Icon(Icons.add), onTap: () => Navigator.pop(context, item));
             })),
         ])),
-    ));
+    )));
   }
 }

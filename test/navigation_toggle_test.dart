@@ -41,10 +41,8 @@ void main() {
     expect(find.byType(LanguageSelector), findsOneWidget);
     for (final destination in [AppDestination.hatim, AppDestination.surahs, AppDestination.bookmarks, AppDestination.search, AppDestination.history, AppDestination.settings]) {
       if (destination == AppDestination.hatim) {
-        await tester.scrollUntilVisible(find.byKey(const ValueKey('dashboard-card-hatim')), 200,
-          scrollable: find.byType(Scrollable).first);
-        await tester.pumpAndSettle();
-        await tester.tap(find.text('Hatim'));
+        await tester.tap(find.byKey(const ValueKey('home-menu')));await tester.pumpAndSettle();
+        await tester.tap(find.byKey(const ValueKey('home-menu-hatim')));
       } else {
         AppNavigation.instance.open!(destination);
       }

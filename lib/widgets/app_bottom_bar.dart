@@ -1,3 +1,5 @@
+import 'motif_surface.dart';
+import '../services/shortcut_transfer.dart';
 import 'personal_page_scope.dart';
 import 'package:flutter/material.dart';
 import '../l10n/translations.dart';
@@ -45,6 +47,7 @@ class AppNavigation extends ValueNotifier<ReadingStore?> {
   final selected = ValueNotifier<AppDestination>(AppDestination.home);
   void Function(AppDestination)? open;
   void Function(String)? openCard;
+  BuildContext? Function()? navigationContext;
   void Function(int delta)? switchPage;
   void exitFullscreen() {
     for (final session in [fullscreenReader.value, fullscreenMeal.value]) {
@@ -104,6 +107,7 @@ class AppBottomBar extends StatefulWidget {
 }
 class _AppBottomBarState extends State<AppBottomBar> {
   bool _saving = false;
+  bool _shortcutSheetOpen=false;
   final _dropKey = GlobalKey();
   String? _arriving;
   Offset _arrivalOffset = Offset.zero;
@@ -117,20 +121,56 @@ class _AppBottomBarState extends State<AppBottomBar> {
       if (mounted) ScaffoldMessenger.maybeOf(context)?.showSnackBar(SnackBar(content: Text(context.t('Tercih kaydedilemedi.'))));
     } finally { if (mounted) setState(() => _saving = false); }
   }
+  Future<void> _chooseShortcuts() async {
+    final navigationContext=AppNavigation.instance.navigationContext?.call();
+    if(navigationContext==null) return;
+    if(_shortcutSheetOpen) { Navigator.of(navigationContext).pop(); return; }
+    _shortcutSheetOpen=true;
+    try {
+    await showModalBottomSheet<void>(context: navigationContext, isScrollControlled: true,
+      builder: (sheetContext) => MotifSurface(menu:true,child:SafeArea(child: FractionallySizedBox(heightFactor: .8,
+        child: ValueListenableBuilder<UiPreferences>(valueListenable: AppPreferences.instance,
+          builder: (context, preferences, _) {
+            final ids = {...UiPreferences.availableBottomShortcuts, ...preferences.shortcuts.map((s) => s.id)}.toList();
+            return Column(children: [Padding(padding: const EdgeInsets.all(16),
+              child: Text(context.t('navigationShortcuts'),style: Theme.of(context).textTheme.titleLarge)),
+              Expanded(child: ListView(children: [for(final id in ids) CheckboxListTile(
+                key: ValueKey('navigation-choice-$id'),
+                title: Text(bottomShortcutLabel(context,id)),
+                secondary: Icon(bottomShortcutIcon(id)), value: preferences.bottomShortcuts.contains(id),
+                onChanged: (value) async {
+                  final items=[...AppPreferences.instance.value.bottomShortcuts];
+                  if(value==true) {
+                    if(items.length>=5) {
+                      ScaffoldMessenger.of(navigationContext).showSnackBar(SnackBar(content:
+                        Text(this.context.t('Alt \u00e7ubu\u011fa en fazla 5 k\u0131sayol ekleyebilirsin.'))));
+                      return;
+                    }
+                    items.add(id);
+                  } else { items.remove(id); }
+                  await _save(items);
+                })]))]);
+          })))));
+    } finally { _shortcutSheetOpen=false; }
+  }
   void _endDrag() {
     _trash?.remove(); _trash?.dispose(); _trash = null;
+    DashboardDrag.active.value=false;
+    DashboardDrag.position=null;
+    DashboardDrag.overNavigation.value=false;
     if (mounted) setState(() => _dragged = null);
   }
   void _startDrag(String id) {
     setState(() => _dragged = id);
+    DashboardDrag.active.value=true;
     final box = context.findRenderObject() as RenderBox;
     final top = box.localToGlobal(Offset.zero).dy;
     _trash = OverlayEntry(builder: (overlayContext) => Positioned(
       top: (top - 100).clamp(0.0, double.infinity), left: 0, right: 0,
-      child: Center(child: DragTarget<String>(
-        onWillAcceptWithDetails: (details) => details.data == _dragged,
+      child: Center(child: DragTarget<DashboardDrag>(
+        onWillAcceptWithDetails: (details) => ShortcutTransfer.canonical(details.data.id,'bottom') == _dragged,
         onAcceptWithDetails: (details) {
-          _save(AppPreferences.instance.value.bottomShortcuts.where((item) => item != details.data).toList());
+          _save(AppPreferences.instance.value.bottomShortcuts.where((item) => item != ShortcutTransfer.canonical(details.data.id,'bottom')).toList());
         },
         builder: (context, candidates, rejected) => Material(
           key: const ValueKey('navigation-trash'), elevation: 8,
@@ -154,7 +194,7 @@ class _AppBottomBarState extends State<AppBottomBar> {
           return ValueListenableBuilder<AppDestination>(valueListenable: AppNavigation.instance.selected,
             builder: (context, selected, _) => ValueListenableBuilder<bool>(valueListenable: DashboardDrag.active,
             builder: (context, dragging, _) {
-              if (preferences.bottomShortcuts.isEmpty && !dragging) return const SizedBox.shrink();
+
               return DragTarget<DashboardDrag>(
                 key: _dropKey,
                 onWillAcceptWithDetails: (_) {
@@ -163,29 +203,31 @@ class _AppBottomBarState extends State<AppBottomBar> {
                 },
                 onMove: (_) => DashboardDrag.overNavigation.value = true,
                 onLeave: (_) => DashboardDrag.overNavigation.value = false,
-                onAcceptWithDetails: (details) {
-                  final items = [...AppPreferences.instance.value.bottomShortcuts];
-                  if (items.contains(details.data.id)) return;
-                  if (items.length >= 6) {
-                    ScaffoldMessenger.maybeOf(context)?.showSnackBar(SnackBar(content: Text(context.t('Alt \u00e7ubu\u011fa en fazla 6 k\u0131sayol ekleyebilirsin.'))));
-                    return;
+                onAcceptWithDetails: (details) async {
+                  final id=ShortcutTransfer.canonical(details.data.id,'bottom');
+                  final items=AppPreferences.instance.value.bottomShortcuts;
+                  final box=_dropKey.currentContext!.findRenderObject() as RenderBox;
+                  final fraction=(box.globalToLocal(DashboardDrag.position??details.offset).dx/box.size.width).clamp(0.0,1.0);
+                  final index=((Directionality.of(context)==TextDirection.rtl?1-fraction:fraction)*items.length).round();
+                  if(!items.contains(id) && items.length<5) {
+                    final destination=box.localToGlobal(Offset(box.size.width*(index+.5)/(items.length+1),28));
+                    _arriving=id;
+                    _arrivalOffset=(DashboardDrag.position??details.offset)-const Offset(52,0)-destination;
                   }
-                  final box = _dropKey.currentContext!.findRenderObject() as RenderBox;
-                  final x = box.globalToLocal(DashboardDrag.position ?? details.offset).dx;
-                  final fraction = (x / box.size.width).clamp(0.0, 1.0);
-                  final index = ((Directionality.of(context) == TextDirection.rtl ? 1 - fraction : fraction) * items.length).round();
-                  items.insert(index, details.data.id);
-                  final visualIndex = Directionality.of(context) == TextDirection.rtl ? items.length - 1 - index : index;
-                  final destination = box.localToGlobal(Offset(box.size.width * (visualIndex + .5) / items.length, 28));
-                  _arriving = details.data.id;
-                  _arrivalOffset = (DashboardDrag.position ?? details.offset) - const Offset(52, 0) - destination;
-                  _save(items);
+                  final message=await ShortcutTransfer.put('bottom',details.data.id,
+                    before:index<items.length?items[index]:null,reorder:details.data.source=='bottom');
+                  if(message!=null && context.mounted) { ScaffoldMessenger.maybeOf(context)?.showSnackBar(
+                    SnackBar(content:Text(context.t(message)))); }
                 },
                 builder: (context, candidates, rejected) => Material(
                   key: const ValueKey('navigation-add-target'),
                   color: candidates.isEmpty ? Theme.of(context).colorScheme.surfaceContainer : Theme.of(context).colorScheme.primaryContainer,
               child: SafeArea(top: false, child: SizedBox(height: 56, child: Row(children: [
-                for (final id in preferences.bottomShortcuts) Expanded(child: Builder(builder: (context) {
+                for (final (index,id) in preferences.bottomShortcuts.indexed) ...[
+                  if(preferences.bottomShortcuts.length<2 && index==preferences.bottomShortcuts.length-1) Expanded(child: IconButton(
+                    key: const ValueKey('navigation-add'), tooltip: context.t('navigationCustomize'),
+                    onPressed: _chooseShortcuts,icon: const Icon(Icons.add))),
+                  Expanded(child: Builder(builder: (context) {
                   final destination = AppDestination.values.where((d) => d.name == id).firstOrNull;
                   final active = selected == destination;
                   final colors = Theme.of(context).colorScheme;
@@ -210,16 +252,16 @@ class _AppBottomBarState extends State<AppBottomBar> {
                     builder: (context, progress, child) => Transform.translate(
                       offset: _arriving == id ? _arrivalOffset * (1 - progress) : Offset.zero,
                       child: Transform.scale(scale: _arriving == id ? 1 + .18 * (1 - progress) : 1, child: child)),
-                    child: DragTarget<String>(
-                    onWillAcceptWithDetails: (details) => details.data != id,
-                    onAcceptWithDetails: (details) {
-                      final items = [...AppPreferences.instance.value.bottomShortcuts];
-                      final oldIndex = items.indexOf(details.data);
-                      final newIndex = items.indexOf(id);
-                      if (oldIndex >= 0 && newIndex >= 0) { items.insert(newIndex, items.removeAt(oldIndex)); _save(items); }
+                    child: DragTarget<DashboardDrag>(
+                    onWillAcceptWithDetails: (details) => details.data.id != id,
+                    onAcceptWithDetails: (details) async {
+                      final message=await ShortcutTransfer.put('bottom',details.data.id,before:id,
+                        reorder:details.data.source=='bottom');
+                      if(message!=null && context.mounted) { ScaffoldMessenger.maybeOf(context)?.showSnackBar(
+                        SnackBar(content:Text(context.t(message)))); }
                     },
-                    builder: (context, candidates, rejected) => LongPressDraggable<String>(
-                      data: id, maxSimultaneousDrags: _saving ? 0 : 1,
+                    builder: (context, candidates, rejected) => LongPressDraggable<DashboardDrag>(
+                      data: DashboardDrag(id=='search'?'page':id, source:'bottom'), maxSimultaneousDrags: _saving ? 0 : 1,
                       onDragStarted: () => _startDrag(id), onDragEnd: (_) => _endDrag(),
                       feedback: Material(elevation: 8, color: colors.primaryContainer,
                         borderRadius: BorderRadius.circular(28), child: Padding(padding: const EdgeInsets.all(16),
@@ -233,6 +275,10 @@ class _AppBottomBarState extends State<AppBottomBar> {
                     ),
                   ));
                 })),
+                ],
+                if(preferences.bottomShortcuts.isEmpty) Expanded(child: IconButton(
+                  key: const ValueKey('navigation-add'),tooltip: context.t('navigationCustomize'),
+                  onPressed: _chooseShortcuts,icon: const Icon(Icons.add))),
               ])))));
             }));
         });
