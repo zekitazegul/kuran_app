@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../services/verse_regions.dart';
+import '../l10n/translations.dart';
 
 /// A long press owns the gesture until release, including moves outside its first verse.
 class VerseSelectionOverlay extends StatefulWidget {
@@ -18,16 +19,17 @@ class VerseSelectionOverlay extends StatefulWidget {
 
 class _VerseSelectionOverlayState extends State<VerseSelectionOverlay> {
   int? _start;
+  bool _selecting = false;
   List<VerseRegion> _selected = [];
   void _clear() {
     if (!mounted) return;
-    setState(() { _start = null; _selected = []; });
+    setState(() { _start = null; _selected = []; _selecting = false; });
     widget.onChanged([]);
   }
   @override
   void didUpdateWidget(VerseSelectionOverlay old) {
     super.didUpdateWidget(old);
-    if (old.crop != widget.crop || old.verses.length != widget.verses.length ||
+    if (old.page != widget.page || old.verses.length != widget.verses.length ||
         (old.verses.isNotEmpty && widget.verses.isNotEmpty &&
           (old.verses.first.surah != widget.verses.first.surah || old.verses.first.verse != widget.verses.first.verse))) {
       _start = null; _selected = [];
@@ -50,9 +52,41 @@ class _VerseSelectionOverlayState extends State<VerseSelectionOverlay> {
       setState(() => _selected = widget.verses.sublist(first, last + 1));
       widget.onChanged(_selected);
     }
+    Widget handle(bool first) {
+      final verse = first ? _selected.first : _selected.last;
+      final boxes = verse.boxes.map(display).toList();
+      final point = first ? boxes.first.topRight : boxes.last.bottomLeft;
+      final left = (point.dx - 24).clamp(0.0, (size.width - 48).clamp(0.0, double.infinity));
+      final top = (point.dy - 24).clamp(0.0, (size.height - 48).clamp(0.0, double.infinity));
+      return Positioned(left: left, top: top, width: 48, height: 48,
+        child: Semantics(label: context.t(first ? 'verseStart' : 'verseEnd'),
+          child: GestureDetector(key: ValueKey(first ? 'selection-start' : 'selection-end'),
+            behavior: HitTestBehavior.opaque,
+            onPanStart: (_) {
+              final anchor = first ? _selected.last : _selected.first;
+              _start = widget.verses.indexWhere((v) => v.surah == anchor.surah && v.verse == anchor.verse);
+            },
+            onPanUpdate: (details) {
+              final index = hit(details.globalPosition);
+              if (index != null && _start != null) update(index);
+            },
+            onPanEnd: (_) => setState(() => _start = null),
+            onPanCancel: () => setState(() => _start = null),
+            child: Center(child: Container(width: 22, height: 22,
+              decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary,
+                shape: BoxShape.circle, border: Border.all(color: Colors.white, width: 2)))),
+          )));
+    }
+    Future<void> actions() async {
+      final selected = List<VerseRegion>.of(_selected);
+      final box = context.findRenderObject() as RenderBox;
+      await widget.onSelected(selected, box.localToGlobal(size.center(Offset.zero)));
+      _clear();
+    }
     return GestureDetector(
       behavior: HitTestBehavior.translucent,
       onLongPressStart: (details) {
+        _selecting = true;
         _start = hit(details.globalPosition);
         if (_start != null) update(_start!);
       },
@@ -61,14 +95,9 @@ class _VerseSelectionOverlayState extends State<VerseSelectionOverlay> {
         final index = hit(details.globalPosition);
         if (index != null) update(index);
       },
-      onLongPressEnd: (details) async {
-        final selected = List<VerseRegion>.of(_selected);
-        _start = null;
-        try {
-          if (selected.isNotEmpty) await widget.onSelected(selected, details.globalPosition);
-        } finally { _clear(); }
-      },
-      onLongPressCancel: _clear,
+      onLongPressEnd: (_) { setState(() { _start = null; _selecting = false; }); },
+      onTap: _selected.isEmpty ? null : _clear,
+      onLongPressCancel: () { if (_selecting) _clear(); },
       child: Stack(fit: StackFit.expand, children: [
         for (final verse in widget.verses)
           for (final box in verse.boxes)
@@ -77,6 +106,12 @@ class _VerseSelectionOverlayState extends State<VerseSelectionOverlay> {
                 _selected.any((v) => v.surah == verse.surah && v.verse == verse.verse)
                   ? const Color(0x663498DB)
                   : widget.sajdah == (verse.surah, verse.verse) ? const Color(0x55FFB300) : Colors.transparent)),
+        if (_selected.isNotEmpty) ...[
+          handle(true), handle(false),
+          Positioned(top: 4, left: 4, child: FilledButton.icon(
+            key: const ValueKey('selection-actions'), onPressed: actions,
+            icon: const Icon(Icons.more_horiz), label: Text(context.t('selectionActions')))),
+        ],
       ]),
     );
   });

@@ -1,5 +1,6 @@
 import 'screens/bookmarks_screen.dart';
 import 'widgets/update_dialog.dart';
+import 'widgets/required_update_gate.dart';
 import 'widgets/compact_confirmation_dialog.dart';
 import 'services/app_preferences.dart';
 import 'widgets/app_bottom_bar.dart';
@@ -41,7 +42,7 @@ class KuranApp extends StatelessWidget {
       valueListenable: AppLanguage.instance,
       builder: (context, locale, _) => MaterialApp(
         navigatorKey: appNavigatorKey,
-        builder: (context, child) => NavigationOverlay(child: Column(children: [Expanded(child: child!), const AnimatedAppBottomBar()])),
+        builder: (context, child) => RequiredUpdateGate(child: NavigationOverlay(child: Column(children: [Expanded(child: child!), const AnimatedAppBottomBar()]))),
         locale: locale ?? const Locale('tr'),
         supportedLocales: const [Locale('tr'), Locale('en'), Locale('nl')],
         localizationsDelegates: GlobalMaterialLocalizations.delegates,

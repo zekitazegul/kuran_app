@@ -14,8 +14,8 @@ android {
         applicationId = "com.zekitazegul.kuran_installer"
         minSdk = 24
         targetSdk = 36
-        versionCode = 2
-        versionName = "1.1"
+        versionCode = 4
+        versionName = "1.3"
         buildConfigField("String", "MANIFEST_URL", "\"https://github.com/zekitazegul/kuran_app/releases/latest/download/update.json\"")
     }
     buildFeatures { buildConfig = true }

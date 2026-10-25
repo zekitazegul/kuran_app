@@ -1,4 +1,8 @@
 <resources>
+    <string name="setup_complete">Installatie afronden</string>
+    <string name="cleanup_explanation">KuranApp blijft op je telefoon. Alleen het tijdelijke installatiehulpmiddel Kuran Installer wordt verwijderd.</string>
+    <string name="cleanup_step">Controleer op het volgende Android-scherm of er Kuran Installer staat en tik op Verwijderen.</string>
+    <string name="cleanup_action">Installatie afronden</string>
     <string name="app_name">Kuran Installer</string>
     <string name="intro">Download en installeer de nieuwste versie van KuranApp.\n\nKoranpagina’s en audio worden op verzoek in de app gedownload. Wifi wordt aanbevolen.</string>
     <string name="start_hint">Tik op Downloaden en installeren om te beginnen.</string>

@@ -263,10 +263,12 @@ class _QuranScreenState extends State<QuranScreen> with SingleTickerProviderStat
   final TransformationController _zoom = TransformationController();
   final ScrollController _verticalScroll = ScrollController();
   bool _zoomed = false;
+  bool _verseSelectionActive = false;
   bool _landscape = false;
   Orientation? _orientation;
 
   void _resetReadingPosition() {
+    _verseSelectionActive = false;
     _zoom.value = Matrix4.identity();
     _zoomed = false;
     if (_verticalScroll.hasClients) _verticalScroll.jumpTo(0);
@@ -337,7 +339,13 @@ class _QuranScreenState extends State<QuranScreen> with SingleTickerProviderStat
     _audioTimer = Timer.periodic(const Duration(seconds: 2), (_) async {
       if (_audioBusy || _audio.playing == null) return;
       _audioBusy = true;
-      try { await _audio.load(); } catch (_) { /* Refresh on the next tick. */ }
+      try {
+        final previousError = _audio.playbackError;
+        await _audio.load();
+        if (_audio.playbackError != null && _audio.playbackError != previousError) {
+          _error('Ses işlemi tamamlanamadı. Tekrar dene.');
+        }
+      } catch (_) { /* Refresh on the next tick. */ }
       finally { _audioBusy = false; if (mounted) setState(() {}); }
     });
     if (widget.initialPanel != null) {
@@ -563,6 +571,9 @@ class _QuranScreenState extends State<QuranScreen> with SingleTickerProviderStat
         ReadingPage(image: FileImage(File(widget.store.pagePath(page))), crop: _normalizedActiveCrop(page)),
         VerseSelectionOverlay(page: page, verses: regions, imageSize: widget.store.edition.pageSize(page),
           crop: _normalizedActiveCrop(page), sajdah: sajdah, onChanged: (selection) {
+            if (_verseSelectionActive != selection.isNotEmpty) {
+              setState(() => _verseSelectionActive = selection.isNotEmpty);
+            }
             if (selection.isNotEmpty) {
               _touchPointer = null; _touchStart = null; _exitFromBottomEdge = false;
             }
@@ -654,6 +665,7 @@ class _QuranScreenState extends State<QuranScreen> with SingleTickerProviderStat
           behavior: HitTestBehavior.opaque,
           child: Listener(
             onPointerDown: (event) {
+              if (_verseSelectionActive) return;
               if (_touchPointer != null) {
                 _multiTouch = true;
                 _releaseDrag(commit: false);
@@ -727,7 +739,7 @@ class _QuranScreenState extends State<QuranScreen> with SingleTickerProviderStat
                       : ClampingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
                   child: Column(children: [
                     GestureDetector(behavior: HitTestBehavior.opaque,
-                      onDoubleTap: _doubleTapFullscreen,
+                      onDoubleTap: _verseSelectionActive ? null : _doubleTapFullscreen,
                       child: SizedBox(width: constraints.maxWidth, height: sheetHeight, child: child)),
                     if (_landscape && _fullscreen) SafeArea(top: false,
                       child: Column(key: const ValueKey('landscape-reading-footer'), children: [

@@ -11,6 +11,13 @@ import java.util.concurrent.Executors
 import io.flutter.embedding.android.FlutterActivity
 
 class MainActivity : FlutterActivity() {
+    fun installUpdate(apk: java.io.File) {
+        val uri = androidx.core.content.FileProvider.getUriForFile(this, "$packageName.apkshare", apk)
+        startActivityForResult(Intent(Intent.ACTION_VIEW).apply {
+            setDataAndType(uri, "application/vnd.android.package-archive")
+            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        }, 7402)
+    }
     private lateinit var updater: AppUpdater
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)

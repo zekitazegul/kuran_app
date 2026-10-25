@@ -1,4 +1,8 @@
 <resources>
+    <string name="setup_complete">Kurulumu tamamla</string>
+    <string name="cleanup_explanation">KuranApp telefonunda kalacak. Yalnızca kurulum için kullanılan geçici Kuran Installer kaldırılacak.</string>
+    <string name="cleanup_step">Sonraki Android ekranında Kuran Installer adını görüp Kaldır’a dokunabilirsin.</string>
+    <string name="cleanup_action">Kurulumu tamamla</string>
     <string name="app_name">Kuran Installer</string>
     <string name="intro">KuranApp’in güncel sürümünü internetten indirip kolayca kurabilirsin.\n\nKur’an sayfaları ve sesler uygulama içinde isteğe bağlı indirilir. Wi-Fi bağlantısı önerilir.</string>
     <string name="start_hint">Başlamak için İndir ve kur’a dokun.</string>

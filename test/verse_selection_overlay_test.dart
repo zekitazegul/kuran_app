@@ -13,9 +13,9 @@ void main() {
           VerseRegion(114,1,[Rect.fromLTRB(.1,.4,.9,.6)]),
           VerseRegion(114,2,[Rect.fromLTRB(.1,.7,.9,.9)])];
         List<VerseRegion> current=[];List<VerseRegion>? result;
-        await tester.pumpWidget(MaterialApp(home: Scaffold(body: VerseSelectionOverlay(
-          page:604,verses:verses,imageSize:size,onChanged:(v)=>current=v,
-          onSelected:(v,_) async {result=v;}))));
+        await tester.pumpWidget(MaterialApp(home: Scaffold(body: StatefulBuilder(builder: (context, rebuild) => VerseSelectionOverlay(
+          page:604,verses:verses.map((v) => VerseRegion(v.surah, v.verse, v.boxes)).toList(),imageSize:size,onChanged:(v)=>rebuild(() => current=v),
+          onSelected:(v,_) async {result=v;})))));
         final first=tester.getCenter(find.byKey(ValueKey(reverse?'verse-604-114-2-0':'verse-604-113-5-0')));
         final last=tester.getCenter(find.byKey(ValueKey(reverse?'verse-604-113-5-0':'verse-604-114-2-0')));
         final gesture=await tester.startGesture(first);
@@ -25,6 +25,30 @@ void main() {
         expect(current.map((v)=>(v.surah,v.verse)),[(113,5),(114,1),(114,2)]);
         expect(result,isNull);
         await gesture.up();await tester.pump();
+        expect(result,isNull);
+        expect(current.length,3);
+        final endHandle = await tester.startGesture(tester.getCenter(find.byKey(const ValueKey('selection-end'))));
+        await endHandle.moveTo(tester.getCenter(find.byKey(const ValueKey('verse-604-114-1-0'))));
+        await tester.pump();
+        await endHandle.moveBy(const Offset(0, 1));await tester.pump();
+        await endHandle.up();await tester.pump();
+        expect(current.length,2);
+        final extend = await tester.startGesture(tester.getCenter(find.byKey(const ValueKey('selection-end'))));
+        await extend.moveTo(last.dy > first.dy ? last : first);await tester.pump();
+        await extend.moveBy(const Offset(0, 1));await tester.pump();
+        await extend.up();await tester.pump();
+        expect(current.length,3);
+        final shrinkStart = await tester.startGesture(tester.getCenter(find.byKey(const ValueKey('selection-start'))));
+        await shrinkStart.moveTo(tester.getCenter(find.byKey(const ValueKey('verse-604-114-1-0'))));await tester.pump();
+        await shrinkStart.moveBy(const Offset(0, 1));await tester.pump();
+        await shrinkStart.up();await tester.pump();
+        expect(current.length,2);
+        final extendStart = await tester.startGesture(tester.getCenter(find.byKey(const ValueKey('selection-start'))));
+        await extendStart.moveTo(tester.getCenter(find.byKey(const ValueKey('verse-604-113-5-0'))));await tester.pump();
+        await extendStart.moveBy(const Offset(0, 1));await tester.pump();
+        await extendStart.up();await tester.pump();
+        expect(current.length,3);
+        await tester.tap(find.byKey(const ValueKey('selection-actions')));await tester.pump();
         expect(result!.map((v)=>(v.surah,v.verse)),[(113,5),(114,1),(114,2)]);
         expect(current,isEmpty);
       });

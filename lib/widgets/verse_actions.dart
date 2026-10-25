@@ -68,14 +68,16 @@ Future<(int, int, int)?> showMemorizeRange(BuildContext context, VerseRegion ver
   final form = GlobalKey<FormState>();
   final result = await showDialog<(int, int, int)>(context: context, builder: (context) => AlertDialog(
     title: Text(context.t('verseMemorize')),
-    content: SingleChildScrollView(child: Form(key: form, autovalidateMode: AutovalidateMode.onUserInteraction,
+    insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+    content: SizedBox(width: 480, child: SingleChildScrollView(child: Form(key: form, autovalidateMode: AutovalidateMode.onUserInteraction,
       child: Column(mainAxisSize: MainAxisSize.min, children: [
       if (selection != null) Text(verseSelectionLabel(selection)),
-      if (!crossSurah) Text(context.t('verseRepeatHint', {'surah': verse.surah, 'max': verseCounts[verse.surah - 1]})),
+      const SizedBox(height: 12),
+      Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
       for (final field in crossSurah ? <(TextEditingController, String)>[] : [(start, 'verseStart'), (end, 'verseEnd')])
-        TextFormField(controller: field.$1, keyboardType: TextInputType.number,
+        Expanded(child: Padding(padding: const EdgeInsets.only(right: 8), child: TextFormField(controller: field.$1, keyboardType: TextInputType.number,
           inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-          decoration: InputDecoration(labelText: context.t(field.$2)),
+          decoration: InputDecoration(labelText: context.t(field.$2), floatingLabelBehavior: FloatingLabelBehavior.always, errorMaxLines: 4),
           validator: (value) {
             final first = int.tryParse(start.text);
             final n = int.tryParse(value ?? '');
@@ -87,13 +89,16 @@ Future<(int, int, int)?> showMemorizeRange(BuildContext context, VerseRegion ver
             }
             return n == null || n < 1 || n > verseCounts[verse.surah - 1] ||
               (field.$1 == end && (first == null || n < first)) ? context.t('verseInvalidRange') : null;
-          }),
-      TextFormField(controller: repeats, keyboardType: TextInputType.number,
+          }))),
+      Expanded(child: TextFormField(controller: repeats, keyboardType: TextInputType.number,
         inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-        decoration: InputDecoration(labelText: context.t('verseRepeatCount')),
+        decoration: InputDecoration(labelText: context.t('verseRepeatCount'), floatingLabelBehavior: FloatingLabelBehavior.always, errorMaxLines: 4),
         validator: (value) => (int.tryParse(value ?? '') ?? 0) < 1 ||
-          (int.tryParse(value ?? '') ?? 0) > 999 ? context.t('verseInvalidRepeats') : null),
-    ]))),
+          (int.tryParse(value ?? '') ?? 0) > 999 ? context.t('verseInvalidRepeats') : null)),
+      ]),
+      const SizedBox(height: 12),
+      if (!crossSurah) Text(context.t('verseRepeatHint', {'surah': verse.surah, 'max': verseCounts[verse.surah - 1]})),
+    ])))),
     actions: [TextButton(onPressed: () => Navigator.pop(context), child: Text(context.t('İptal'))),
       FilledButton(onPressed: () {
         if (form.currentState!.validate()) Navigator.pop(context, (int.parse(start.text), int.parse(end.text), int.parse(repeats.text)));

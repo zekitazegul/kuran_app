@@ -1,5 +1,5 @@
-Yatay tam ekran okuma ve kaydırmayla açılan dinle/meal kontrolleri. Sayfa sonunda ayraç, sayfa ve Hatim kontrolleri. Kurulumdan sonra otomatik açılış ve kurucuyu kaldırma onayı.
+Ayet seçimini başlangıç ve bitiş tutamaçlarıyla değiştirebilirsin. Ezber aralığı ve tekrar sayısı birlikte görünür. Yeni sürüm varsa açılışta güncelleme istenir. Kurulumun son adımı, KuranApp’in kalacağını ve yalnızca geçici kurucunun kaldırılacağını açıklar.
 
-Landscape fullscreen reading with swipe-to-show listen/translation controls. Bookmarks, page navigation and Hatim controls at the end of each page. Automatic opening after installation and an installer removal prompt.
+Adjust selected verses with start and end handles. Memorization range and repeat count are shown together. A new version requires an update at startup. The final setup step explains that KuranApp stays installed and only the temporary installer is removed.
 
-Liggend lezen op volledig scherm met luister- en vertaalpictogrammen die met vegen verschijnen. Bladwijzers, paginanavigatie en Hatim-bediening aan het einde van elke pagina. Automatisch openen na installatie en een verzoek om het installatieprogramma te verwijderen.
+Pas geselecteerde verzen aan met begin- en eindgrepen. Het memoriseerbereik en aantal herhalingen staan bij elkaar. Een nieuwe versie vereist een update bij het openen. De laatste installatiestap legt uit dat KuranApp blijft staan en alleen het tijdelijke installatiehulpmiddel wordt verwijderd.

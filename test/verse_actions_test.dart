@@ -125,7 +125,8 @@ void main() {
     await tester.pumpWidget(MaterialApp(home: QuranScreen(store: store, initialPage: 0)));
     await tester.pumpAndSettle();
     await tester.longPress(find.byKey(const ValueKey('verse-0-1-1-0'))); await tester.pumpAndSettle();
-    expect(find.text('Seslendir'), findsOneWidget); expect(find.text('Ezber'), findsOneWidget);
+    await tester.tap(find.byKey(const ValueKey('selection-actions'))); await tester.pumpAndSettle();
+    expect(find.text('Seslendir'), findsOneWidget, reason: tester.widgetList<Text>(find.byType(Text)).map((t) => t.data).join(' | ')); expect(find.text('Ezber'), findsOneWidget);
     await tester.tap(find.text('Seslendir')); await tester.pump(const Duration(milliseconds: 500));
     expect(calls,isEmpty);
     await tester.tap(find.text('İndirmeyi başlat')); await tester.pumpAndSettle();
@@ -137,6 +138,7 @@ void main() {
     await tester.pump(const Duration(milliseconds:600));
     await drag.moveTo(tester.getCenter(find.byKey(const ValueKey('verse-0-1-1-0'))));
     await tester.pump(); await drag.up(); await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('selection-actions'))); await tester.pumpAndSettle();
     expect(find.text('1:1 – 1:3'),findsOneWidget);
     expect(find.text('Ezber'),findsOneWidget);
     await tester.tap(find.text('Seslendir')); await tester.pumpAndSettle();
@@ -146,6 +148,7 @@ void main() {
     await tester.pump(const Duration(milliseconds:600));
     await memorizeDrag.moveTo(tester.getCenter(find.byKey(const ValueKey('verse-0-1-3-0'))));
     await memorizeDrag.up();await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('selection-actions'))); await tester.pumpAndSettle();
     await tester.tap(find.text('Ezber')); await tester.pumpAndSettle();
     expect(tester.widgetList<TextFormField>(find.byType(TextFormField)).map((f)=>f.controller!.text), ['1','3','3']);
     await tester.enterText(find.byType(TextFormField).at(1), '3');

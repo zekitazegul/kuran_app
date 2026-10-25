@@ -22,6 +22,10 @@ void main() {
           expect(find.text(verseSelectionLabel(verses)),findsOneWidget);
           expect(tester.widgetList<TextFormField>(find.byType(TextFormField)).map((f)=>f.controller!.text),
             cross?['3']:['2','4','3']);
+          final repeatRect = tester.getRect(find.byType(TextFormField).last);
+          expect(repeatRect.top, greaterThanOrEqualTo(0));
+          expect(repeatRect.bottom, lessThanOrEqualTo(size.height));
+          if (!cross) expect(repeatRect.top, tester.getRect(find.byType(TextFormField).first).top);
           await tester.enterText(find.byType(TextFormField).last,'2');
           await tester.tap(find.text(translate('verseRepeatStart',locale)));await tester.pumpAndSettle();
           expect(result,cross?(5,1,2):(2,4,2));expect(tester.takeException(),isNull);

@@ -37,7 +37,7 @@ public final class InstallerActivity extends Activity {
     private boolean cleanupRequested;
     private static final long MAX_APK = 250L * 1024 * 1024;
     private android.widget.Spinner languages;
-    private TextView status;
+    private TextView status, title, intro, privacy;
     private ProgressBar progress;
     private Button primary, cancel;
     private boolean busy, ready, installedReady;
@@ -70,7 +70,7 @@ public final class InstallerActivity extends Activity {
                 dp(24) + insets.getSystemWindowInsetRight(), dp(24) + insets.getSystemWindowInsetBottom());
             return insets;
         });
-        TextView title = text(getString(R.string.app_name), 28);
+        title = text(getString(R.string.app_name), 28);
         body.addView(title);
         languages = new android.widget.Spinner(this);
         String[] codes = {"tr", "en", "nl"};
@@ -87,7 +87,7 @@ public final class InstallerActivity extends Activity {
             }
         });
         body.addView(languages);
-        TextView intro = text(getString(R.string.intro), 17);
+        intro = text(getString(R.string.intro), 17);
         intro.setPadding(0, dp(20), 0, dp(24));
         body.addView(intro);
         status = text(getString(R.string.start_hint), 16);
@@ -111,17 +111,14 @@ public final class InstallerActivity extends Activity {
         cancel.setVisibility(View.GONE);
         cancel.setOnClickListener(v -> cancelDownload());
         body.addView(cancel);
-        TextView privacy = text(getString(R.string.privacy), 13);
+        privacy = text(getString(R.string.privacy), 13);
         privacy.setPadding(0, dp(20), 0, 0);
         body.addView(privacy);
         scroll.addView(body);
         setContentView(scroll);
         cleanupRequested = saved != null && saved.getBoolean("cleanupRequested");
         if (installedVersion() > 0) {
-            installedReady = true;
-            primary.setText(getString(R.string.open_app));
-            status.setText(getString(R.string.installed));
-            if (!cleanupRequested) openReader();
+            showCompletion();
             return;
         }
         if (saved != null && saved.getBoolean("ready")) {
@@ -195,12 +192,7 @@ public final class InstallerActivity extends Activity {
                     throw new IllegalArgumentException(getString(R.string.invalid_download));
                 }
                 if (installedVersion() >= expectedVersion) {
-                    ui(() -> {
-                        installedReady = true;
-                        primary.setText(getString(R.string.open_app));
-                        status.setText(getString(R.string.already_current));
-                        openReader();
-                    });
+                    ui(this::showCompletion);
                     return;
                 }
                 File apk = target();
@@ -346,14 +338,19 @@ public final class InstallerActivity extends Activity {
             else status.setText(getString(R.string.permission_denied));
         } else if (request == INSTALL) {
             if (installedVersion() >= expectedVersion) {
-                installedReady = true;
-                primary.setText(getString(R.string.open_app));
-                status.setText(getString(R.string.installed));
-                target().delete();
-                ready = false;
-                openReader();
+                showCompletion();
             } else status.setText(getString(R.string.not_completed));
         }
+    }
+    private void showCompletion() {
+        installedReady = true;
+        ready = false;
+        target().delete();
+        title.setText(getString(R.string.setup_complete));
+        intro.setText(getString(R.string.cleanup_explanation));
+        status.setText(getString(R.string.cleanup_step));
+        primary.setText(getString(R.string.cleanup_action));
+        privacy.setVisibility(View.GONE);
     }
     private void openReader() {
         Intent launch = getPackageManager().getLaunchIntentForPackage(APP_ID);

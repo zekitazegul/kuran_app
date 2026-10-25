@@ -1,8 +1,19 @@
 package com.zekitazegul.kuranapp
 
 import android.content.Context
-import android.media.MediaPlayer
-import android.media.AudioAttributes
+import android.net.Uri
+import android.os.Looper
+import android.util.Log
+import androidx.media3.common.MediaItem
+import androidx.media3.common.Player
+import androidx.media3.common.PlaybackException
+import androidx.media3.common.AudioAttributes
+import androidx.media3.common.C
+import androidx.media3.datasource.DefaultDataSource
+import androidx.media3.exoplayer.ExoPlayer
+import androidx.media3.exoplayer.source.ProgressiveMediaSource
+import androidx.media3.extractor.ExtractorsFactory
+import androidx.media3.extractor.mp3.Mp3Extractor
 import org.json.JSONObject
 import java.io.File
 import java.net.URL
@@ -27,7 +38,7 @@ class QuranAudioStorage(private val context: Context) {
         check(preferences.edit().putString("reciter", id).commit())
         reciter = id
     }
-    private var player: MediaPlayer? = null
+    private var player: ExoPlayer? = null
     private var queue: VersePlaybackQueue<JSONObject>? = null
     private var onStopped: (() -> Unit)? = null
     private var playbackError: String? = null
@@ -184,28 +195,39 @@ class QuranAudioStorage(private val context: Context) {
     }
     private fun playCurrent() {
         val entry = checkNotNull(queue).current
-        val next = MediaPlayer()
+        val next = ExoPlayer.Builder(context).setLooper(checkNotNull(Looper.myLooper())).build()
         try {
-            next.setAudioAttributes(AudioAttributes.Builder().setContentType(AudioAttributes.CONTENT_TYPE_SPEECH)
-                .setUsage(AudioAttributes.USAGE_MEDIA).build())
-            next.setDataSource(file(entry.getString("id")).path)
-            next.setOnCompletionListener {
-                player?.release(); player = null
-                if (queue?.completeVerse() != true) finish()
-                else {
-                    try { playCurrent() } catch (error: Exception) { playbackError = error.message; finish() }
+            next.setAudioAttributes(AudioAttributes.Builder().setContentType(C.AUDIO_CONTENT_TYPE_SPEECH)
+                .setUsage(C.USAGE_MEDIA).build(), false)
+            // Use only the MP3 extractor: some vendor sniffers mistake raw MP3 frames for MIDI.
+            val source = ProgressiveMediaSource.Factory(DefaultDataSource.Factory(context),
+                ExtractorsFactory { arrayOf(Mp3Extractor()) }).createMediaSource(
+                    MediaItem.fromUri(Uri.fromFile(file(entry.getString("id")))))
+            next.addListener(object : Player.Listener {
+                override fun onPlaybackStateChanged(state: Int) {
+                    if (player !== next) return
+                    if (state == Player.STATE_READY) Log.i("QuranPlayback", "ready ${entry.getString("id")} duration=${next.duration}")
+                    if (state != Player.STATE_ENDED) return
+                    Log.i("QuranPlayback", "completed ${entry.getString("id")}")
+                    player = null; next.release()
+                    if (queue?.completeVerse() != true) finish()
+                    else try { playCurrent() } catch (error: Exception) { playbackError = error.message; finish() }
                 }
-            }
-            next.setOnErrorListener { _, _, _ -> playbackError = "Playback failed"; finish(); true }
-            next.prepare()
-            player = next; next.start()
+                override fun onPlayerError(error: PlaybackException) {
+                    if (player !== next) return
+                    Log.e("QuranPlayback", "failed ${entry.getString("id")}", error)
+                    playbackError = "Playback failed"; finish()
+                }
+            })
+            player = next
+            next.setMediaSource(source)
+            next.prepare(); next.play()
         } catch (error: Exception) { next.release(); throw error }
     }
     fun advanceMemorization() {
         val active = queue ?: return
         if (!active.cumulative || active.stopPending) return
-        player?.setOnCompletionListener(null)
-        player?.release(); player = null
+        val old = player; player = null; old?.release()
         if (!active.advanceStage()) finish()
         else try { playCurrent() } catch (error: Exception) { playbackError = error.message; finish(); throw error }
     }

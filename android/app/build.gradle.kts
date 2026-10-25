@@ -14,6 +14,7 @@ plugins {
 }
 
 android {
+    testBuildType = "release"
     namespace = "com.zekitazegul.kuranapp"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
@@ -24,6 +25,7 @@ android {
     }
 
     defaultConfig {
+        testInstrumentationRunner = "com.zekitazegul.kuranapp.UpdateTestInstrumentation"
         applicationId = "com.zekitazegul.kuranapp"
         minSdk = flutter.minSdkVersion
         targetSdk = flutter.targetSdkVersion
@@ -42,6 +44,7 @@ android {
 
     buildTypes {
         release {
+            proguardFile("proguard-rules.pro")
             signingConfig = signingConfigs.getByName("release")
         }
     }
@@ -58,8 +61,11 @@ flutter {
 }
 
 dependencies {
+    implementation("androidx.media3:media3-exoplayer:1.8.0")
     testImplementation("junit:junit:4.13.2")
 }
+
+android.sourceSets.getByName("androidTest").assets.srcDir("../../build/update-install-test-assets")
 
 // Build the small native installer from source and embed it for offline sharing.
 abstract class PrepareInstallerAsset : DefaultTask() {

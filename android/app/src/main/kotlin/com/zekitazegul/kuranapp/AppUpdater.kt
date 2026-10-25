@@ -166,7 +166,20 @@ class AppUpdater(private val activity: MainActivity, private val channel: Method
                     "versionCode" to code, "releaseNotes" to translated)
                 activity.runOnUiThread { reply.success(value) }
             } catch (_: Exception) {
-                activity.runOnUiThread { reply.error("check", "updateCheckError", null) }
+                val known = runCatching {
+                    val prefs = activity.getSharedPreferences("update-status-v1", Context.MODE_PRIVATE)
+                    require(prefs.getString("url", null) == address)
+                    val cached = JSONObject(checkNotNull(prefs.getString("metadata", null)))
+                    val installed = activity.packageManager.getPackageInfo(activity.packageName, 0)
+                    require(cached.getLong("versionCode") > versionCode(installed))
+                    val notes = cached.optJSONObject("releaseNotes")
+                    mapOf("available" to true, "versionName" to cached.getString("versionName"),
+                        "installedVersionName" to installed.versionName,
+                        "releaseNotes" to listOf("tr", "en", "nl").associateWith { notes?.optString(it, "") ?: "" })
+                }.getOrNull()
+                activity.runOnUiThread {
+                    if (known != null) reply.success(known) else reply.error("check", "updateCheckError", null)
+                }
             }
         }.start()
     }
@@ -247,13 +260,8 @@ class AppUpdater(private val activity: MainActivity, private val channel: Method
             return
         }
         val file = apk ?: error("updateError")
-        val uri = FileProvider.getUriForFile(activity, "${activity.packageName}.apkshare", file)
         status("updateInstalling")
-        activity.startActivityForResult(Intent(Intent.ACTION_INSTALL_PACKAGE).apply {
-            data = uri
-            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-            putExtra(Intent.EXTRA_RETURN_RESULT, true)
-        }, installerRequest)
+        activity.installUpdate(file)
     }
 
     fun onActivityResult(requestCode: Int) {

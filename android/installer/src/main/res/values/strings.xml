@@ -1,4 +1,8 @@
 <resources>
+    <string name="setup_complete">Complete setup</string>
+    <string name="cleanup_explanation">KuranApp will stay on your phone. Only the temporary setup tool Kuran Installer will be removed.</string>
+    <string name="cleanup_step">On the next Android screen, check that the name is Kuran Installer, then tap Uninstall.</string>
+    <string name="cleanup_action">Complete setup</string>
     <string name="app_name">Kuran Installer</string>
     <string name="intro">Download and install the latest KuranApp version.\n\nQuran pages and audio are downloaded on request inside the app. Wi-Fi is recommended.</string>
     <string name="start_hint">Tap Download and install to start.</string>
