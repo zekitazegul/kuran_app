@@ -213,7 +213,10 @@ void main() {
     await tester.tapAt(center); await tester.pump(const Duration(milliseconds: 60));
     await tester.tapAt(center); await tester.pumpAndSettle();
     expect(AppNavigation.instance.fullscreenMeal.value, isNotNull);
-    AppNavigation.instance.exitFullscreen();
+    expect(find.byKey(const ValueKey('meal-screen-progress')), findsNothing);
+    expect(find.byTooltip('Sesli komut'), findsNothing);
+    await tester.tapAt(tester.getCenter(surface));
+    await tester.pump(const Duration(milliseconds: 350));
     await tester.pumpAndSettle();
     expect(AppNavigation.instance.fullscreenMeal.value, isNull);
     expect(find.byKey(const ValueKey('meal-font-larger')), findsOneWidget);

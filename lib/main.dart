@@ -8,6 +8,7 @@ import 'widgets/required_update_gate.dart';
 import 'widgets/compact_confirmation_dialog.dart';
 import 'services/app_preferences.dart';
 import 'services/voice_intents.dart';
+import 'services/voice_suggestions.dart';
 import 'services/voice_control.dart';
 import 'services/verse_regions.dart';
 import 'widgets/app_bottom_bar.dart';
@@ -182,7 +183,7 @@ class _HomeScreenState extends State<HomeScreen> {
         if (command != null) break;
       }
       if (command == null) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(context.t('voiceNotUnderstood'))));
+        _suggestVoiceCorrection(results);
       } else {
         await _executeVoice(command);
       }
@@ -254,15 +255,17 @@ class _HomeScreenState extends State<HomeScreen> {
     unawaited(_read(page,voice:voice,playSurah:playSurah));
   }
 
-  void _showVoiceHelp() {
-    final controller=TextEditingController();
+  void _showVoiceHelp({String? initialText}) {
+    final controller=TextEditingController(text: initialText);
     final visible=appNavigatorKey.currentState?.overlay?.context;
     if(visible==null)return;
     unawaited(showDialog<String>(context:visible,builder:(context)=>AlertDialog(
-      title:Text(context.t('voiceHelpTitle')),
+      title:Text(context.t(initialText == null ? 'voiceHelpTitle' : 'voiceEditSuggestion')),
       content:SizedBox(width:520,child:SingleChildScrollView(child:Column(mainAxisSize:MainAxisSize.min,children:[
-        Text(context.t('voiceHelpBody')),
-        const SizedBox(height:16),
+        if (initialText == null) ...[
+          Text(context.t('voiceHelpBody')),
+          const SizedBox(height:16),
+        ],
         TextField(key:const ValueKey('voice-command-input'),controller:controller,
           decoration:InputDecoration(labelText:context.t('voiceTypeHint')),
           onSubmitted:(value)=>Navigator.pop(context,value)),
@@ -272,13 +275,30 @@ class _HomeScreenState extends State<HomeScreen> {
     )).then((text) async {
       if(text==null || text.trim().isEmpty || !mounted)return;
       final command=VoiceIntents.parse(text);
-      if(command==null) {_voiceNotice('voiceNotUnderstood');return;}
+      if(command==null) {_suggestVoiceCorrection([text]);return;}
       try {await _executeVoice(command);}catch(_) {_voiceNotice('voiceUnavailable');}
     }).whenComplete(() {Future.delayed(const Duration(milliseconds:400),controller.dispose);}));
   }
 
   void _voiceNotice(String key) {
     if(mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text(context.t(key))));
+  }
+
+  void _suggestVoiceCorrection(List<String> results) {
+    if (!mounted) return;
+    String? suggestion;
+    for (final result in results) {
+      suggestion = VoiceSuggestions.suggest(result, context.language);
+      if (suggestion != null) break;
+    }
+    final correction = suggestion;
+    ScaffoldMessenger.of(context)..clearSnackBars()..showSnackBar(SnackBar(
+      duration: const Duration(seconds: 8),
+      content: Text(correction == null ? context.t('voiceNotUnderstood')
+        : context.t('voiceSuggestedCorrection', {'command': correction})),
+      action: SnackBarAction(label: context.t('voiceEditSuggestion'),
+        onPressed: () => _showVoiceHelp(initialText: correction ?? results.first)),
+    ));
   }
 
   Future<void> _navigate(AppDestination destination) async {

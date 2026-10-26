@@ -146,10 +146,9 @@ class _MealScreenState extends State<MealScreen> implements FullscreenReadingSes
         IconButton(key: const ValueKey('meal-font-smaller'), tooltip: context.t('Yazıyı küçült'), onPressed: _busy || _fontSize <= 16 ? null : () => _resize(-2), icon: const Icon(Icons.text_decrease)),
         IconButton(key: const ValueKey('meal-font-larger'), tooltip: context.t('Yazıyı büyüt'), onPressed: _busy || _fontSize >= 40 ? null : () => _resize(2), icon: const Icon(Icons.text_increase)),
       ]),
-      body: SafeArea(top: false, child: _pages.isEmpty && _busy ? const Center(child: CircularProgressIndicator()) : _failed
+      body: SafeArea(top: false, bottom: !_fullscreen, left: !_fullscreen, right: !_fullscreen, child: _pages.isEmpty && _busy ? const Center(child: CircularProgressIndicator()) : _failed
         ? Center(child: TextButton(onPressed: _load, child: Text(context.t('Tekrar dene'))))
         : Column(children: [
-          if(_fullscreen) const SafeArea(bottom:false,child:Align(alignment:Alignment.centerRight,child:VoiceButton())),
           if (!_fullscreen) Padding(padding: const EdgeInsets.fromLTRB(16, 0, 16, 0), child: DecoratedBox(
             decoration: BoxDecoration(border: Border(bottom: BorderSide(color: Theme.of(context).colorScheme.outline))),
             child: Row(children: [
@@ -165,6 +164,8 @@ class _MealScreenState extends State<MealScreen> implements FullscreenReadingSes
           ]))),
           Expanded(key: const ValueKey('meal-reading-area'), child: PaginatedMealText(
               onDoubleTap: _toggleFullscreen,
+              onTap: _fullscreen ? exitFullscreen : null,
+              showProgress: !_fullscreen,
               key: _pager, pages: _pages, page: _reader.page,
               offset: _textOffset, fontSize: _fontSize, enabled: !_busy,
               positionRevision: _positionRevision,

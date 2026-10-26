@@ -1,8 +1,8 @@
 tr
-- Meali gereksiz boş satırlar olmadan kesintisiz oku.
+- Anlaşılamayan komutlara benzer düzeltme önerilerini gör ve düzenle.
 
 en
-- Read the translation continuously without unnecessary blank lines.
+- See and edit similar command suggestions when a command is not understood.
 
 nl
-- Lees de vertaling doorlopend zonder onnodige lege regels.
+- Bekijk en bewerk vergelijkbare opdrachten als een opdracht niet wordt begrepen.

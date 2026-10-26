@@ -50,12 +50,14 @@ class PaginatedMealText extends StatefulWidget {
   final bool enabled;
   final int positionRevision;
   final VoidCallback? onDoubleTap;
+  final VoidCallback? onTap;
+  final bool showProgress;
   final void Function(int page, int offset) onChanged;
   final Widget Function(BuildContext context, int screen, int screens)? footerBuilder;
   const PaginatedMealText({super.key, required this.pages, required this.page,
     required this.offset, required this.fontSize, required this.enabled,
     required this.onChanged, this.footerBuilder, this.onDoubleTap,
-    this.positionRevision = 0});
+    this.positionRevision = 0, this.onTap, this.showProgress = true});
 
   @override
   State<PaginatedMealText> createState() => PaginatedMealTextState();
@@ -365,8 +367,9 @@ class PaginatedMealTextState extends State<PaginatedMealText> with SingleTickerP
   @override
   Widget build(BuildContext context) => LayoutBuilder(builder: (context, constraints) {
     _width = (constraints.maxWidth - 40).clamp(1.0, double.infinity);
-    _textHeight = (constraints.maxHeight - (widget.footerBuilder == null ? 52 : 60)).clamp(1.0, double.infinity);
-    _viewportHeight = (constraints.maxHeight - 48).clamp(1.0, double.infinity);
+    final footerHeight = widget.footerBuilder != null || widget.showProgress ? 48.0 : 0.0;
+    _textHeight = (constraints.maxHeight - (footerHeight == 0 ? 0 : widget.footerBuilder == null ? 52 : 60)).clamp(1.0, double.infinity);
+    _viewportHeight = (constraints.maxHeight - footerHeight).clamp(1.0, double.infinity);
     _scaler = MediaQuery.textScalerOf(context);
     _style = DefaultTextStyle.of(context).style.copyWith(fontSize: widget.fontSize.toDouble(), height: 1.6);
     final geometry = (_width, _textHeight, _style, _scaler);
@@ -376,6 +379,7 @@ class PaginatedMealTextState extends State<PaginatedMealText> with SingleTickerP
       Expanded(child: SizedBox(key: _viewportKey, child: GestureDetector(
         key: const ValueKey('meal-reading-surface'), behavior: HitTestBehavior.opaque,
         onDoubleTap: widget.onDoubleTap,
+        onTap: widget.onTap,
         onHorizontalDragStart: widget.enabled ? (_) {
           if (_horizontalCommit) return;
           _horizontalDistance = 0;
@@ -431,7 +435,7 @@ class PaginatedMealTextState extends State<PaginatedMealText> with SingleTickerP
       ))),
       if (widget.footerBuilder != null)
         SizedBox(height: 48, child: widget.footerBuilder!(context, _index + 1, slices.length))
-      else Padding(padding: const EdgeInsets.symmetric(vertical: 6),
+      else if (widget.showProgress) Padding(padding: const EdgeInsets.symmetric(vertical: 6),
         child: Text('${_index + 1} / ${slices.length}', key: const ValueKey('meal-screen-progress'),
           style: Theme.of(context).textTheme.bodySmall)),
     ]);

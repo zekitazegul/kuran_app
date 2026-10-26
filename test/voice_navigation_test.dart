@@ -15,8 +15,9 @@ import 'support/reading_images.dart';
 void main() {
   for(final language in ['tr','en','nl']) {
     for(final result in ['open','play','cancel','unrecognized','unavailable']) {
-      testWidgets('voice command $result in $language preserves or opens the reading page', (tester) async {
-        tester.view.physicalSize=const Size(360,640);tester.view.devicePixelRatio=1;
+      for (final size in result == 'unrecognized' ? [const Size(320,568), const Size(800,360), const Size(800,1280), const Size(1280,800)] : [const Size(360,640)]) {
+      testWidgets('voice command $result in $language $size preserves or opens the reading page', (tester) async {
+        tester.view.physicalSize=size;tester.view.devicePixelRatio=1;
         addTearDown(tester.view.resetPhysicalSize);addTearDown(tester.view.resetDevicePixelRatio);
         AppLanguage.instance.value=Locale(language);
         var lastPage=200;var listening=0; Map? playback; final downloads=<String>[];
@@ -75,11 +76,27 @@ void main() {
           expect(appNavigatorKey.currentState!.canPop(),false);
         } else {
           expect(lastPage,200);expect(appNavigatorKey.currentState!.canPop(),false);
-          if(result!='cancel')expect(find.text(translate(result=='unrecognized'?'voiceNotUnderstood':'voiceUnavailable',language)),findsOneWidget);
+          if(result=='unavailable')expect(find.text(translate('voiceUnavailable',language)),findsOneWidget);
+          if(result=='unrecognized') {
+            final suggestion={'tr':'Yâsin suresini aç','en':'Open Surah Ya-Sin','nl':'Open soera Ya-Sin'}[language]!;
+            expect(find.text(translate('voiceSuggestedCorrection',language,{'command':suggestion})),findsOneWidget);
+            expect(lastPage,200);
+            await tester.tap(find.text(translate('voiceEditSuggestion',language)));await tester.pumpAndSettle();
+            expect(tester.widget<TextField>(find.byKey(const ValueKey('voice-command-input'))).controller!.text,suggestion);
+            expect(lastPage,200);
+            await tester.tap(find.text(translate('Kapat',language)));await tester.pumpAndSettle();
+            await tester.longPress(find.byKey(const ValueKey('home-voice')));await tester.pumpAndSettle();
+            await tester.enterText(find.byKey(const ValueKey('voice-command-input')), 'completely unrelated words');
+            await tester.tap(find.byKey(const ValueKey('voice-command-apply')));await tester.pumpAndSettle();
+            expect(find.text(translate('voiceNotUnderstood',language)),findsOneWidget);
+            expect(find.text(translate('voiceSuggestedCorrection',language,{'command':suggestion})),findsNothing);
+            expect(lastPage,200);
+          }
         }
         expect(tester.takeException(),isNull);
         await tester.pumpWidget(const SizedBox());await tester.pump();
       });
+      }
     }
   }
 }

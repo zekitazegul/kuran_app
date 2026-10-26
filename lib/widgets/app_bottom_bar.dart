@@ -66,7 +66,7 @@ class AnimatedAppBottomBar extends StatelessWidget {
     listenable: Listenable.merge([AppNavigation.instance.fullscreenReader, AppNavigation.instance.fullscreenMeal]),
     builder: (context, _) {
       final hidden = AppNavigation.instance.fullscreenMeal.value != null ||
-          (AppNavigation.instance.fullscreenReader.value != null && MediaQuery.orientationOf(context) == Orientation.landscape);
+          AppNavigation.instance.fullscreenReader.value != null;
       return TweenAnimationBuilder<double>(
         tween: Tween(end: hidden ? 0 : 1),
         duration: MediaQuery.disableAnimationsOf(context) ? Duration.zero : const Duration(milliseconds: 320),

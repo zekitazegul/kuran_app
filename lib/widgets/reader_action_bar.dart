@@ -21,7 +21,10 @@ class ReaderActionBar extends StatelessWidget {
         stopping ? 'Ayet sonunda duracak' : playing ? 'Durdur' : "Kur'an dinle",
         playing ? Icons.stop_circle_outlined : Icons.headphones_rounded,
         onListen, busy: loading),
-      _cornerAction(context, 'reader-meal', 'Meal Oku', Icons.menu_book_rounded, onMeal),
+      Row(mainAxisSize: MainAxisSize.min, children: [
+        _cornerAction(context, 'reader-meal', 'Meal Oku', Icons.menu_book_rounded, onMeal),
+        const VoiceButton(),
+      ]),
     ],
   ) : Align(alignment: Alignment.center,
     child: Padding(padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
@@ -33,9 +36,9 @@ class ReaderActionBar extends StatelessWidget {
               stopping ? 'readerStoppingLabel' : playing ? 'Durdur' : 'readerListenLabel',
               playing ? Icons.stop_circle_outlined : Icons.headphones_rounded,
               onListen, tooltip: stopping ? 'Ayet sonunda duracak' : playing ? 'Durdur' : "Kur'an dinle", busy: loading),
-            const VoiceButton(),
             _action(context, 'reader-meal', 'readerMealLabel', Icons.menu_book_rounded,
               onMeal, tooltip: 'Meal Oku'),
+            const VoiceButton(),
           ])))));
 
   Widget _cornerAction(BuildContext context, String key, String tooltip,

@@ -98,7 +98,7 @@ void main() {
     AppNavigation.instance.open = null;
     AppNavigation.instance.value = null;
   });
-  testWidgets('landscape fullscreen fades and slides the bar away, portrait restores it', (tester) async {
+  testWidgets('fullscreen hides navigation in both orientations until exit', (tester) async {
     tester.view.devicePixelRatio = 1;
     tester.view.physicalSize = const Size(800, 400);
     addTearDown(tester.view.resetPhysicalSize);
@@ -124,7 +124,7 @@ void main() {
     expect(tester.getSize(bar).height, 0);
     tester.view.physicalSize = const Size(400, 800);
     await tester.pumpAndSettle();
-    expect(tester.getSize(bar).height, greaterThan(0));
+    expect(tester.getSize(bar).height, 0);
     tester.view.physicalSize = const Size(800, 400);
     await tester.pumpAndSettle();
     AppNavigation.instance.fullscreenReader.value = null;

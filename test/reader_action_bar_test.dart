@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:kuran_app/l10n/translations.dart';
 import 'package:kuran_app/services/app_language.dart';
 import 'package:kuran_app/widgets/reader_action_bar.dart';
+import 'package:kuran_app/widgets/voice_button.dart';
 
 void main() {
   for (final language in ['tr', 'en', 'nl']) {
@@ -22,7 +23,8 @@ void main() {
         final listen = find.byKey(const ValueKey('reader-listen'));
         final meal = find.byKey(const ValueKey('reader-meal'));
         expect(tester.getTopLeft(listen), Offset.zero);
-        expect(tester.getTopRight(meal), Offset(width, 0));
+        expect(tester.getTopRight(find.byType(VoiceButton)), Offset(width, 0));
+        expect(tester.getCenter(find.byType(VoiceButton)).dx, greaterThan(width / 2));
         expect(tester.getSize(listen), const Size(48, 48));
         expect(find.byType(TextButton), findsNothing);
         await tester.tap(listen);
@@ -51,8 +53,9 @@ void main() {
         }
         expect(calls,['listen','meal']);
         final left=tester.getTopLeft(find.byKey(const ValueKey('reader-listen'))).dx;
-        final right=tester.getBottomRight(find.byKey(const ValueKey('reader-meal'))).dx;
+        final right=tester.getBottomRight(find.byType(VoiceButton)).dx;
         expect((left+right)/2,closeTo(size.width/2,.1));
+        expect(tester.getCenter(find.byType(VoiceButton)).dx,greaterThan(size.width/2));
         expect(find.byKey(const ValueKey('reader-reciter')),findsNothing);
         expect(find.text(translate('readerMealLabel',language)),findsOneWidget);
         expect(find.byIcon(Icons.menu_book_rounded),findsOneWidget);

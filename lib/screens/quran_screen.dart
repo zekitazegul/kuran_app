@@ -1,4 +1,3 @@
-import '../widgets/voice_button.dart';
 import '../services/voice_intents.dart';
 import '../services/voice_control.dart';
 import '../data/verse_counts.dart';
@@ -382,6 +381,7 @@ class _QuranScreenState extends State<QuranScreen> with SingleTickerProviderStat
     _readingScrollStart = null;
   }
   bool _showOuterFrame = false;
+  int _landscapeZoomStage = 2;
   bool _preparing = false;
   bool _bookmarkSaving = false;
   final TransformationController _zoom = TransformationController();
@@ -607,6 +607,7 @@ class _QuranScreenState extends State<QuranScreen> with SingleTickerProviderStat
     _resetReadingPosition();
     setState(() {
       _fullscreen = !_fullscreen;
+      _showLandscapeActions = false;
       if (_fullscreen) _showOuterFrame = false;
     });
     AppNavigation.instance.fullscreenReader.value = _fullscreen ? this : null;
@@ -617,7 +618,12 @@ class _QuranScreenState extends State<QuranScreen> with SingleTickerProviderStat
     if (_target != null || _preparing) return;
     _resetReadingPosition();
     setState(() {
-      if (!_fullscreen) {
+      _showLandscapeActions = false;
+      if (_landscape) {
+        _landscapeZoomStage = (_landscapeZoomStage + 1) % 3;
+        _fullscreen = true;
+        _showOuterFrame = _landscapeZoomStage == 1;
+      } else if (!_fullscreen) {
         _fullscreen = true;
         _showOuterFrame = true;
       } else if (_showOuterFrame) {
@@ -630,10 +636,11 @@ class _QuranScreenState extends State<QuranScreen> with SingleTickerProviderStat
     SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
   }
 
-  Rect _activeCrop(int page) => _showOuterFrame
+  Rect _activeCrop(int page) => _landscape && _landscapeZoomStage == 0
+    ? Offset.zero & widget.store.edition.pageSize(page) : _showOuterFrame
     ? widget.store.edition.outerCrop(page) : widget.store.edition.crop(page);
 
-  Rect? _normalizedActiveCrop(int page) => !_fullscreen ? null : _showOuterFrame
+  Rect? _normalizedActiveCrop(int page) => !_fullscreen || (_landscape && _landscapeZoomStage == 0) ? null : _showOuterFrame
     ? widget.store.edition.normalizedOuterCrop(page) : widget.store.edition.normalizedCrop(page);
 
   @override
@@ -749,6 +756,7 @@ class _QuranScreenState extends State<QuranScreen> with SingleTickerProviderStat
         _fullscreenBeforeLandscape = _fullscreen;
         _fullscreen = true;
         _showOuterFrame = false;
+        _landscapeZoomStage = 2;
       } else if (_orientation == Orientation.landscape) {
         _fullscreen = _fullscreenBeforeLandscape;
         _showOuterFrame = false;
@@ -782,7 +790,7 @@ class _QuranScreenState extends State<QuranScreen> with SingleTickerProviderStat
           child: Opacity(opacity: chromeVisibility, child: PersonalPageSwipe(onNavigate: (delta) => AppNavigation.instance.switchPage?.call(delta), child: AppBar(title: ScreenTitle(context, (widget.hatim && PersonalPageScope.of(context) == null ? '${context.t("Hatim")} · ' : '') + widget.store.edition.surahsOnPage(_page).map((s) => surahName(s, context.language)).join(' · '), maxLines: 1, overflow: TextOverflow.ellipsis,
           style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600)),
         actions: const <Widget>[])))))),
-      bottomNavigationBar: _audio.memorizing ? SafeArea(child: Padding(
+      bottomNavigationBar: _audio.memorizing && (!_fullscreen || _showLandscapeActions) ? SafeArea(child: Padding(
         padding: const EdgeInsets.all(8), child: FilledButton.icon(
           onPressed: _audioBusy || _audio.stopPending ? null : () async {
             setState(() => _audioBusy = true);
@@ -794,15 +802,17 @@ class _QuranScreenState extends State<QuranScreen> with SingleTickerProviderStat
         onPointerDown: _readingScrollDown, onPointerMove: _readingScrollMove, onPointerUp: _readingScrollUp,
         onPointerCancel: (_) { _readingScrollPointer = null; _readingScrollStart = null; },
         child: Stack(fit: StackFit.expand, children: [
-      SafeArea(top: !_fullscreen, bottom: !_fullscreen, child: Column(children: [
-        if(_landscape && _fullscreen && _audio.repeatTotal<=1) const Align(alignment:Alignment.center,child:VoiceButton()),
+      SafeArea(top: !_fullscreen || _showLandscapeActions, bottom: !_fullscreen || _showLandscapeActions,
+        left: !_fullscreen || _showLandscapeActions, right: !_fullscreen || _showLandscapeActions,
+        minimum: _fullscreen && _showLandscapeActions ? MediaQuery.viewPaddingOf(context) : EdgeInsets.zero,
+        child: Column(children: [
         TweenAnimationBuilder<double>(
-          tween: Tween(end: !(_landscape && _fullscreen) || _showLandscapeActions ? 1 : 0),
+          tween: Tween(end: !_fullscreen || _showLandscapeActions ? 1 : 0),
           duration: _landscape && !MediaQuery.disableAnimationsOf(context)
             ? const Duration(milliseconds: 180) : Duration.zero,
           builder: (context, visibility, child) => visibility == 0 ? const SizedBox.shrink()
             : ClipRect(child: Align(heightFactor: visibility, alignment: Alignment.bottomCenter,
-                child: IgnorePointer(ignoring: _landscape && _fullscreen && !_showLandscapeActions,
+                child: IgnorePointer(ignoring: _fullscreen && !_showLandscapeActions,
                   child: child))),
           child: Padding(
           padding: _landscape && _fullscreen ? const EdgeInsets.symmetric(horizontal: 4) : EdgeInsets.zero,
@@ -810,9 +820,8 @@ class _QuranScreenState extends State<QuranScreen> with SingleTickerProviderStat
           loading: _audioBusy, playing: _audio.playing != null, stopping: _audio.stopPending,
           onListen: busy || _audioBusy || _audio.stopPending ? null : _listenPage,
           onMeal: busy || _audioBusy ? null : _mealPage))),
-        if(_audio.repeatTotal>1) Padding(padding:const EdgeInsets.symmetric(horizontal:8),
+        if(_audio.repeatTotal>1 && (!_fullscreen || _showLandscapeActions)) Padding(padding:const EdgeInsets.symmetric(horizontal:8),
           child: Wrap(alignment:WrapAlignment.center,crossAxisAlignment:WrapCrossAlignment.center,children:[
-            if(_landscape && _fullscreen) const VoiceButton(),
             Text(_audio.repeatCompleted==_audio.repeatTotal
               ? context.t('voiceRepeatComplete',{'total':_audio.repeatTotal})
               : context.t('voiceRepeatProgress',{'current':_audio.repeatCurrent,'total':_audio.repeatTotal,'remaining':_audio.repeatRemaining}),
@@ -902,9 +911,13 @@ class _QuranScreenState extends State<QuranScreen> with SingleTickerProviderStat
                       : ClampingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
                   child: Column(children: [
                     GestureDetector(behavior: HitTestBehavior.opaque,
+                      onTap: _fullscreen && !_verseSelectionActive ? () {
+                        if (_target != null || _preparing) return;
+                        setState(() => _showLandscapeActions = !_showLandscapeActions);
+                      } : null,
                       onDoubleTap: _verseSelectionActive ? null : _doubleTapFullscreen,
                       child: SizedBox(width: constraints.maxWidth, height: sheetHeight, child: child)),
-                    if (_landscape && _fullscreen) SafeArea(top: false,
+                    if (_landscape && _fullscreen && _showLandscapeActions) SafeArea(top: false,
                       child: Column(key: const ValueKey('landscape-reading-footer'), children: [
                         if (widget.hatim) _hatimControls(busy),
                         _pageControls(busy),
@@ -913,12 +926,12 @@ class _QuranScreenState extends State<QuranScreen> with SingleTickerProviderStat
               ));
           })),
         )),
-        if (!(_landscape && _fullscreen)) ...[
+        if (!_fullscreen || (!_landscape && _showLandscapeActions)) ...[
           if (widget.hatim) _hatimControls(busy),
-          if (!_fullscreen) _pageControls(busy),
+          _pageControls(busy),
         ],
       ])),
-      Positioned(top: 12, left: 20, right: 20, child: SafeArea(
+      if (!_fullscreen || _showLandscapeActions) Positioned(top: 12, left: 20, right: 20, child: SafeArea(
         child: SajdahNotice(page: _page, editionId: widget.store.edition.id))),
 
       ])),

@@ -15,6 +15,7 @@ class VoiceCommand {
 }
 
 class VoiceIntents {
+  static String normalizeNumbers(String speech) => _numbers(speech);
   static final _simple = <VoiceAction, List<String>>{
     VoiceAction.continueReading: ['kaldigimyerden devam et','son okudugumu ac','continue reading','resume reading','open last read','ga verder met lezen','open laatst gelezen'],
     VoiceAction.pause: ['duraklat','pause','pauseer'],

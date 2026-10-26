@@ -3,6 +3,7 @@ import 'dart:ui' as ui;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
 import 'package:kuran_app/widgets/reading_page.dart';
+import 'package:kuran_app/widgets/voice_button.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kuran_app/screens/quran_screen.dart';
@@ -66,6 +67,23 @@ void main() {
           store.edition.normalizedCrop(439));
         expect(find.byKey(const ValueKey('reader-listen')), findsNothing);
         expect(find.byKey(const ValueKey('reader-meal')), findsNothing);
+        expect(find.byType(VoiceButton), findsNothing);
+        expect(find.byKey(const ValueKey('landscape-reading-footer')), findsNothing);
+        final center = tester.getCenter(surface);
+        await tester.tapAt(center);
+        await tester.pump(kDoubleTapTimeout); await tester.pumpAndSettle();
+        expect(find.byKey(const ValueKey('reader-listen')), findsOneWidget);
+        await tester.tapAt(tester.getCenter(surface));
+        await tester.pump(kDoubleTapTimeout); await tester.pumpAndSettle();
+        expect(find.byType(VoiceButton), findsNothing);
+        for (final crop in [null, store.edition.normalizedOuterCrop(439), store.edition.normalizedCrop(439)]) {
+          final point = tester.getCenter(surface);
+          await tester.tapAt(point); await tester.pump(const Duration(milliseconds: 60));
+          await tester.tapAt(point); await tester.pumpAndSettle();
+          expect(tester.widget<ReadingPage>(find.byType(ReadingPage)).crop, crop);
+          expect(find.byType(VoiceButton), findsNothing);
+          expect(find.byType(AppBar), findsNothing);
+        }
         tester.view.physicalSize = portrait;
         await tester.pumpAndSettle();
         expect(find.byType(AppBar), findsOneWidget);
@@ -77,6 +95,33 @@ void main() {
         await tester.pumpWidget(const SizedBox());
       });
     }
+  }
+
+  for (final cutout in [const EdgeInsets.only(top: 36), const EdgeInsets.only(left: 44), const EdgeInsets.only(right: 44)]) {
+    testWidgets('revealed controls avoid camera safe areas $cutout', (tester) async {
+      const size = Size(800, 400);
+      tester.view.physicalSize = size;
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      await tester.pumpWidget(MaterialApp(home: MediaQuery(
+        data: MediaQueryData(size: size, viewPadding: cutout),
+        child: QuranScreen(store: store, initialPage: 439))));
+      await tester.pumpAndSettle();
+      expect(find.byType(VoiceButton), findsNothing);
+      final surface = find.byKey(const ValueKey('quran-reading-surface'));
+      expect(tester.getSize(surface), size);
+      await tester.tapAt(tester.getCenter(surface));
+      await tester.pump(kDoubleTapTimeout); await tester.pumpAndSettle();
+      for (final control in [find.byType(VoiceButton), find.byKey(const ValueKey('reader-listen')), find.byKey(const ValueKey('reader-meal'))]) {
+        final rect = tester.getRect(control);
+        expect(rect.left, greaterThanOrEqualTo(cutout.left));
+        expect(rect.top, greaterThanOrEqualTo(cutout.top));
+        expect(rect.right, lessThanOrEqualTo(size.width - cutout.right));
+      }
+      expect(tester.getCenter(find.byType(VoiceButton)).dx, greaterThan(size.width / 2));
+      await tester.pumpWidget(const SizedBox());
+    });
   }
 
   for (final hatim in [false, true]) {
@@ -266,6 +311,9 @@ void main() {
       final center = tester.getCenter(find.byKey(const ValueKey('quran-reading-surface')));
       await tester.tapAt(center); await tester.pump(const Duration(milliseconds: 60));
       await tester.tapAt(center); await tester.pumpAndSettle();
+      expect(find.byKey(const ValueKey('reader-meal')), findsNothing);
+      await tester.tapAt(tester.getCenter(find.byKey(const ValueKey('quran-reading-surface'))));
+      await tester.pump(kDoubleTapTimeout); await tester.pumpAndSettle();
       expect(find.byKey(const ValueKey('reader-meal')), findsOneWidget);
       expect(tester.getBottomRight(find.byKey(const ValueKey('reader-meal'))).dy,
         lessThanOrEqualTo(tester.getTopLeft(find.byKey(const ValueKey('quran-reading-surface'))).dy));
@@ -409,6 +457,8 @@ void main() {
         final footer = find.byKey(const ValueKey('landscape-reading-footer'));
         expect(footer.hitTestable(), findsNothing);
         expect(find.text('439 / 604').hitTestable(), findsNothing);
+        await tester.tapAt(tester.getCenter(find.byKey(const ValueKey('quran-reading-surface'))));
+        await tester.pump(kDoubleTapTimeout); await tester.pumpAndSettle();
         final scroll = tester.widget<SingleChildScrollView>(find.byType(SingleChildScrollView));
         scroll.controller!.jumpTo(scroll.controller!.position.maxScrollExtent);
         await tester.pumpAndSettle();
