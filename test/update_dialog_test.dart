@@ -51,7 +51,7 @@ void main() {
       Future<void> closeNotes() async {
         expect(find.byType(CompactConfirmationDialog), findsOneWidget);
         expect(
-          find.textContaining(translate('voiceExpandedFeature', language)),
+          find.textContaining(translate('continuousMealFeature', language)),
           findsOneWidget,
         );
         await tester.tap(find.text(translate('Kapat', language)));

@@ -1,5 +1,5 @@
 import 'voice_button.dart';
-import 'dart:convert';
+import '../services/meal_content.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../data/verse_counts.dart';
@@ -52,14 +52,9 @@ Future<void> showVerseMeal(BuildContext context, VerseRegion verse, {List<VerseR
   ));
 }
 
-Map<String, String>? _meal;
-Future<String> _translation(VerseRegion verse) {
-  String value(Map<String,String> data) => data['${verse.surah}:${verse.verse}'] ?? (throw StateError('Missing translation'));
-  if (_meal != null) return Future.value(value(_meal!));
-  return rootBundle.loadString('assets/meal/translation.json', cache: false).then((text) {
-    _meal = {for (final v in (jsonDecode(text)['verses'] as List)) '${v['surah']}:${v['verse']}': v['text'] as String};
-    return value(_meal!);
-  });
+Future<String> _translation(VerseRegion verse) async {
+  final data = await MealContent.verses();
+  return data['${verse.surah}:${verse.verse}'] ?? (throw StateError('Missing translation'));
 }
 
 Future<(int, int, int)?> showMemorizeRange(BuildContext context, VerseRegion verse, {List<VerseRegion>? selection}) async {

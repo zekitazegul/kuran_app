@@ -4,9 +4,8 @@ import '../widgets/voice_button.dart';
 import '../widgets/screen_title.dart';
 import '../widgets/paginated_meal_text.dart';
 import '../widgets/personal_page_scope.dart';
-import 'dart:convert';
+import '../services/meal_content.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import '../data/surahs.dart';
 import '../l10n/translations.dart';
 import '../services/meal_reader.dart';
@@ -97,14 +96,14 @@ class _MealScreenState extends State<MealScreen> implements FullscreenReadingSes
 
   Future<void> _load() async {
     try {
-      final data = jsonDecode(await rootBundle.loadString('assets/meal/turkish-pages.json')) as List;
+      final pages = await MealContent.pages();
       await _reader.load(initialSurah: widget.initialSurah, initialVerse: widget.initialVerse);
       final preferences = await MealReader.channel.invokeMapMethod<String, dynamic>('loadText');
       if (!mounted) return;
       _textOffset = widget.initialSurah == null && preferences?['textPage'] == _reader.page
         ? (preferences?['textOffset'] as int? ?? 0) : 0;
       setState(() {
-        _pages = data.map((p) => List<String>.from(p as List)).toList();
+        _pages = pages;
         _fontSize = (preferences?['fontSize'] as int? ?? 22).clamp(16, 40);
         _busy = false;
         _failed = false;

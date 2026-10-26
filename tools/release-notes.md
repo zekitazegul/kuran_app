@@ -1,11 +1,8 @@
 tr
-- Sayfa, cüz, ayet, meal ve görünümü sesli komutlarla yönet.
-- Sure ve ayetleri istediğin sayıda dinle; tekrar sayısını ve kalan tekrarları ekranda gör.
+- Meali gereksiz boş satırlar olmadan kesintisiz oku.
 
 en
-- Control pages, juz, verses, translation and display with voice commands.
-- Repeat surahs and verses and see the repeat count and remaining rounds.
+- Read the translation continuously without unnecessary blank lines.
 
 nl
-- Bedien pagina’s, djoez, verzen, vertaling en weergave met spraakopdrachten.
-- Herhaal soera’s en verzen en bekijk het aantal herhalingen en resterende rondes.
+- Lees de vertaling doorlopend zonder onnodige lege regels.

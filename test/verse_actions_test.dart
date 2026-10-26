@@ -11,10 +11,12 @@ import 'package:kuran_app/screens/quran_screen.dart';
 import 'package:kuran_app/services/app_language.dart';
 import 'package:kuran_app/services/reading_store.dart';
 import 'package:kuran_app/services/verse_regions.dart';
+import 'package:kuran_app/services/meal_content.dart';
 import 'package:kuran_app/widgets/verse_actions.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
+  setUpAll(() async { await MealContent.verses(); });
   test('all three scripts have every verse and all prostration targets', () {
     final data = jsonDecode(File('assets/verse_regions.json').readAsStringSync()) as Map;
     final refs = jsonDecode(File('assets/page_verses.json').readAsStringSync())['pages'] as List;

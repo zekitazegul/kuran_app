@@ -6,7 +6,7 @@ import 'compact_confirmation_dialog.dart';
 /// Update these notes along with the version in pubspec.yaml for each release.
 // Show only new user-facing features, in short sentences. Replace this list
 // for each release; keep technical details and previous changes in docs.
-const latestUpdateNotes = <String>['voiceExpandedFeature', 'voiceRepeatFeature'];
+const latestUpdateNotes = <String>['continuousMealFeature'];
 
 Future<void> showUpdateDialog(BuildContext context, String version) {
   if (latestUpdateNotes.isEmpty) return Future<void>.value();

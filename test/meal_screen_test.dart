@@ -4,12 +4,24 @@ import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kuran_app/screens/meal_screen.dart';
 import 'package:kuran_app/services/meal_reader.dart';
+import 'package:kuran_app/services/meal_content.dart';
 import 'package:kuran_app/widgets/app_bottom_bar.dart';
 import 'package:kuran_app/widgets/paginated_meal_text.dart';
 import 'package:kuran_app/widgets/personal_page_scope.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
+  setUpAll(() async { await MealContent.pages(); });
+  testWidgets('paragraphs and source boundaries have no extra blank lines', (tester) async {
+    await tester.pumpWidget(MaterialApp(home: Scaffold(body: PaginatedMealText(
+      pages: const [['First paragraph.', 'Second paragraph continues'], ['on the next source page.']],
+      page: 1, offset: 0, fontSize: 22, enabled: true, onChanged: (_, _) {}))));
+    await tester.pumpAndSettle();
+    final first = find.byKey(const ValueKey('meal-source-text-1'));
+    final second = find.byKey(const ValueKey('meal-source-text-2'));
+    expect(tester.widget<Text>(first).data, 'First paragraph.\nSecond paragraph continues');
+    expect(tester.getTopLeft(second).dy, closeTo(tester.getBottomLeft(first).dy, .01));
+  });
   test('Turkish pages retain explanation text and exclude Arabic', () async {
     final pages = jsonDecode(await rootBundle.loadString('assets/meal/turkish-pages.json')) as List;
     expect(pages.length, 1490);

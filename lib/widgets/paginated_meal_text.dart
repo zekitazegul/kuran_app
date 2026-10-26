@@ -147,7 +147,7 @@ class PaginatedMealTextState extends State<PaginatedMealText> with SingleTickerP
       _layouts[page] = cached;
       return cached;
     }
-    final text = widget.pages[page - 1].join('\n\n');
+    final text = widget.pages[page - 1].join('\n');
     final painter = TextPainter(text: TextSpan(text: text, style: _style),
       textDirection: TextDirection.ltr, textScaler: _scaler)..layout(maxWidth: _width);
     final result = _MealPageLayout(text, painter,
@@ -177,7 +177,7 @@ class PaginatedMealTextState extends State<PaginatedMealText> with SingleTickerP
       final box = entry.value.currentContext?.findRenderObject();
       if (box is! RenderBox || !box.attached || !box.hasSize) continue;
       final pageTop = box.localToGlobal(Offset.zero).dy - top;
-      if (pageTop + box.size.height - 16 > 0 && pageTop + 12 < viewport.size.height) {
+      if (pageTop + box.size.height > 0 && pageTop < viewport.size.height) {
         visible.add((page: entry.key, top: pageTop));
       }
     }
@@ -185,7 +185,7 @@ class PaginatedMealTextState extends State<PaginatedMealText> with SingleTickerP
     visible.sort((a, b) => a.page.compareTo(b.page));
     final first = visible.first;
     final layout = _layoutFor(first.page);
-    final y = (-first.top - 12).clamp(0.0, layout.painter.height);
+    final y = (-first.top).clamp(0.0, layout.painter.height);
     final position = layout.painter.getPositionForOffset(Offset(0, y + 0.1));
     final offset = layout.painter.getLineBoundary(position).start.clamp(0, layout.text.length);
     return (page: first.page, offset: offset);
@@ -338,7 +338,7 @@ class PaginatedMealTextState extends State<PaginatedMealText> with SingleTickerP
       index = 0;
     }
     return ColoredBox(color: Theme.of(context).scaffoldBackgroundColor,
-      child: Padding(padding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
+      child: Padding(padding: const EdgeInsets.symmetric(horizontal: 20),
         child: Text(layout.text.substring(layout.slices[index].start),
           textDirection: TextDirection.ltr, style: _style)));
   }
@@ -346,7 +346,7 @@ class PaginatedMealTextState extends State<PaginatedMealText> with SingleTickerP
   Widget _buildSource(int page) {
     final layout = _layoutFor(page);
     return Padding(key: _pageKeys.putIfAbsent(page, GlobalKey.new),
-      padding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
+      padding: const EdgeInsets.symmetric(horizontal: 20),
       child: Text(layout.text, key: ValueKey('meal-source-text-$page'),
         textDirection: TextDirection.ltr, style: _style));
   }
@@ -426,7 +426,7 @@ class PaginatedMealTextState extends State<PaginatedMealText> with SingleTickerP
               SliverList(key: _centerKey, delegate: SliverChildBuilderDelegate(
                 (context, index) => _buildSource(_origin + index), childCount: widget.pages.length - _origin + 1)),
               SliverToBoxAdapter(child: SizedBox(height:
-                (_viewportHeight - _scaler.scale(widget.fontSize.toDouble()) * 1.6 - 28).clamp(0.0, double.infinity))),
+                (_viewportHeight - _scaler.scale(widget.fontSize.toDouble()) * 1.6).clamp(0.0, double.infinity))),
             ])))),
       ))),
       if (widget.footerBuilder != null)
