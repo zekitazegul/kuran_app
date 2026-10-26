@@ -290,3 +290,9 @@ TR: Ayarlar’dan uygulamayı APK olarak paylaşabilir, son sürümü GitHub say
 EN: Share the app as an APK from Settings, and download the latest version without opening GitHub. Android asks for installation confirmation.
 
 NL: Deel de app als APK vanuit Instellingen en download de nieuwste versie zonder GitHub te openen. Android vraagt om bevestiging voor installatie.
+
+## 1.1.3+94
+
+- TR: Meal kısayolu doğrudan açılır; sayfa geçişlerinde alttaki ekranın görünmesi düzeltildi.
+- EN: Translation opens directly; fixed underlying screens showing through page transitions.
+- NL: Vertaling opent direct; onderliggende schermen zijn niet meer zichtbaar door paginaovergangen.

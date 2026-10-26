@@ -1,3 +1,4 @@
+import 'screens/meal_screen.dart';
 import 'widgets/motif_surface.dart';
 import 'widgets/feature_demo.dart';
 import 'widgets/dashboard_cards.dart';
@@ -330,6 +331,10 @@ class _HomeScreenState extends State<HomeScreen> {
     AppNavigation.instance.selected.value = destination;
     try {
     if (destination == AppDestination.home) { setState(() {}); return; }
+    if (destination == AppDestination.meal) {
+      await navigator.push(MaterialPageRoute<void>(builder: (_) => const MealScreen()));
+      return;
+    }
     if (destination == AppDestination.settings) { await _settings(); return; }
     if (destination == AppDestination.history) {
       await navigator.push(MaterialPageRoute<void>(builder: (_) => ReadingHistoryScreen(store: store)));

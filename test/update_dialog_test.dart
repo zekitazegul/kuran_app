@@ -1,3 +1,4 @@
+import 'package:kuran_app/widgets/update_dialog.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kuran_app/main.dart';
@@ -49,9 +50,18 @@ void main() {
       }
 
       Future<void> closeNotes() async {
+        if (latestUpdateNotes.isEmpty) {
+          expect(find.byType(CompactConfirmationDialog), findsNothing);
+          if (find.byKey(const ValueKey('demo-skip')).evaluate().isNotEmpty) {
+            await tester.tap(find.byKey(const ValueKey('demo-skip')));
+            await tester.pumpAndSettle();
+          }
+          expect(seen, version);
+          return;
+        }
         expect(find.byType(CompactConfirmationDialog), findsOneWidget);
         expect(
-          find.textContaining(translate('voiceSuggestionsFeature', language)),
+          find.textContaining(translate(latestUpdateNotes.first, language)),
           findsOneWidget,
         );
         await tester.tap(find.text(translate('Kapat', language)));

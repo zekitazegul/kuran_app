@@ -54,7 +54,7 @@ void main() {
       await tester.pump(); await tester.pump(const Duration(milliseconds:500));
       expect(find.byType(MealScreen),findsOneWidget);
       expect(tester.widget<MealScreen>(find.byType(MealScreen)).initialSurah, isNull);
-      expect(tester.widgetList<QuranScreen>(find.byType(QuranScreen,skipOffstage:false)).any((r)=>r.initialPanel=='meal'),true);
+      expect(find.byType(QuranScreen, skipOffstage: false), findsNothing);
       AppNavigation.instance.open!(AppDestination.home); await tester.pumpAndSettle();
       expect(appNavigatorKey.currentState!.canPop(),isFalse);
     }
@@ -65,7 +65,7 @@ void main() {
     addTearDown(tester.view.resetDevicePixelRatio);
     Future<void> openMealShortcut() async {
       await tester.tap(find.byKey(const ValueKey('navigation-meal')));
-      // Both reader and meal routes load assets asynchronously between frames.
+      // Translation loads its assets asynchronously between frames.
       for (var frame = 0; frame < 6; frame++) {
         await tester.pump(const Duration(milliseconds: 500));
         await tester.runAsync(() async => Future<void>.delayed(const Duration(milliseconds: 100)));
