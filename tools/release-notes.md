@@ -1,1 +1,1 @@
-KuranApp 1.1.3 (94)
+KuranApp 1.1.3 (95)

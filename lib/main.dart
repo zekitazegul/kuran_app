@@ -232,10 +232,8 @@ class _HomeScreenState extends State<HomeScreen> {
         unawaited(_readVoice(page));
       case VoiceAction.verse:
         final regions=await VerseRegions.load();
-        int? page;
-        for(var p=store.edition.firstPage;p<=store.edition.lastPage;p++) {
-          if(regions.page(store.edition.id,p).any((v)=>v.surah==command.number && v.verse==command.verse)) {page=p;break;}
-        }
+        final page = regions.pageForVerse(store.edition.id, command.number!, command.verse!,
+          firstPage: store.edition.firstPage, lastPage: store.edition.lastPage);
         if(page==null) {_voiceNotice('voiceInvalidTarget');return;}
         unawaited(_readVoice(page,voice:command));
       case VoiceAction.bookmarks:

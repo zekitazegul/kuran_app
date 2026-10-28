@@ -149,9 +149,9 @@ class _QuranScreenState extends State<QuranScreen> with SingleTickerProviderStat
           } else {verse=VerseRegion(verse.surah,n,[]);}
         }
         final regions=_verseRegions??await VerseRegions.load();
-        for(var p=widget.store.edition.firstPage;p<=widget.store.edition.lastPage;p++) {
-          if(regions.page(widget.store.edition.id,p).any((v)=>v.surah==verse!.surah && v.verse==verse.verse)) {await _go(p);break;}
-        }
+        final targetPage = regions.pageForVerse(widget.store.edition.id, verse.surah, verse.verse,
+          firstPage: widget.store.edition.firstPage, lastPage: widget.store.edition.lastPage);
+        if (targetPage != null) await _go(targetPage);
         await _audio.stopImmediately();
         _voiceSelection=[];
         _voiceVerse=verse;
